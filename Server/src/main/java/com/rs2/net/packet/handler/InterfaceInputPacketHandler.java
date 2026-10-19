@@ -148,6 +148,9 @@ implements PacketHandler {
                     return;
                 }
                 if (player.getSelectedInterfaceId() == 13718) {
+                    // The Cook-X amount applies to the one pending cooking
+                    // prompt; don't let a replayed input restart cooking.
+                    player.setSelectedInterfaceId(0);
                     CookingManager.startCookingTask(player, amount);
                     return;
                 }
