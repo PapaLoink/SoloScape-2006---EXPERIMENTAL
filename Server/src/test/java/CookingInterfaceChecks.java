@@ -95,6 +95,9 @@ public final class CookingInterfaceChecks {
         // Native revision-443 action-type-6 controls use opcode 153.
         // Verify a selection actually reaches the cooking event's first tick,
         // animates at a range, and converts one raw item into cooked/burnt food.
+        // Non-tutorial cooking: avoid refreshing Tutorial Island's journal
+        // in this detached Player(null) regression fixture.
+        player.setQuestState(0, 1);
         player.setOpenInterfaceId(COOKING_CHATBOX);
         player.setSelectedSkillItemId(2132);
         player.interfaceAction = "cookRange";
