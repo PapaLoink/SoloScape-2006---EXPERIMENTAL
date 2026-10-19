@@ -42,3 +42,11 @@ jobs:
           javac -encoding UTF-8 -cp 'lib/*' -d cooking-server-classes @/tmp/cooking-server-sources.txt
           javac -encoding UTF-8 -cp 'cooking-server-classes:lib/*' -d cooking-server-classes src/test/java/CookingInterfaceChecks.java
           java -cp 'cooking-server-classes:lib/*' CookingInterfaceChecks
+      - name: Inspect client widget rendering references
+        run: |
+          echo '--- references to native widgets array (top 100) ---'
+          grep -Rn 'Class62_Sub1.widgets\|widgets\[.*>>> 16' Client/src --include='*.java' | head -100 || true
+          echo '--- text rendering paths ---'
+          grep -Rn 'aClass3_2029\|getFont()' Client/src/unpackaged --include='*.java' | head -100 || true
+          echo '--- code paths that render interface root ---'
+          grep -Rn 'anInt1912' Client/src --include='*.java' | head -90 || true
