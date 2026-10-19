@@ -182,12 +182,12 @@ public final class InterfaceBridge {
         }
         put(mappings, 153, 261, 0);    // toggle run
         put(mappings, 3214, 149, 0);   // inventory container
-        // Native group 307: title (0), food-name text (1), model (2),
-        // then buttons (3..6). Cook All remains a reverse-only click on
-        // child 3; the legacy text id 13717 must NOT write to that button.
-        put(mappings, 13715, 307, 0);  // cooking prompt/title
+        // Revision 443's native cooking interface has no food-name text:
+        // children 0/1 are sprites, 2 the model, 3-6 the quantity actions,
+        // and 7 the title. The client adds child 8 as a centered name label.
+        put(mappings, 13715, 307, 7);  // cooking prompt/title
         put(mappings, 13716, 307, 2);  // cooking item model
-        put(mappings, 13717, 307, 1);  // food name beneath model
+        put(mappings, 13717, 307, 8);  // synthetic food name below the model
         put(mappings, 13718, 307, 4);  // Cook X
         put(mappings, 13719, 307, 5);  // Cook 5
         put(mappings, 13720, 307, 6);  // Cook 1
@@ -723,7 +723,7 @@ public final class InterfaceBridge {
         // static reverse table is built only once when this class is first loaded.
         if (packedId == (192 << 16 | 591)) return 30000;
         // Cook All is a reverse-only action on child 3. The same legacy
-        // ID 13717 now writes the food name to child 1, not to the button.
+        // ID 13717 writes the food name to synthetic child 8, not the button.
         // Keep this explicit reverse mapping ahead of the component table.
         if ((packedId >>> 16) == 307) {
             switch (packedId & 0xffff) {
