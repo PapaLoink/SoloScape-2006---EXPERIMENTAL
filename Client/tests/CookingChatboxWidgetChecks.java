@@ -11,7 +11,7 @@ import java.net.Socket;
 
 /** Native cache 307 has no food-name text field; client must add child 8. */
 public final class CookingChatboxWidgetChecks {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Class39_Sub5_Sub4.widgetsLoaded = new boolean[500];
         Class62_Sub1.widgets = new Widget[500][];
 
@@ -63,7 +63,7 @@ public final class CookingChatboxWidgetChecks {
         System.out.println("Cooking chatbox widget checks passed.");
     }
 
-    private static void readFoodNamePacket(String value) {
+    private static void readFoodNamePacket(String value) throws Exception {
         byte[] text = value.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
         byte[] payload = new byte[4 + text.length + 1];
         int widget = 307 << 16 | 8;
