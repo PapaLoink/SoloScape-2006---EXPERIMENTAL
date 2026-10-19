@@ -645,6 +645,54 @@ public class JSocket implements Runnable {
         Class14.aBoolean245 = true;
     }
 
+    /**
+     * Native revision-443 cooking group 307 only contains a title, a model,
+     * two decorative sprites, and four quantity buttons. There is no food-name
+     * text widget in the cache. Append one without changing the stock controls.
+     *
+     * The server targets synthetic child 8 with the selected raw-food name.
+     */
+    private static void configureCookingChatbox() {
+        Widget[] group = Class62_Sub1.widgets[307];
+        if (group == null || group.length < 8 || group[7] == null) {
+            return;
+        }
+        if (group.length < 9) {
+            Widget[] expanded = new Widget[9];
+            System.arraycopy(group, 0, expanded, 0, group.length);
+            Class62_Sub1.widgets[307] = group = expanded;
+        }
+        if (group[8] != null) {
+            return;
+        }
+
+        Widget title = group[7];
+        Widget name = new Widget();
+        name.anInt2084 = (307 << 16) | 8;
+        name.anInt2050 = -1;
+        name.aBoolean2013 = title.aBoolean2013;
+        name.type = 4;
+        name.anInt2078 = title.anInt2078;
+        name.anInt2090 = name.anInt2091 = 0;
+        // The stock item model is at y=13 with height 83. Put the label
+        // directly beneath it, inside the chatbox's normal 115px area.
+        name.anInt2024 = name.anInt2021 = 96;
+        name.quadWidth = 479;
+        name.quadHeight = 17;
+        name.anInt2105 = title.anInt2105;
+        name.anInt2032 = 1; // centered
+        name.anInt1996 = title.anInt1996;
+        name.anInt2036 = title.anInt2036;
+        name.aBoolean2059 = title.aBoolean2059;
+        name.activeQuadColor = name.inactiveQuadColor = 0x000000;
+        name.aClass3_2029 = Class39_Sub5_Sub9.createJstring("");
+        name.aClass3_2048 = Class39_Sub5_Sub9.createJstring("");
+        name.anInt2089 = 0;
+        name.anInt2049 = name.anInt1998 = 0;
+        group[8] = name;
+        Class14.aBoolean245 = true;
+    }
+
     public static boolean loadWidget(int parent) {
         if (unpackaged.ChristmasEventSnow.loadOverlayWidget(parent)) return true;
         if (unpackaged.GrandExchangeWidgets.load(parent)) return true;
@@ -656,6 +704,8 @@ public class JSocket implements Runnable {
         if (Class39_Sub5_Sub4.widgetsLoaded[parent]) {
             if (parent == 214) {
                 configureTutorialChatbox();
+            } else if (parent == 307) {
+                configureCookingChatbox();
             } else if (parent == 137) {
                 configureWorldTeleportButtons();
             } else {
@@ -692,6 +742,8 @@ public class JSocket implements Runnable {
         }
         if (parent == 214) {
             configureTutorialChatbox();
+        } else if (parent == 307) {
+            configureCookingChatbox();
         } else if (parent == 137) {
             configureWorldTeleportButtons();
         } else {
