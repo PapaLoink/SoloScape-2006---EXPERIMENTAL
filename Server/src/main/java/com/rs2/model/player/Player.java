@@ -5347,9 +5347,8 @@ extends Entity {
 
     public final boolean isInterfaceIdOpen(int interfaceId) {
         // Native cooking child 307:3 translates to legacy Cook All (13717).
-        // That legacy ID is also a food-name text target, so the interface bridge
-        // deliberately has no forward mapping for it. Permit the click only
-        // while the cooking quantity chatbox is actually open.
+        // The same legacy ID writes food-name text to native child 307:1,
+        // but this action must only be accepted when the cooking chatbox is open.
         if (ServerSettings.clientBuild == 443
                 && interfaceId == 13717
                 && this.openInterfaceId == 1743) {
