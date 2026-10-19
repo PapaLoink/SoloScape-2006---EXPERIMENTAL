@@ -106,6 +106,9 @@ public final class CookingManager {
                 this.player.packetSender.showChatboxInterface(1743);
                 // The client creates native 307:8 as a text child because
                 // the stock 307:1 is a decorative sprite, not a label.
+                // Shift only the native item model 4 pixels down. Position
+                // packets are relative to the cached position, not cumulative.
+                this.player.packetSender.sendInterfacePosition(13716, 0, 4);
                 this.player.packetSender.sendInterfaceModel(13716, 200, rawItemId);
                 this.player.packetSender.sendInterfaceText(
                         ItemDefinition.forId(rawItemId).getName(), 13717);
