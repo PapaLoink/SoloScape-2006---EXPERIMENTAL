@@ -51,6 +51,10 @@ public final class CookingManager {
         if (!fire && !range) {
             return false;
         }
+        if (fire && isUnlitFireplace(definition, objectName)) {
+            this.player.packetSender.sendGameMessage("You need to light the fireplace first.");
+            return true;
+        }
 
         this.player.packetSender.closeInterfaces();
         if (!ServerSettings.cookingEnabled) {
@@ -119,6 +123,25 @@ public final class CookingManager {
                 || name.equals("ogre fire")
                 || name.startsWith("firepit")
                 || name.endsWith(" fireplace");
+    }
+
+    // Some unlit fireplace objects share the name "Fireplace" with
+    // their lit counterparts. Check the examine text and Light action too.
+    static boolean isUnlitFireplace(ObjectDefinition definition, String name) {
+        if (definition == null || name == null || !name.toLowerCase().contains("fireplace")) {
+            return false;
+        }
+        if (definition.description != null
+                && definition.description.toLowerCase().contains("you can light a fire here")) {
+            return true;
+        }
+        for (int slot = 0; slot < 5; slot++) {
+            String action = definition.getAction(slot);
+            if (action != null && action.toLowerCase().startsWith("light")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean isRangeCookingSurface(String objectName) {
