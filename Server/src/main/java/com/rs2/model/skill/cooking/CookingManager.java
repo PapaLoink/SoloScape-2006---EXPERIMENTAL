@@ -104,14 +104,8 @@ public final class CookingManager {
                 // opening packet can restore cached text/positions, otherwise
                 // swallowing the food-name update.
                 this.player.packetSender.showChatboxInterface(1743);
-                this.player.packetSender.sendInterfacePosition(13715, 0, 20); // prompt
-
-                // Child 307:1 already has a visible native text baseline
-                // (the stock "Please wait..." placeholder). The previous
-                // +88/+112 position packets moved that text outside its clipped
-                // parent, making every food name invisible. Do not reposition
-                // the name: replacing the stock text leaves it on-screen.
-                // Likewise leave the model on its native baseline.
+                // The client creates native 307:8 as a text child because
+                // the stock 307:1 is a decorative sprite, not a label.
                 this.player.packetSender.sendInterfaceModel(13716, 200, rawItemId);
                 this.player.packetSender.sendInterfaceText(
                         ItemDefinition.forId(rawItemId).getName(), 13717);
