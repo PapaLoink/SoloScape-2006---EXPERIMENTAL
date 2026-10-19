@@ -5,6 +5,7 @@ import com.rs2.net.packet.handler.InterfaceInputPacketHandler;
 import java.lang.reflect.Field;
 import com.rs2.model.player.Player;
 import com.rs2.model.skill.cooking.CookingTask;
+import com.rs2.model.task.CycleEventContainer;
 import com.rs2.net.packet.ClientPackets;
 import com.rs2.net.packet.IncomingPacket;
 import com.rs2.net.packet.InterfaceBridge;
@@ -91,6 +92,39 @@ public final class CookingInterfaceChecks {
             }
         }
 
+        // Native revision-443 action-type-6 controls use opcode 153.
+        // Verify a selection actually reaches the cooking event's first tick,
+        // animates at a range, and converts one raw item into cooked/burnt food.
+        player.setOpenInterfaceId(COOKING_CHATBOX);
+        player.setSelectedSkillItemId(2132);
+        player.interfaceAction = "cookRange";
+        player.beginInterruptibleAction();
+        player.setActiveCycleEvent(null);
+        int rawBefore = player.getInventoryManager().getItemAmount(2132);
+        int cookedBefore = player.getInventoryManager().getItemAmount(2142);
+        int burntBefore = player.getInventoryManager().getItemAmount(2146);
+        clickNative(player, 6); // Cook 1 via opcode 153
+        require(player.getActiveCycleEvent() instanceof CookingTask,
+                "Opcode 153 did not schedule cooking");
+        new CycleEventContainer(player, player.getActiveCycleEvent(), 1).execute();
+        require(player.getInventoryManager().getItemAmount(2132) == rawBefore - 1,
+                "Cooking task did not consume raw meat on the first tick");
+        require(player.getInventoryManager().getItemAmount(2142) > cookedBefore
+                        || player.getInventoryManager().getItemAmount(2146) > burntBefore,
+                "Cooking task did not produce cooked or burnt meat");
+        require(player.getUpdateState().getAnimationId() == 883,
+                "Cooking task did not play the range animation");
+
+        // Retain support for the alternative opcode 54 click path.
+        player.setOpenInterfaceId(COOKING_CHATBOX);
+        player.setSelectedSkillItemId(2132);
+        player.interfaceAction = "cookRange";
+        player.beginInterruptibleAction();
+        player.setActiveCycleEvent(null);
+        clickNativeButton(player, 6);
+        require(player.getActiveCycleEvent() instanceof CookingTask,
+                "Opcode 54 cooking button stopped working");
+
         player.setActiveCycleEvent(null);
         enterAmount(player, 3); // Replay without a fresh Cook-X prompt.
         require(player.getActiveCycleEvent() == null, "Stale Cook-X input started cooking");
@@ -107,7 +141,20 @@ public final class CookingInterfaceChecks {
         System.out.println("Cooking interface checks passed (range/fire, all quantities, closed-dialog guard).");
     }
 
+    // Group 307 children 3..6 are action-type-6 widgets in the native cache.
+    // The real client emits WIDGET_SELECT (153), a little-endian short parameter
+    // followed by the packed widget ID, not INTERFACE_BUTTON (54).
     private static void clickNative(Player player, int child) {
+        ByteBuffer payload = ByteBuffer.allocate(6);
+        payload.order(java.nio.ByteOrder.LITTLE_ENDIAN).putShort((short) 0);
+        payload.order(java.nio.ByteOrder.BIG_ENDIAN).putInt(NATIVE_COOKING_GROUP << 16 | child);
+        payload.flip();
+        new InterfaceActionPacketHandler().handle(player,
+                new IncomingPacket(ClientPackets.WIDGET_SELECT, 6,
+                        PacketBuffer.wrapReader(payload)));
+    }
+
+    private static void clickNativeButton(Player player, int child) {
         ByteBuffer payload = ByteBuffer.allocate(4);
         payload.putInt(NATIVE_COOKING_GROUP << 16 | child);
         payload.flip();
