@@ -1,0 +1,28 @@
+name: Verify Cooking Widget
+on:
+  push:
+    branches:
+      - fix/issue-7-cooking-ranges-fireplaces
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Decode revision 443 cooking chatbox
+        working-directory: Server
+        run: |
+          mkdir -p widget-audit-classes
+          javac -cp 'lib/*' -d widget-audit-classes \
+            src/main/java/com/rs2/cache/js5/ConfigReader.java \
+            src/main/java/com/rs2/cache/js5/Js5CacheStore.java \
+            src/main/java/com/rs2/cache/js5/Js5Container.java \
+            src/main/java/com/rs2/cache/js5/Js5Group.java \
+            src/main/java/com/rs2/cache/js5/Js5ReferenceTable.java \
+            src/main/java/com/rs2/cache/js5/Interfaces.java \
+            src/test/java/CookingWidgetCacheChecks.java
+          java -cp 'widget-audit-classes:lib/*' CookingWidgetCacheChecks
