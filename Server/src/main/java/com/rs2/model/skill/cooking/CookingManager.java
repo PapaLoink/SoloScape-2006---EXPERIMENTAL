@@ -99,6 +99,16 @@ public final class CookingManager {
                 || ServerSettings.cacheVersion < 334) {
             startCookingTask(this.player, 1);
         } else {
+            // Revision 443's stock group 307 uses the wrong vertical
+            // alignment for the 2006 cooking dialogue. The per-component
+            // move packet takes offsets relative to the cached positions;
+            // move the prompt and model down, and put the raw-food name
+            // below the enlarged item picture instead of over its top.
+            if (ServerSettings.clientBuild == 443) {
+                this.player.packetSender.sendInterfacePosition(13715, 0, 20);  // title
+                this.player.packetSender.sendInterfacePosition(13716, 0, 26);  // item model
+                this.player.packetSender.sendInterfacePosition(13717, 0, 112); // food name
+            }
             this.player.packetSender.sendInterfaceModel(13716, 200, rawItemId);
             this.player.packetSender.sendInterfaceText(ItemDefinition.forId(rawItemId).getName(), 13717);
             this.player.packetSender.showChatboxInterface(1743);
