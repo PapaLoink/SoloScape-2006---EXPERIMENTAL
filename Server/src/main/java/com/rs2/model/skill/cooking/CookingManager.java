@@ -30,85 +30,76 @@ public final class CookingManager {
         this.player = player;
     }
 
-    public final boolean handleItemOnCookingObject(int objectId, int value5, int value32, int value42) {
-        Object value2 = CookableFoodDefinition.forRawItemId(objectId);
-        if (value2 == null) {
-            if (GameplayTrace.enabled()) {
-                GameplayTrace.log("cooking item-on-object not-cookable player=" + GameplayTrace.describe(this.player) + " itemId=" + objectId + " objectId=" + value5 + " x=" + value32 + " y=" + value42 + " plane=" + this.player.getPosition().getPlane());
-            }
+    public final boolean handleItemOnCookingObject(int rawItemId, int objectId, int x, int y) {
+        CookableFoodDefinition food = CookableFoodDefinition.forRawItemId(rawItemId);
+        if (food == null) {
             return false;
         }
-        value2 = this.player;
-        ((Player)value2).packetSender.closeInterfaces();
+
+        int plane = this.player.getPosition().getPlane();
+        LoadedWorldObject loaded = WorldObjectLookup.findObjectByIdAt(objectId, x, y, plane);
+        WorldObject worldObject = SkillActionHelper.findWorldObjectById(objectId, x, y, plane);
+        if (loaded == null && worldObject == null) {
+            return false;
+        }
+
+        int actualObjectId = loaded != null ? loaded.getWorldObject().getObjectId() : worldObject.getObjectId();
+        ObjectDefinition definition = ObjectDefinition.forId(actualObjectId);
+        String objectName = definition == null ? null : definition.name;
+        boolean fire = isFireCookingSurface(actualObjectId, objectName);
+        boolean range = !fire && isRangeCookingSurface(objectName);
+        if (!fire && !range) {
+            return false;
+        }
+
+        this.player.packetSender.closeInterfaces();
         if (!ServerSettings.cookingEnabled) {
-            value2 = this.player;
-            ((Player)value2).packetSender.sendGameMessage("This skill is currently disabled.");
+            this.player.packetSender.sendGameMessage("This skill is currently disabled.");
             return true;
         }
-        this.player.setCookingObjectId(value5);
-        value2 = WorldObjectLookup.findObjectByIdAt(value5, value32, value42, this.player.getPosition().getPlane());
-        Object worldObjectById = SkillActionHelper.findWorldObjectById(value5, value32, value42, this.player.getPosition().getPlane());
-        if (value2 != null || worldObjectById != null) {
-            value2 = ObjectDefinition.forId(value2 != null ? ((LoadedWorldObject)value2).getWorldObject().getObjectId() : ((WorldObject)worldObjectById).getObjectId());
-            worldObjectById = ((ObjectDefinition)value2).name;
-            if (CookingManager.isFireCookingSurface(value5, (String)worldObjectById)) {
-                if (GameplayTrace.enabled()) {
-                    GameplayTrace.log("cooking item-on-object accepted player=" + GameplayTrace.describe(this.player) + " rawItemId=" + objectId + " raw=" + ItemDefinition.forId(objectId).getName() + " objectId=" + value5 + " objectName=" + ((ObjectDefinition)value2).name + " action=cookFire x=" + value32 + " y=" + value42 + " plane=" + this.player.getPosition().getPlane());
-                }
-                this.player.beginInterruptibleAction();
-                worldObjectById = "cookFire";
-                value2 = this.player;
-                this.player.interfaceAction = (String)worldObjectById;
-                this.firePosition = new Position(value32, value42, this.player.getPosition().getPlane());
-                this.player.setSelectedSkillItemId(objectId);
-                if (this.player.getQuestState(0) != 1 || this.player.getInventoryManager().getItemAmount(objectId) == 1 || ServerSettings.cacheVersion < 334) {
-                    CookingManager.startCookingTask(this.player, 1);
-                    return true;
-                }
-                worldObjectById = new ItemStack(objectId);
-                value2 = this.player;
-                ((Player)value2).packetSender.sendInterfaceModel(13716, 200, objectId);
-                value2 = this.player;
-                ((Player)value2).packetSender.sendInterfaceText(((ItemStack)worldObjectById).getDefinition().getName(), 13717);
-                value2 = this.player;
-                ((Player)value2).packetSender.showChatboxInterface(1743);
-                return true;
-            }
-            if (CookingManager.isRangeCookingSurface((String)worldObjectById)) {
-                if (GameplayTrace.enabled()) {
-                    GameplayTrace.log("cooking item-on-object accepted player=" + GameplayTrace.describe(this.player) + " rawItemId=" + objectId + " raw=" + ItemDefinition.forId(objectId).getName() + " objectId=" + value5 + " objectName=" + ((ObjectDefinition)value2).name + " action=cookRange x=" + value32 + " y=" + value42 + " plane=" + this.player.getPosition().getPlane());
-                }
-                this.player.beginInterruptibleAction();
-                worldObjectById = "cookRange";
-                value2 = this.player;
-                this.player.interfaceAction = (String)worldObjectById;
-                this.player.setSelectedSkillItemId(objectId);
-                if (this.player.botEnabled) {
-                    CookingManager.startCookingTask(this.player, 28);
-                    return true;
-                }
-                if (this.player.getQuestState(0) != 1 || this.player.getInventoryManager().getItemAmount(objectId) == 1 || ServerSettings.cacheVersion < 334) {
-                    CookingManager.startCookingTask(this.player, 1);
-                    this.player.getUpdateState().setFacePosition(new Position(this.player.getPosition().getX(), this.player.getPosition().getY() - 1));
-                    return true;
-                }
-                worldObjectById = new ItemStack(objectId);
-                value2 = this.player;
-                ((Player)value2).packetSender.sendInterfaceModel(13716, 200, objectId);
-                value2 = this.player;
-                ((Player)value2).packetSender.sendInterfaceText(((ItemStack)worldObjectById).getDefinition().getName(), 13717);
-                value2 = this.player;
-                ((Player)value2).packetSender.showChatboxInterface(1743);
-                return true;
-            }
-            if (GameplayTrace.enabled()) {
-                GameplayTrace.log("cooking item-on-object object-not-cooking-surface player=" + GameplayTrace.describe(this.player) + " rawItemId=" + objectId + " objectId=" + value5 + " objectName=" + ((ObjectDefinition)value2).name + " x=" + value32 + " y=" + value42 + " plane=" + this.player.getPosition().getPlane());
-            }
+        if (this.player.getInventoryManager().getItemAmount(rawItemId) < 1) {
+            return true;
         }
+        // A lit fireplace counts as a fire, not an oven. Most dough, pies,
+        // and other range-only items cannot be cooked here. Raw potatoes are
+        // a historical exception: putting them on a fire burns them.
+        if (fire && !food.canCookOnFire() && rawItemId != 1942) {
+            this.player.packetSender.sendGameMessage("You need to use a range to cook this.");
+            return true;
+        }
+        if (this.player.getSkillManager().getCurrentLevels()[7] < food.getRequiredLevel()) {
+            this.player.getDialogueManager().showOneLineStatement(
+                    "You need a cooking level of " + food.getRequiredLevel() + " to cook this.");
+            return true;
+        }
+
         if (GameplayTrace.enabled()) {
-            GameplayTrace.log("cooking item-on-object no-object player=" + GameplayTrace.describe(this.player) + " rawItemId=" + objectId + " objectId=" + value5 + " x=" + value32 + " y=" + value42 + " plane=" + this.player.getPosition().getPlane());
+            GameplayTrace.log("cooking item-on-object accepted player=" + GameplayTrace.describe(this.player)
+                    + " rawItemId=" + rawItemId + " objectId=" + actualObjectId + " objectName="
+                    + objectName + " action=" + (fire ? "cookFire" : "cookRange")
+                    + " x=" + x + " y=" + y + " plane=" + plane);
         }
-        return false;
+        this.player.beginInterruptibleAction();
+        this.player.interfaceAction = fire ? "cookFire" : "cookRange";
+        this.player.setCookingObjectId(actualObjectId);
+        this.firePosition = fire ? new Position(x, y, plane) : null;
+        this.player.setSelectedSkillItemId(rawItemId);
+        this.player.getUpdateState().setFacePosition(new Position(x, y, plane));
+
+        // September 2005 Cook-X: a single raw item cooks immediately; with
+        // multiple items the chatbox offers Cook 1 / 5 / X / All.
+        if (this.player.botEnabled) {
+            startCookingTask(this.player, 28);
+        } else if (this.player.getQuestState(0) != 1
+                || this.player.getInventoryManager().getItemAmount(rawItemId) == 1
+                || ServerSettings.cacheVersion < 334) {
+            startCookingTask(this.player, 1);
+        } else {
+            this.player.packetSender.sendInterfaceModel(13716, 200, rawItemId);
+            this.player.packetSender.sendInterfaceText(ItemDefinition.forId(rawItemId).getName(), 13717);
+            this.player.packetSender.showChatboxInterface(1743);
+        }
+        return true;
     }
 
     static boolean isFireCookingSurface(int objectId, String objectName) {
@@ -119,6 +110,9 @@ public final class CookingManager {
             return false;
         }
         String name = objectName.trim().toLowerCase();
+        if (name.startsWith("unlit ") || name.startsWith("unlit-")) {
+            return false;
+        }
         return name.equals("fire")
                 || name.equals("fireplace")
                 || name.equals("campfire")
@@ -140,12 +134,30 @@ public final class CookingManager {
                 || name.endsWith(" range");
     }
 
-    public static void startCookingTask(Player player, int value3) {
-        int value2 = player.nextActionSequence();
+    public static void startCookingTask(Player player, int amount) {
+        CookableFoodDefinition food = CookableFoodDefinition.forRawItemId(player.getSelectedSkillItemId());
+        if (amount <= 0 || food == null
+                || (!"cookFire".equals(player.interfaceAction) && !"cookRange".equals(player.interfaceAction))) {
+            return;
+        }
+        int available = player.getInventoryManager().getItemAmount(player.getSelectedSkillItemId());
+        if (available <= 0) {
+            return;
+        }
+        if (player.getSkillManager().getCurrentLevels()[7] < food.getRequiredLevel()) {
+            player.getDialogueManager().showOneLineStatement(
+                    "You need a cooking level of " + food.getRequiredLevel() + " to cook this.");
+            return;
+        }
+        if ("cookFire".equals(player.interfaceAction)
+                && (!food.canCookOnFire() && player.getSelectedSkillItemId() != 1942
+                    || player.getCookingManager().firePosition == null)) {
+            return;
+        }
+        int sequence = player.nextActionSequence();
         player.getMovementQueue().clear();
-        Player player2 = player;
-        player2.packetSender.closeInterfaces();
-        player.setActiveCycleEvent(new CookingTask(value3, player, value2));
+        player.packetSender.closeInterfaces();
+        player.setActiveCycleEvent(new CookingTask(Math.min(amount, available), player, sequence));
         CycleEventHandler.getInstance().schedule(player, player.getActiveCycleEvent(), 1);
     }
 
@@ -208,6 +220,12 @@ public final class CookingManager {
         int rawItemId = value2;
         int successChanceLow = cookableFoodDefinition.getSuccessChanceLow();
         int successChanceHigh = cookableFoodDefinition.getSuccessChanceHigh();
+        // Ranges are less likely to burn food than fires or fireplaces.
+        // These 0-256 cooking chance thresholds gain a small range advantage.
+        if ("cookRange".equals(player.interfaceAction)) {
+            successChanceLow += 5;
+            successChanceHigh += 5;
+        }
         if (player.getEquipmentManager().getContainer().getItemAt(9) != null && player.getEquipmentManager().getContainer().getItemAt(9).getId() == 775 && (value2 == 377 || value2 == 371 || value2 == 383)) {
             successChanceLow += 14;
             successChanceHigh += 31;
