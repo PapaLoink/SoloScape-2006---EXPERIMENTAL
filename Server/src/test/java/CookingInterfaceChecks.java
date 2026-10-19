@@ -65,6 +65,8 @@ public final class CookingInterfaceChecks {
                     require(player.getSelectedInterfaceId() == 13718,
                             "Cook X did not request an amount for " + surface);
                     enterAmount(player, 3);
+                    require(player.getSelectedInterfaceId() == 0,
+                            "Cook X kept its stale amount-input target");
                 }
                 require(player.getActiveCycleEvent() instanceof CookingTask,
                         "Cooking did not start for " + surface + " option " + children[option]);
@@ -75,6 +77,10 @@ public final class CookingInterfaceChecks {
                         "Starting to cook did not close the quantity dialog");
             }
         }
+
+        player.setActiveCycleEvent(null);
+        enterAmount(player, 3); // Replay without a fresh Cook-X prompt.
+        require(player.getActiveCycleEvent() == null, "Stale Cook-X input started cooking");
 
         // An unrelated or closed chatbox must not authorize the reverse-only ID.
         player.setOpenInterfaceId(6179);
