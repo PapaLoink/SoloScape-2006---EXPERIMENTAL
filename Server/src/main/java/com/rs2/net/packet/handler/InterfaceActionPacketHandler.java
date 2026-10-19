@@ -255,6 +255,22 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
             if (handleSkillGuideCategory(player, packedWidgetId, -1, child)) {
                 return;
             }
+            // Group 307's four Cook buttons are action-type-6 widgets and
+            // therefore send WIDGET_SELECT (153), not INTERFACE_BUTTON (54).
+            // Ignoring opcode 153 leaves the client's action text at
+            // "Please wait..." without scheduling a cooking animation.
+            // Restrict the route to the open cooking quantity chatbox.
+            if ((packedWidgetId >>> 16) == 307
+                    && player.getOpenInterfaceId() == 1743) {
+                int cookingChild = packedWidgetId & 0xffff;
+                if (cookingChild >= 3 && cookingChild <= 6) {
+                    int cookingButton = InterfaceBridge.toLegacyComponent(packedWidgetId);
+                    if (cookingButton != InterfaceBridge.UNMAPPED) {
+                        buttonHandler.handleButton(player, cookingButton);
+                    }
+                    return;
+                }
+            }
             // Native 443 dialogue controls use WIDGET_SELECT rather than the
             // ordinary interface-action packet. Continue buttons and option
             // choices must both be routed into the legacy dialogue state machine
