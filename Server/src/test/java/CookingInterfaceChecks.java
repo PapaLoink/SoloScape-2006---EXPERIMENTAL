@@ -16,8 +16,9 @@ import java.nio.ByteBuffer;
  * Regression for issue #7: Cook All on the native 443 quantity chatbox must
  * schedule the normal cooking action for ranges and fireplaces.
  *
- * The 13717 component is reverse-only because the same legacy id is also the
- * food-name text widget; it must not require a forward component mapping.
+ * The 13717 legacy ID serves two distinct purposes:
+ * forward text writes go to native 307:1 (the raw-food name), while a
+ * click on 307:3 still translates back to 13717 (Cook All).
  */
 public final class CookingInterfaceChecks {
     private static final int COOKING_CHATBOX = 1743;
@@ -28,6 +29,18 @@ public final class CookingInterfaceChecks {
 
         require(InterfaceBridge.translateGroup(COOKING_CHATBOX) == NATIVE_COOKING_GROUP,
                 "Cooking quantity chatbox is not mapped to native group 307");
+        // The title and food-name components must remain separate from
+        // native Cook All. Do not overwrite button label 307:3 with food text.
+        require(InterfaceBridge.translate(13715) == (NATIVE_COOKING_GROUP << 16 | 0),
+                "Cooking title did not map to native 307:0");
+        require(InterfaceBridge.translate(13717) == (NATIVE_COOKING_GROUP << 16 | 1),
+                "Raw-food name did not map to native 307:1");
+        require(InterfaceBridge.translate(13716) == (NATIVE_COOKING_GROUP << 16 | 2),
+                "Cooking item model did not map to native 307:2");
+        require(InterfaceBridge.translate(13717) != (NATIVE_COOKING_GROUP << 16 | 3),
+                "Food-name updates would overwrite the Cook All label");
+        require(InterfaceBridge.toLegacyComponent(NATIVE_COOKING_GROUP << 16 | 3) == 13717,
+                "Native Cook All click no longer maps to legacy 13717");
 
         Player player = new Player(null);
         player.isBot = true; // Suppress socket writes in this packet-routing test.
