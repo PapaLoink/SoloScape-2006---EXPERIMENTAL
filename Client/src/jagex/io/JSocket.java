@@ -674,11 +674,13 @@ public class JSocket implements Runnable {
         name.type = 4;
         name.anInt2078 = title.anInt2078;
         name.anInt2090 = name.anInt2091 = 0;
-        // The stock item model is at y=13 with height 83. Put the label
-        // directly beneath it, inside the chatbox's normal 115px area.
-        name.anInt2024 = name.anInt2021 = 96;
+        // The stock chatbox renderer clips group 307 to 96 pixels high
+        // (Deque.method955(96, 479, ...)). The previous y=96 put the
+        // entire label *outside* that clip, although packet 180 updated it.
+        // Place it under the visible raw-food model, but within the clip.
+        name.anInt2024 = name.anInt2021 = 78;
         name.quadWidth = 479;
-        name.quadHeight = 17;
+        name.quadHeight = 16;
         name.anInt2105 = title.anInt2105;
         name.anInt2032 = 1; // centered
         name.anInt1996 = title.anInt1996;
