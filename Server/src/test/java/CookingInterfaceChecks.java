@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
  * schedule the normal cooking action for ranges and fireplaces.
  *
  * The 13717 legacy ID serves two distinct purposes:
- * forward text writes go to native 307:1 (the raw-food name), while a
- * click on 307:3 still translates back to 13717 (Cook All).
+ * forward text writes go to synthetic native 307:8 (the raw-food name),
+ * while a click on 307:3 still translates back to 13717 (Cook All).
  */
 public final class CookingInterfaceChecks {
     private static final int COOKING_CHATBOX = 1743;
@@ -31,10 +31,10 @@ public final class CookingInterfaceChecks {
                 "Cooking quantity chatbox is not mapped to native group 307");
         // The title and food-name components must remain separate from
         // native Cook All. Do not overwrite button label 307:3 with food text.
-        require(InterfaceBridge.translate(13715) == (NATIVE_COOKING_GROUP << 16 | 0),
-                "Cooking title did not map to native 307:0");
-        require(InterfaceBridge.translate(13717) == (NATIVE_COOKING_GROUP << 16 | 1),
-                "Raw-food name did not map to native 307:1");
+        require(InterfaceBridge.translate(13715) == (NATIVE_COOKING_GROUP << 16 | 7),
+                "Cooking title did not map to native 307:7");
+        require(InterfaceBridge.translate(13717) == (NATIVE_COOKING_GROUP << 16 | 8),
+                "Raw-food name did not map to native 307:8");
         require(InterfaceBridge.translate(13716) == (NATIVE_COOKING_GROUP << 16 | 2),
                 "Cooking item model did not map to native 307:2");
         require(InterfaceBridge.translate(13717) != (NATIVE_COOKING_GROUP << 16 | 3),
