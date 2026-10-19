@@ -1,4 +1,8 @@
 import com.rs2.ServerSettings;
+import com.rs2.model.Position;
+import com.rs2.model.item.ItemStack;
+import com.rs2.net.packet.handler.InterfaceInputPacketHandler;
+import java.lang.reflect.Field;
 import com.rs2.model.player.Player;
 import com.rs2.model.skill.cooking.CookingTask;
 import com.rs2.net.packet.ClientPackets;
@@ -19,7 +23,7 @@ public final class CookingInterfaceChecks {
     private static final int COOKING_CHATBOX = 1743;
     private static final int NATIVE_COOKING_GROUP = 307;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         ServerSettings.clientBuild = 443;
 
         require(InterfaceBridge.translateGroup(COOKING_CHATBOX) == NATIVE_COOKING_GROUP,
@@ -27,6 +31,9 @@ public final class CookingInterfaceChecks {
 
         Player player = new Player(null);
         player.isBot = true; // Suppress socket writes in this packet-routing test.
+        player.getSkillManager().getCurrentLevels()[7] = 99;
+        require(player.getInventoryManager().addItem(new ItemStack(2132, 28)),
+                "Could not fill the inventory with raw meat");
 
         int[] legacyButtons = {13717, 13718, 13719, 13720};
         for (int child = 3; child <= 6; child++) {
@@ -40,19 +47,33 @@ public final class CookingInterfaceChecks {
                     "Native cooking action " + legacyButton + " was rejected as closed");
         }
 
-        // Both surfaces use the same chatbox: Cook All must route for each.
+        // Ranges and (lit) fireplaces/fires share this dialog and its
+        // quantity choices. The selected quantity must reach CookingTask.
+        int[] children = {3, 5, 6, 4}; // All, 5, 1, X
+        int[] expectedAmounts = {28, 5, 1, 3};
         for (String surface : new String[]{"cookRange", "cookFire"}) {
-            player.setOpenInterfaceId(COOKING_CHATBOX);
-            player.setSelectedSkillItemId(2132); // Raw meat.
-            player.interfaceAction = surface;
-            player.beginInterruptibleAction();
-            player.setActiveCycleEvent(null);
+            for (int option = 0; option < children.length; option++) {
+                player.setOpenInterfaceId(COOKING_CHATBOX);
+                player.setSelectedSkillItemId(2132); // Raw meat.
+                player.interfaceAction = surface;
+                player.getCookingManager().firePosition = new Position(3200, 3200, 0);
+                player.beginInterruptibleAction();
+                player.setActiveCycleEvent(null);
 
-            clickNative(player, 3); // Cook All
-            require(player.getActiveCycleEvent() instanceof CookingTask,
-                    "Cook All did not schedule cooking on " + surface);
-            require(player.getOpenInterfaceId() == 0,
-                    "Starting to cook did not close the quantity dialog");
+                clickNative(player, children[option]);
+                if (children[option] == 4) {
+                    require(player.getSelectedInterfaceId() == 13718,
+                            "Cook X did not request an amount for " + surface);
+                    enterAmount(player, 3);
+                }
+                require(player.getActiveCycleEvent() instanceof CookingTask,
+                        "Cooking did not start for " + surface + " option " + children[option]);
+                require(remainingActions((CookingTask) player.getActiveCycleEvent())
+                                == expectedAmounts[option],
+                        "Wrong cooking quantity for " + surface + " option " + children[option]);
+                require(player.getOpenInterfaceId() == 0,
+                        "Starting to cook did not close the quantity dialog");
+            }
         }
 
         // An unrelated or closed chatbox must not authorize the reverse-only ID.
@@ -64,7 +85,7 @@ public final class CookingInterfaceChecks {
         require(player.getActiveCycleEvent() == null,
                 "Cook All started cooking with an unrelated chatbox open");
 
-        System.out.println("Cooking interface checks passed (range/fire, Cook All, closed-dialog guard).");
+        System.out.println("Cooking interface checks passed (range/fire, all quantities, closed-dialog guard).");
     }
 
     private static void clickNative(Player player, int child) {
@@ -74,6 +95,20 @@ public final class CookingInterfaceChecks {
         new InterfaceActionPacketHandler().handle(player,
                 new IncomingPacket(ClientPackets.INTERFACE_BUTTON, 4,
                         PacketBuffer.wrapReader(payload)));
+    }
+
+    private static void enterAmount(Player player, int amount) {
+        ByteBuffer payload = ByteBuffer.allocate(4);
+        payload.putInt(amount);
+        payload.flip();
+        new InterfaceInputPacketHandler().handle(player,
+                new IncomingPacket(208, 4, PacketBuffer.wrapReader(payload)));
+    }
+
+    private static int remainingActions(CookingTask task) throws Exception {
+        Field field = CookingTask.class.getDeclaredField("remainingActions");
+        field.setAccessible(true);
+        return field.getInt(task);
     }
 
     private static void require(boolean ok, String message) {
