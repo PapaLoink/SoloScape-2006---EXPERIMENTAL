@@ -26,3 +26,19 @@ jobs:
             src/main/java/com/rs2/cache/js5/Interfaces.java \
             src/test/java/CookingWidgetCacheChecks.java
           java -cp 'widget-audit-classes:lib/*' CookingWidgetCacheChecks
+      - name: Compile client and verify cooking label
+        working-directory: Client
+        run: |
+          mkdir -p cooking-test-classes
+          find src -name '*.java' > /tmp/cooking-client-sources.txt
+          javac -encoding UTF-8 -d cooking-test-classes @/tmp/cooking-client-sources.txt
+          javac -encoding UTF-8 -cp cooking-test-classes -d cooking-test-classes tests/CookingChatboxWidgetChecks.java
+          java -cp cooking-test-classes unpackaged.CookingChatboxWidgetChecks
+      - name: Compile server and verify cooking button mapping
+        working-directory: Server
+        run: |
+          mkdir -p cooking-server-classes
+          find src/main/java -name '*.java' > /tmp/cooking-server-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d cooking-server-classes @/tmp/cooking-server-sources.txt
+          javac -encoding UTF-8 -cp 'cooking-server-classes:lib/*' -d cooking-server-classes src/test/java/CookingInterfaceChecks.java
+          java -cp 'cooking-server-classes:lib/*' CookingInterfaceChecks
