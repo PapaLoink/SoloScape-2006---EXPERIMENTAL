@@ -106,11 +106,12 @@ public final class CookingManager {
                 this.player.packetSender.showChatboxInterface(1743);
                 this.player.packetSender.sendInterfacePosition(13715, 0, 20); // prompt
 
-                // Keep the stock height for native 307:2. Moving the model
-                // down previously covered the food-name text drawn behind it.
-                // Position 307:1 just below the icon, within chatbox bounds.
-                this.player.packetSender.sendInterfacePosition(13716, 0, 0);
-                this.player.packetSender.sendInterfacePosition(13717, 0, 88);
+                // Child 307:1 already has a visible native text baseline
+                // (the stock "Please wait..." placeholder). The previous
+                // +88/+112 position packets moved that text outside its clipped
+                // parent, making every food name invisible. Do not reposition
+                // the name: replacing the stock text leaves it on-screen.
+                // Likewise leave the model on its native baseline.
                 this.player.packetSender.sendInterfaceModel(13716, 200, rawItemId);
                 this.player.packetSender.sendInterfaceText(
                         ItemDefinition.forId(rawItemId).getName(), 13717);
