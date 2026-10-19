@@ -44,8 +44,14 @@ extends CycleEvent {
             cycleEventContainer.stop();
             return;
         }
+        // Firemaking fires expire. A fireplace remains usable while its
+        // world object exists, but never continue after that object disappears.
+        com.rs2.model.Position firePosition = this.player.getCookingManager().firePosition;
         Object value = this.player;
-        if (((Player)value).interfaceAction.equals("cookFire") && !SkillActionHelper.isObjectPresent(this.player.getCookingObjectId(), this.player.getCookingManager().firePosition.getX(), this.player.getCookingManager().firePosition.getY(), this.player.getCookingManager().firePosition.getPlane())) {
+        if ("cookFire".equals(this.player.interfaceAction)
+                && (firePosition == null || !SkillActionHelper.isObjectPresent(
+                        this.player.getCookingObjectId(), firePosition.getX(),
+                        firePosition.getY(), firePosition.getPlane()))) {
             if (this.player.botEnabled) {
                 value = CookableFoodDefinition.forRawItemId(this.player.getSelectedSkillItemId());
                 if (value != null && this.player.getInventoryManager().getContainer().containsItem(((CookableFoodDefinition)((Object)value)).getBurntItemId())) {
@@ -62,6 +68,11 @@ extends CycleEvent {
                 }
                 this.player.currentBotTask.startWalkToBank(this.player);
             }
+            cycleEventContainer.stop();
+            return;
+        }
+        CookableFoodDefinition food = CookableFoodDefinition.forRawItemId(this.player.getSelectedSkillItemId());
+        if (food == null || this.player.getSkillManager().getCurrentLevels()[7] < food.getRequiredLevel()) {
             cycleEventContainer.stop();
             return;
         }
