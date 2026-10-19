@@ -35,8 +35,13 @@ public final class CookingChatboxWidgetChecks {
         require(name.type == 4, "Food label is not a text widget");
         require(name.anInt2084 == (307 << 16 | 8), "Food label id incorrect");
         require(name.anInt2050 == -1, "Food label is not attached to chatbox root");
-        require(name.anInt2021 == 96 && name.quadHeight == 17,
+        require(name.anInt2021 == 78 && name.quadHeight == 16,
                 "Food label is not below the item model");
+        // The native chatbox paints group 307 in a 96-pixel clip.
+        // A label at y=96 can receive packet 180 but is never visible.
+        require(name.anInt2021 >= 0
+                && name.anInt2021 + name.quadHeight <= 96,
+                "Food name is clipped by the native 96-pixel chatbox");
         require(name.anInt2032 == 1 && name.activeQuadColor == 0,
                 "Food label not centered in black");
         for (int child = 0; child < 8; child++) {
