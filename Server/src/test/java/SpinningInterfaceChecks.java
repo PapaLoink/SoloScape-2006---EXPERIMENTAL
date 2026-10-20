@@ -26,7 +26,6 @@ public final class SpinningInterfaceChecks {
 
     public static void main(String[] args) throws Exception {
         ServerSettings.clientBuild = 443;
-        ServerSettings.cacheVersion = 443;
         ItemDefinition.loadDefinitions();
         ObjectDefinition.loadRevision443();
         Interfaces.load();
