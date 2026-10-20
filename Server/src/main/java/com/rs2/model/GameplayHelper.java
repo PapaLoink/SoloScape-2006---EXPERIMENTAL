@@ -1028,6 +1028,12 @@ public class GameplayHelper {
                 GameplayHelper.showThreeOptionProductionInterface((Player)interfaceId, 1714, 2961, 5525, "Unstrung symbol", "Silver sickle", "Tiara");
             }
         } else if (interfaceId2 == "spinning") {
+            // Revision 443 uses the full-screen spinning widget (459), not
+            // the unmapped legacy make-item chatboxes 8866/8880.
+            if (ServerSettings.clientBuild == 443) {
+                ((Player)interfaceId).packetSender.showInterface(8880);
+                return;
+            }
             if (!ItemDefinition.isDefined(6051)) {
                 GameplayHelper.showTwoOptionProductionInterface((Player)interfaceId, 1737, 1779, "Wool", "Flax");
             } else {
