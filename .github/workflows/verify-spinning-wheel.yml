@@ -1,0 +1,23 @@
+name: Verify Spinning Wheel
+on:
+  push:
+    branches:
+      - fix/issue-2-spinning-wheel
+  workflow_dispatch:
+jobs:
+  spinning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and check spinning interface
+        working-directory: Server
+        run: |
+          mkdir -p spinning-test-classes
+          find src/main/java -name '*.java' > /tmp/spinning-server-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d spinning-test-classes @/tmp/spinning-server-sources.txt
+          javac -encoding UTF-8 -cp 'spinning-test-classes:lib/*' -d spinning-test-classes src/test/java/SpinningInterfaceChecks.java
+          java -cp 'spinning-test-classes:lib/*' SpinningInterfaceChecks
