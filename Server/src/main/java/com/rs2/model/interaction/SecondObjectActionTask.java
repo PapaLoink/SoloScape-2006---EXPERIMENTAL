@@ -228,6 +228,8 @@ extends TickTask {
                 break;
             }
             case 2644: {
+                // Keep the spinning quantity actions bound to this wheel.
+                this.player.setInterfaceAction("spinning");
                 GameplayHelper.openProductionInterface(this.player, "spinning");
                 if (!this.player.botEnabled) break;
                 CraftingHandler.startBotSpinningTask(this.player);
