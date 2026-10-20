@@ -97,6 +97,8 @@ public final class InterfaceBridge {
         mappings.put(3824, 300);  // shop
         mappings.put(3822, 301);  // shop inventory overlay
         mappings.put(1743, 307);  // cooking quantity chatbox
+        mappings.put(8866, 459); // legacy two-product spinning interface
+        mappings.put(8880, 459); // legacy three-product spinning interface
         mappings.put(679, 324);  // tanning (legacy fallback)
         mappings.put(14670, 324); // tanning
         mappings.put(8134, 275);  // quest detail page
@@ -191,6 +193,20 @@ public final class InterfaceBridge {
         put(mappings, 13718, 307, 4);  // Cook X
         put(mappings, 13719, 307, 5);  // Cook 5
         put(mappings, 13720, 307, 6);  // Cook 1
+        // Cache-backed group 459: 92-95 flax, 97-100 wool, 104-107 magic roots.
+        // Each four-button group is ordered Make X, Make 10, Make 5, Make 1.
+        put(mappings, 8890, 459, 92);  // flax X
+        put(mappings, 8891, 459, 93);  // flax 10
+        put(mappings, 8892, 459, 94);  // flax 5
+        put(mappings, 8893, 459, 95);  // flax 1
+        put(mappings, 8886, 459, 97);  // wool X
+        put(mappings, 8887, 459, 98);  // wool 10
+        put(mappings, 8888, 459, 99);  // wool 5
+        put(mappings, 8889, 459, 100); // wool 1
+        put(mappings, 8894, 459, 104); // magic roots X
+        put(mappings, 8895, 459, 105); // magic roots 10
+        put(mappings, 8896, 459, 106); // magic roots 5
+        put(mappings, 8897, 459, 107); // magic roots 1
         put(mappings, 30000, 192, 591); // standard spellbook: Lumbridge Home Teleport
         put(mappings, 1688, 387, 25);  // worn equipment container
         put(mappings, 15107, 465, 103); // items on the equipment statistics screen
