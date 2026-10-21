@@ -2886,6 +2886,12 @@ public class GameplayHelper {
                         value5 += 768;
                         value4 += 5120;
                     }
+                    // Urhney's old south-east swamp spawn predates the 443 map.
+                    if (ServerSettings.cacheVersion == 443 && value7 == 458
+                            && value5 == 3234 && value4 == 3154 && value3 == 0) {
+                        value5 = 3145;
+                        value4 = 3175;
+                    }
                     GameplayHelper.spawnNpc(value7, value5, value4, value3, value6);
                     NpcDefinition npcDefinition = NpcDefinition.forId(value7);
                     npcDefinition.getDropTableNpcIdOverride();
