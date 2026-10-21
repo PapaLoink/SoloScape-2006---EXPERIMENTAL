@@ -212,7 +212,7 @@ extends QuestScript {
                     return true;
                 }
                 if (value2 == 9) {
-                    player.getDialogueManager().showNpcThreeLineDialogue("I believe he is currently living as a hermit in Lumbridge", "swamp. He has a little shack in the south-west of the", "swamps.", 591);
+                    player.getDialogueManager().showNpcThreeLineDialogue("I believe he is currently living as a hermit in Lumbridge", ServerSettings.cacheVersion == 443 ? "swamp. He has a little shack in the south-west of the" : "swamp. He has a little shack in the south-east of the", "swamps.", 591);
                     return true;
                 }
                 if (value2 == 10) {
@@ -249,7 +249,7 @@ extends QuestScript {
                     return true;
                 }
                 if (value2 == 4) {
-                    player.getDialogueManager().showNpcTwoLineDialogue("You'll have to go right into the western depths of the", "swamp. That is where his house is.", 591);
+                    player.getDialogueManager().showNpcTwoLineDialogue(ServerSettings.cacheVersion == 443 ? "You'll have to go right into the western depths of the" : "You'll have to go right into the eastern depths of the", ServerSettings.cacheVersion == 443 ? "swamp. That is where his house is." : "swamp, near the coastline. That is where his house is.", 591);
                     player.getDialogueManager().finishDialogue();
                     return true;
                 }
