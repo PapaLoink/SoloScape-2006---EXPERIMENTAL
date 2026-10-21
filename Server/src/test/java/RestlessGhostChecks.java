@@ -24,6 +24,7 @@ public final class RestlessGhostChecks {
     public static void main(String[] args) throws Exception {
         require(ServerSettings.cacheVersion == 443, "Checks require the bundled 443 cache");
         ServerSettings.clientBuild = 443;
+        com.rs2.model.quest.QuestDefinition.loadDefinitions();
         ItemDefinition.loadDefinitions();
         NpcDefinition.loadDefinitions();
         Interfaces.load();
