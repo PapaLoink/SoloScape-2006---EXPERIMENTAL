@@ -112,7 +112,7 @@ public final class RestlessGhostChecks {
         require(player.getQuestManager().handleItemOnObject(553, openId),
                 "Skull was not accepted by corrected open coffin");
         assertCoffin(2145);
-        require(player.getQuestState(12) == 6, "Release cutscene did not start");
+        require(player.cutsceneActive, "Release cutscene did not start");
 
         System.out.println("Restless Ghost checks passed: cache, coffin menus, ghost, Urhney, amulet and skull handoff.");
     }
