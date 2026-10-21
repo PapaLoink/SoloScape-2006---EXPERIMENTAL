@@ -8,6 +8,9 @@ import java.nio.file.Paths;
 public final class RestlessGhostChecks {
     public static void main(String[] args) throws Exception {
         WorldObjectLookup.loadWorldObjects();
+        com.rs2.util.path.WalkingCollisionMap.loadCollisionMaps();
+        java.util.Map<Integer, byte[]> defs = com.rs2.cache.js5.Definitions.readGroup(6);
+        for (int id : new int[]{2145,2146,15052,15053}) System.out.println("RAW " + id + " " + java.util.Arrays.toString(defs.get(id)));
         for (int id = 0; id < ObjectDefinition.definitionsById.length; id++) {
             ObjectDefinition d = ObjectDefinition.forId(id);
             if (d.getName().toLowerCase().contains("coffin") || id == 2146) {
