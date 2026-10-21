@@ -57,7 +57,9 @@ public final class RestlessGhostChecks {
         require(fathers == 1, "Father Urhney was duplicated");
 
         Player player = new Player(null);
-        // Use a detached human fixture: the skull guardian enters player combat.
+        // Match the identity assigned at login; the skull guardian enters player combat.
+        player.setIndex(1);
+        player.setEncodedIndex(32769);
         player.setOutboundCipher(new com.rs2.net.IsaacCipher(new int[4]));
         java.nio.channels.SocketChannel transport = java.nio.channels.SocketChannel.open();
         transport.close();
