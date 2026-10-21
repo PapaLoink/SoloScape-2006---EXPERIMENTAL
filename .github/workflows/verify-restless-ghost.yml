@@ -1,0 +1,29 @@
+name: Verify Restless Ghost
+on:
+  push:
+    branches:
+      - feature/fix-issue-3-restless-ghost
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/quest/impl/RestlessGhost*.java'
+      - 'Server/src/main/java/com/rs2/model/GameplayHelper.java'
+      - 'Server/src/test/java/RestlessGhostChecks.java'
+      - '.github/workflows/verify-restless-ghost.yml'
+  workflow_dispatch:
+jobs:
+  restless-ghost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and check Restless Ghost
+        working-directory: Server
+        run: |
+          mkdir -p restless-ghost-test-classes
+          find src/main/java -name '*.java' > /tmp/restless-ghost-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d restless-ghost-test-classes @/tmp/restless-ghost-sources.txt
+          javac -encoding UTF-8 -cp 'restless-ghost-test-classes:lib/*' -d restless-ghost-test-classes src/test/java/RestlessGhostChecks.java
+          java -cp 'restless-ghost-test-classes:lib/*' RestlessGhostChecks
