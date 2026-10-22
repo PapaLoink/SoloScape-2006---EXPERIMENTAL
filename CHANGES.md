@@ -19,7 +19,12 @@ Only the files listed here differ from that commit.
 | `model/quest/impl/QuestExtras.java` | Starts the quest world spawns at server start-up. |
 | `HiscoresHttp.java` | Local-only (127.0.0.1:43597) endpoint with live player stats for the client tool bar. |
 
+- `model/npc/ExtraNpcSpawns.java` - loads `Server/data/npcs/extra_spawns.csv` (2,290 extra overground NPC spawns, quest-gated NPCs excluded). Delete or empty the CSV to disable.
+- `Server/data/npcs/extra_spawns.csv` - the spawn data (npc_id,name,x,y,plane,walk).
+
 ### Modified files
+`model/quest/impl/QuestExtras.java` now also calls `PlagueCityQuest.spawnWorld()` (Milli Rehnison, Elena and Edmond in the sewer were never spawned before) and `ExtraNpcSpawns.load()`.
+
 | File | Change |
 |---|---|
 | `model/quest/QuestDefinition.java` | Registers the four new quest scripts. |
