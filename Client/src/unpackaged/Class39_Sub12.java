@@ -62,7 +62,7 @@ public class Class39_Sub12 extends Node {
                 int i_4_ = i_2_ * 3 + 600;
                 is[i_1_] = i_3_ * i_4_ >> 16;
             }
-            Class38.method403(is, 500, 800, 512, 334);
+            Class38.method403(is, 500, 2400, 512, 334);
             Class39_Sub7.anInt1387 = 10;
             Class26.anInt484 = 30;
             Class39_Sub5_Sub14.aClass3_1918 = Class39_Sub5_Sub5.aClass3_1741;

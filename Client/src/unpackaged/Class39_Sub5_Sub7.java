@@ -181,7 +181,7 @@ public class Class39_Sub5_Sub7 extends SubNode
 		i_22_ = Class2.anIntArray49[4] + 128;
 	    ClientApplet.method26
 		(1000, Class41.anInt765, i_23_, Class39_Sub10.anInt1431,
-		 i_22_ * 3 + 600, i_22_,
+		 ModHook.zoomDist(i_22_ * 3 + 600), i_22_,
 		 Class14.method212((Cache.aClass39_Sub5_Sub4_Sub4_Sub2_109
 				    .anInt2275),
 				   9990, NameTable.height,

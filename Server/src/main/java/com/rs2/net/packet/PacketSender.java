@@ -157,6 +157,39 @@ public final class PacketSender {
         this.player.getEquipmentManager().refreshWeaponInterface();
     }
 
+    /** Colours every quest-list entry: red/yellow/green by progress, black for quests not yet in the game. */
+    public final void sendQuestListColors() {
+        PacketSender value4 = this;
+        Object value3;
+        Object value2;
+        int value;
+        int initialValue = 1;
+        while (initialValue < QuestDefinition.questCount) {
+            Player player;
+            value3 = QuestDefinition.forId(initialValue);
+            value2 = QuestDefinition.getQuestScript(initialValue);
+            value = ((QuestDefinition)value3).getJournalButtonId();
+            if (((QuestHook)value2).getQuestId() == -1 && value4.player.getQuestState(initialValue, true) != 1) {
+                player = value4.player;
+                player.packetSender.sendInterfaceTextColor(value, new Color(8, 8, 8));
+            } else if (value4.player.getQuestState(initialValue, true) == 0) {
+                player = value4.player;
+                player.packetSender.sendInterfaceTextColor(value, Color.RED);
+            } else if (value4.player.getQuestState(initialValue, true) == 1) {
+                player = value4.player;
+                player.packetSender.sendInterfaceTextColor(value, Color.GREEN);
+            } else if (value4.player.getQuestState(initialValue, true) >= 2) {
+                player = value4.player;
+                player.packetSender.sendInterfaceTextColor(value, Color.YELLOW);
+            }
+            ++initialValue;
+        }
+        // Quests the stock client lists but the server has no entry for: show as unimplemented.
+        for (int unscripted = 20200; unscripted < 20212; ++unscripted) {
+            value4.player.packetSender.sendInterfaceTextColor(unscripted, new Color(8, 8, 8));
+        }
+    }
+
     public final boolean updateMissingQuestCompletionStates() {
         boolean enabled;
         updateMissingQuestCompletionStatesControlExit1: {
@@ -230,27 +263,7 @@ public final class PacketSender {
         this.sendRunEnergy();
         value4 = this;
         ((PacketSender)value4).updateMissingQuestCompletionStates();
-        int initialValue = 1;
-        while (initialValue < QuestDefinition.questCount) {
-            Player player;
-            value3 = QuestDefinition.forId(initialValue);
-            value2 = QuestDefinition.getQuestScript(initialValue);
-            value = ((QuestDefinition)value3).getJournalButtonId();
-            if (ServerSettings.recolorMissingQuests && ((QuestHook)value2).getQuestId() == -1 && ((PacketSender)value4).player.getQuestState(initialValue, true) != 1) {
-                player = ((PacketSender)value4).player;
-                player.packetSender.sendInterfaceTextColor(value, new Color(102, 102, 102));
-            } else if (((PacketSender)value4).player.getQuestState(initialValue, true) == 0) {
-                player = ((PacketSender)value4).player;
-                player.packetSender.sendInterfaceTextColor(value, Color.RED);
-            } else if (((PacketSender)value4).player.getQuestState(initialValue, true) == 1) {
-                player = ((PacketSender)value4).player;
-                player.packetSender.sendInterfaceTextColor(value, Color.GREEN);
-            } else if (((PacketSender)value4).player.getQuestState(initialValue, true) >= 2) {
-                player = ((PacketSender)value4).player;
-                player.packetSender.sendInterfaceTextColor(value, Color.YELLOW);
-            }
-            ++initialValue;
-        }
+        this.sendQuestListColors();
         value4 = this;
         if (((PacketSender)value4).player.isBot) {
             packetSender = (PacketSender)value4;

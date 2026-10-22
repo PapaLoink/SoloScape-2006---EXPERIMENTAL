@@ -402,7 +402,9 @@ public class Buffer extends Node {
                                             HashTable.aBoolean361 = true;
                                         }
                                     }
-                                    if (Class66.aClass3_1160.isEqual(Class39_Sub5_Sub9.createJstring("::fps"))) {
+                                    if (unpackaged.ModHook.command(unpackaged.ModHook.typed())) {
+                                        /* handled by the client */
+                                    } else if (Class66.aClass3_1160.isEqual(Class39_Sub5_Sub9.createJstring("::fps"))) {
                                         OndemandRequest.aBoolean1718 = !OndemandRequest.aBoolean1718;
                                     } else if (Class66.aClass3_1160.method65(Class10.aClass3_160, false)) {
                                         FrameBuffer.outgoingGameBuffer.putFrame(174);

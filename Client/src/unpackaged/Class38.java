@@ -55,6 +55,7 @@ public class Class38
     public static int[] anIntArray709;
     public static int anInt710;
     public static int anInt711;
+    public static final int DR = 52;
     public static boolean[][][][] aBooleanArrayArrayArrayArray712;
     public static int[] anIntArray713;
     public static int anInt714;
@@ -443,7 +444,7 @@ public class Class38
 	int i_94_ = i_92_ * anInt693 - i * anInt671 >> 16;
 	int i_95_ = i_91_ * anInt685 + i_94_ * anInt687 >> 16;
 	int i_96_ = i_91_ * anInt687 - i_94_ * anInt685 >> 16;
-	if (i_95_ < 50 || i_95_ > 3500)
+	if (i_95_ < 50 || i_95_ > 9000)
 	    return false;
 	int i_97_ = anInt726 + (i_93_ << 9) / i_95_;
 	int i_98_ = anInt722 + (i_96_ << 9) / i_95_;
@@ -912,16 +913,16 @@ public class Class38
 	anInt704 = i / 128;
 	anInt674 = i_188_ / 128;
 	anInt679 = i_191_;
-	anInt667 = anInt704 - 25;
+	anInt667 = anInt704 - DR;
 	if (anInt667 < 0)
 	    anInt667 = 0;
-	anInt692 = anInt674 - 25;
+	anInt692 = anInt674 - DR;
 	if (anInt692 < 0)
 	    anInt692 = 0;
-	anInt681 = anInt704 + 25;
+	anInt681 = anInt704 + DR;
 	if (anInt681 > anInt706)
 	    anInt681 = anInt706;
-	anInt672 = anInt674 + 25;
+	anInt672 = anInt674 + DR;
 	if (anInt672 > anInt696)
 	    anInt672 = anInt696;
 	method399();
@@ -935,8 +936,8 @@ public class Class38
 			= class39_sub14s[i_193_][i_194_];
 		    if (class39_sub14 != null) {
 			if (class39_sub14.anInt1545 > i_191_
-			    || (!(aBooleanArrayArray725[i_193_ - anInt704 + 25]
-				  [i_194_ - anInt674 + 25])
+			    || (!(aBooleanArrayArray725[i_193_ - anInt704 + DR]
+				  [i_194_ - anInt674 + DR])
 				&& (anIntArrayArrayArray699[i_192_][i_193_]
 				    [i_194_]) - i_187_ < 2000)) {
 			    class39_sub14.aBoolean1525 = false;
@@ -958,11 +959,11 @@ public class Class38
 	for (int i_195_ = anInt678; i_195_ < anInt689; i_195_++) {
 	    Class39_Sub14[][] class39_sub14s
 		= aClass39_Sub14ArrayArrayArray665[i_195_];
-	    for (int i_196_ = -25; i_196_ <= 0; i_196_++) {
+	    for (int i_196_ = -DR; i_196_ <= 0; i_196_++) {
 		int i_197_ = anInt704 + i_196_;
 		int i_198_ = anInt704 - i_196_;
 		if (i_197_ >= anInt667 || i_198_ < anInt681) {
-		    for (int i_199_ = -25; i_199_ <= 0; i_199_++) {
+		    for (int i_199_ = -DR; i_199_ <= 0; i_199_++) {
 			int i_200_ = anInt674 + i_199_;
 			int i_201_ = anInt674 - i_199_;
 			if (i_197_ >= anInt667) {
@@ -1008,11 +1009,11 @@ public class Class38
 	for (int i_202_ = anInt678; i_202_ < anInt689; i_202_++) {
 	    Class39_Sub14[][] class39_sub14s
 		= aClass39_Sub14ArrayArrayArray665[i_202_];
-	    for (int i_203_ = -25; i_203_ <= 0; i_203_++) {
+	    for (int i_203_ = -DR; i_203_ <= 0; i_203_++) {
 		int i_204_ = anInt704 + i_203_;
 		int i_205_ = anInt704 - i_203_;
 		if (i_204_ >= anInt667 || i_205_ < anInt681) {
-		    for (int i_206_ = -25; i_206_ <= 0; i_206_++) {
+		    for (int i_206_ = -DR; i_206_ <= 0; i_206_++) {
 			int i_207_ = anInt674 + i_206_;
 			int i_208_ = anInt674 - i_206_;
 			if (i_204_ >= anInt667) {
@@ -2330,14 +2331,14 @@ public class Class38
 	for (int i_418_ = 0; i_418_ < i; i_418_++) {
 	    Class26 class26 = class26s[i_418_];
 	    if (class26.anInt493 == 1) {
-		int i_419_ = class26.anInt480 - anInt704 + 25;
-		if (i_419_ >= 0 && i_419_ <= 50) {
-		    int i_420_ = class26.anInt487 - anInt674 + 25;
+		int i_419_ = class26.anInt480 - anInt704 + DR;
+		if (i_419_ >= 0 && i_419_ <= 2 * DR) {
+		    int i_420_ = class26.anInt487 - anInt674 + DR;
 		    if (i_420_ < 0)
 			i_420_ = 0;
-		    int i_421_ = class26.anInt502 - anInt674 + 25;
-		    if (i_421_ > 50)
-			i_421_ = 50;
+		    int i_421_ = class26.anInt502 - anInt674 + DR;
+		    if (i_421_ > 2 * DR)
+			i_421_ = 2 * DR;
 		    boolean bool = false;
 		    while (i_420_ <= i_421_) {
 			if (aBooleanArrayArray725[i_419_][i_420_++]) {
@@ -2367,14 +2368,14 @@ public class Class38
 		    }
 		}
 	    } else if (class26.anInt493 == 2) {
-		int i_423_ = class26.anInt487 - anInt674 + 25;
-		if (i_423_ >= 0 && i_423_ <= 50) {
-		    int i_424_ = class26.anInt480 - anInt704 + 25;
+		int i_423_ = class26.anInt487 - anInt674 + DR;
+		if (i_423_ >= 0 && i_423_ <= 2 * DR) {
+		    int i_424_ = class26.anInt480 - anInt704 + DR;
 		    if (i_424_ < 0)
 			i_424_ = 0;
-		    int i_425_ = class26.anInt500 - anInt704 + 25;
-		    if (i_425_ > 50)
-			i_425_ = 50;
+		    int i_425_ = class26.anInt500 - anInt704 + DR;
+		    if (i_425_ > 2 * DR)
+			i_425_ = 2 * DR;
 		    boolean bool = false;
 		    while (i_424_ <= i_425_) {
 			if (aBooleanArrayArray725[i_424_++][i_423_]) {
@@ -2406,19 +2407,19 @@ public class Class38
 	    } else if (class26.anInt493 == 4) {
 		int i_427_ = class26.anInt494 - anInt669;
 		if (i_427_ > 128) {
-		    int i_428_ = class26.anInt487 - anInt674 + 25;
+		    int i_428_ = class26.anInt487 - anInt674 + DR;
 		    if (i_428_ < 0)
 			i_428_ = 0;
-		    int i_429_ = class26.anInt502 - anInt674 + 25;
-		    if (i_429_ > 50)
-			i_429_ = 50;
+		    int i_429_ = class26.anInt502 - anInt674 + DR;
+		    if (i_429_ > 2 * DR)
+			i_429_ = 2 * DR;
 		    if (i_428_ <= i_429_) {
-			int i_430_ = class26.anInt480 - anInt704 + 25;
+			int i_430_ = class26.anInt480 - anInt704 + DR;
 			if (i_430_ < 0)
 			    i_430_ = 0;
-			int i_431_ = class26.anInt500 - anInt704 + 25;
-			if (i_431_ > 50)
-			    i_431_ = 50;
+			int i_431_ = class26.anInt500 - anInt704 + DR;
+			if (i_431_ > 2 * DR)
+			    i_431_ = 2 * DR;
 			boolean bool = false;
 		    while_11_:
 			for (int i_432_ = i_430_; i_432_ <= i_431_; i_432_++) {
@@ -2545,7 +2546,7 @@ public class Class38
 	anInt710 = i_444_;
 	anInt726 = i_443_ / 2;
 	anInt722 = i_444_ / 2;
-	boolean[][][][] bools = new boolean[9][32][53][53];
+	boolean[][][][] bools = new boolean[9][32][2 * DR + 3][2 * DR + 3];
 	for (int i_445_ = 128; i_445_ <= 384; i_445_ += 32) {
 	    for (int i_446_ = 0; i_446_ < 2048; i_446_ += 64) {
 		anInt685 = Model.anIntArray2394[i_445_];
@@ -2554,20 +2555,23 @@ public class Class38
 		anInt693 = Model.anIntArray2418[i_446_];
 		int i_447_ = (i_445_ - 128) / 32;
 		int i_448_ = i_446_ / 64;
-		for (int i_449_ = -26; i_449_ <= 26; i_449_++) {
-		    for (int i_450_ = -26; i_450_ <= 26; i_450_++) {
+		for (int i_449_ = -DR - 1; i_449_ <= DR + 1; i_449_++) {
+		    for (int i_450_ = -DR - 1; i_450_ <= DR + 1; i_450_++) {
 			int i_451_ = i_449_ * 128;
 			int i_452_ = i_450_ * 128;
 			boolean bool = false;
-			for (int i_453_ = -i; i_453_ <= i_442_;
-			     i_453_ += 128) {
-			    if (method369(i_451_, is[i_447_] + i_453_,
-					  i_452_)) {
-				bool = true;
-				break;
+			for (int zs = 0; zs < 4 && !bool; zs++) {
+			    int camH = is[i_447_] * (new int[] { 65, 100, 140, 175 })[zs] / 100;
+			    for (int i_453_ = -i; i_453_ <= i_442_;
+				 i_453_ += 128) {
+				if (method369(i_451_, camH + i_453_,
+					      i_452_)) {
+				    bool = true;
+				    break;
+				}
 			    }
 			}
-			bools[i_447_][i_448_][i_449_ + 25 + 1][i_450_ + 25 + 1]
+			bools[i_447_][i_448_][i_449_ + DR + 1][i_450_ + DR + 1]
 			    = bool;
 		    }
 		}
@@ -2575,40 +2579,40 @@ public class Class38
 	}
 	for (int i_454_ = 0; i_454_ < 8; i_454_++) {
 	    for (int i_455_ = 0; i_455_ < 32; i_455_++) {
-		for (int i_456_ = -25; i_456_ < 25; i_456_++) {
-		    for (int i_457_ = -25; i_457_ < 25; i_457_++) {
+		for (int i_456_ = -DR; i_456_ < DR; i_456_++) {
+		    for (int i_457_ = -DR; i_457_ < DR; i_457_++) {
 			boolean bool = false;
 		    while_12_:
 			for (int i_458_ = -1; i_458_ <= 1; i_458_++) {
 			    for (int i_459_ = -1; i_459_ <= 1; i_459_++) {
 				if (bools[i_454_][i_455_]
-				    [i_456_ + i_458_ + 25 + 1]
-				    [i_457_ + i_459_ + 25 + 1]) {
+				    [i_456_ + i_458_ + DR + 1]
+				    [i_457_ + i_459_ + DR + 1]) {
 				    bool = true;
 				    break while_12_;
 				}
 				if (bools[i_454_][(i_455_ + 1) % 31]
-				    [i_456_ + i_458_ + 25 + 1]
-				    [i_457_ + i_459_ + 25 + 1]) {
+				    [i_456_ + i_458_ + DR + 1]
+				    [i_457_ + i_459_ + DR + 1]) {
 				    bool = true;
 				    break while_12_;
 				}
 				if (bools[i_454_ + 1][i_455_]
-				    [i_456_ + i_458_ + 25 + 1]
-				    [i_457_ + i_459_ + 25 + 1]) {
+				    [i_456_ + i_458_ + DR + 1]
+				    [i_457_ + i_459_ + DR + 1]) {
 				    bool = true;
 				    break while_12_;
 				}
 				if (bools[i_454_ + 1][(i_455_ + 1) % 31]
-				    [i_456_ + i_458_ + 25 + 1]
-				    [i_457_ + i_459_ + 25 + 1]) {
+				    [i_456_ + i_458_ + DR + 1]
+				    [i_457_ + i_459_ + DR + 1]) {
 				    bool = true;
 				    break while_12_;
 				}
 			    }
 			}
 			aBooleanArrayArrayArrayArray712[i_454_][i_455_]
-			    [i_456_ + 25][i_457_ + 25]
+			    [i_456_ + DR][i_457_ + DR]
 			    = bool;
 		    }
 		}
@@ -2717,7 +2721,7 @@ public class Class38
 	anIntArray701 = new int[anInt683];
 	aClass49_670 = new Deque();
 	anIntArray715 = new int[] { 0, 4, 4, 8, 0, 0, 8, 0, 0 };
-	aBooleanArrayArrayArrayArray712 = new boolean[8][32][51][51];
+	aBooleanArrayArrayArrayArray712 = new boolean[8][32][2 * DR + 1][2 * DR + 1];
 	anIntArray709 = new int[] { 76, 8, 137, 4, 0, 1, 38, 2, 19 };
 	anIntArray717 = new int[] { 19, 55, 38, 155, 255, 110, 137, 205, 76 };
 	anIntArray713 = new int[] { 160, 192, 80, 96, 0, 144, 80, 48, 160 };

@@ -247,6 +247,7 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    Insets insets = Class10.frame.getInsets();
 	    Class10.frame.setSize(insets.right + (insets.left + i_6_), insets.top + i_7_ + insets.bottom);
 	    Class10.frame.setMinimumSize(new Dimension(Class10.frame.getWidth(), Class10.frame.getHeight()));
+	    if (!background) ModHook.init(Class10.frame, this);
 	    Cache.aClass21_108 = Class39_Sub5_Sub9.signlink = new Signlink(true, null, inetaddress, i_10_, string, i_8_);
 	    Class39_Sub5_Sub9.signlink.requestThread(this, 1);
 	} catch (Exception exception) {
@@ -643,15 +644,22 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	Insets insets = Class10.frame.getInsets();
 	int width = Class10.frame.getWidth() - insets.left - insets.right;
 	int height = Class10.frame.getHeight() - insets.top - insets.bottom;
-	double scale = Math.min((double) width / IsaacPrng.anInt1087,
-	    (double) height / Deque.anInt919);
-	int canvasWidth = Math.max(1, (int) (IsaacPrng.anInt1087 * scale));
-	int canvasHeight = Math.max(1, (int) (Deque.anInt919 * scale));
-	Class41.aCanvas778.setBounds(
-	    insets.left + Math.max(0, (width - canvasWidth) / 2),
-	    insets.top + Math.max(0, (height - canvasHeight) / 2),
-	    canvasWidth, canvasHeight);
+	int dock = ModPanel.dockWidth();
+	if (ModPanel.inst != null)
+	{
+	    ModPanel.inst.setBounds(insets.left + width - dock, insets.top, dock, height);
+	    ModPanel.inst.doLayout();
+	    ModPanel.inst.validate();
+	    ModPanel.inst.repaint();
+	}
+	// The canvas fills everything left of the side bar; Canvas_Sub1 fits the game picture inside it.
+	Class41.aCanvas778.setBounds(insets.left, insets.top,
+	    Math.max(1, width - dock), Math.max(1, height));
 	ClientScript.aBoolean1690 = true;
+    }
+
+    public void relayoutCanvas() {
+	positionGameCanvas();
     }
 
     public synchronized void method28(int i) {
@@ -665,6 +673,9 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    container.remove(Class41.aCanvas778);
 	}
 	Class41.aCanvas778 = new Canvas_Sub1(this);
+	ModHook.app = Class41.aCanvas778;
+	ModHook.hookWheel(Class41.aCanvas778);
+	Class41.aCanvas778.setBackground(Color.BLACK);
 	container.add(Class41.aCanvas778);
 	Class41.aCanvas778.setSize(IsaacPrng.anInt1087, Deque.anInt919);
 	Class41.aCanvas778.setVisible(true);

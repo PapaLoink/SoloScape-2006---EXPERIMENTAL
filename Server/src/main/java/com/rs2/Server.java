@@ -351,6 +351,7 @@ implements Runnable {
             SkillGuideManager.initialize();
             GrandExchangePriceSample.loadPriceSamples();
             new NoopStartupHook();
+            com.rs2.model.quest.impl.QuestExtras.start();
             value8 = CacheStore.getInstance();
             if (value8 != null) {
                 ((CacheStore)value8).close();
@@ -362,7 +363,6 @@ implements Runnable {
             this.selector = Selector.open();
             ((Server)value8).serverSocketChannel = ServerSocketChannel.open();
             DedicatedReactor.setInstance(new DedicatedReactor(Selector.open()));
-            DedicatedReactor.getInstance().start();
             ((Server)value8).serverSocketChannel.configureBlocking(false);
             ((Server)value8).serverSocketChannel.socket().bind(((Server)value8).bindAddress);
             value = DedicatedReactor.getInstance();
@@ -370,6 +370,7 @@ implements Runnable {
                 DedicatedReactor.getInstance().getSelector().wakeup();
                 ((Server)value8).serverSocketChannel.register(DedicatedReactor.getInstance().getSelector(), 16);
             }
+            DedicatedReactor.getInstance().start();
             ((Server)value8).cycleTimer = new ElapsedTimer();
             serverStatus = 2;
             long value9 = System.currentTimeMillis();
@@ -462,6 +463,7 @@ implements Runnable {
             if (Boolean.getBoolean("prs.traceGameplay")) {
                 System.out.println("[server-trace] entering main loop interrupted=" + Thread.currentThread().isInterrupted() + " shutdownRequested=" + shutdownRequested);
             }
+            HiscoresHttp.start();
             while (!Thread.interrupted() && !shutdownRequested) {
                 try {
                     long value11 = System.currentTimeMillis() - value9;

@@ -169,6 +169,7 @@ implements PacketHandler {
                 player.setInteractionTargetPlane(player.getPosition().getPlane());
                 packet.getReader().readSignedShort();
                 player.setInteractionTargetX(packet.getReader().readSignedShort());
+                com.rs2.model.quest.impl.ClockTowerQuest.useOnGround(player, itemId);
                 if (itemId == 590) {
                     int actionSequence = player.nextActionSequence();
                     player.setActiveCycleEvent(new TinderboxOnGroundItemTask(this, player, actionSequence));
@@ -549,6 +550,7 @@ implements PacketHandler {
         player.setInteractionTargetPlane(player.getPosition().getPlane());
         traceRevision443Item(player, "item-on-ground-item", targetItemId, selectedSlot,
                 selectedInterface, selectedItemId, x, y);
+        com.rs2.model.quest.impl.ClockTowerQuest.useOnGround(player, selectedItemId);
         if (selectedItemId == 590) {
             int actionSequence = player.nextActionSequence();
             player.setActiveCycleEvent(new TinderboxOnGroundItemTask(this, player, actionSequence));

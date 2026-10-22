@@ -631,7 +631,7 @@ public abstract class Class34 {
                         Buffer.method814(103);
                         int i_33_ = Class32.method326(-2);
                         int i_34_ = Class39_Sub5_Sub11.method699((byte) 49);
-                        if (i_33_ > 4500 && i_34_ > 4500) {
+                        if (i_33_ > ModHook.idleTicks() && i_34_ > ModHook.idleTicks()) {
                             ClientScript.anInt1692 = 250;
                             StillGraphic.method535((byte) 106, 4000);
                             FrameBuffer.outgoingGameBuffer.putFrame(192);

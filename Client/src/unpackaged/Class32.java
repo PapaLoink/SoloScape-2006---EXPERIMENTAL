@@ -333,8 +333,10 @@ public class Class32
 			      (new JString[] { class3,
 					      OndemandRequest.aClass3_1723 })),
 			     4, 90, 0);
+			boolean promptShown = ModHook.promptShown();
 			class39_sub5_sub10_sub1.method647
-			    (Class39_Sub5_Sub11.method708((new JString[]
+			    (promptShown ? ModHook.promptText()
+				 : Class39_Sub5_Sub11.method708((new JString[]
 							   { (Class66
 							      .aClass3_1160),
 							     (ScriptState
@@ -342,7 +344,7 @@ public class Class32
 			     (class39_sub5_sub10_sub1.method637
 			      (Class39_Sub5_Sub11.method708
 			       (new JString[] { class3, Class31.aClass3_556 }))) + 6,
-			     90, 255);
+			     90, promptShown ? ModHook.PROMPT_COLOUR : 255);
 			DrawingArea.drawHorizontalLine(0, 77, 479, 0);
 		    }
 		} else {

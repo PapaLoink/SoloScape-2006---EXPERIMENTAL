@@ -64,6 +64,7 @@ public class Class62_Sub1_Sub1 extends Class62_Sub1 implements Receiver
     }
     
     public synchronized void send(MidiMessage midimessage, long l) {
+	if (ModHook.midiMuted(midimessage)) return;
 	if (aBoolean2161) {
 	    byte[] is = midimessage.getMessage();
 	    if (!method1060(is[0] & 0xff, is[1], is.length >= 3 ? is[2] : 0, l))

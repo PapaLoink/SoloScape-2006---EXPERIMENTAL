@@ -1425,7 +1425,7 @@ extends Entity {
         // A dead connection must leave the world even if combat keeps refreshing its timer.
         if (this.lastPacketReceivedMillis != 0L && now - this.lastPacketReceivedMillis >= 60000L) {
             this.disconnect();
-        } else if (ServerSettings.idleLogoutEnabled && this.getPlayerRights() < 2
+        } else if (false && ServerSettings.idleLogoutEnabled && this.getPlayerRights() < 2
                 && this.lastPlayerInputMillis != 0L && now - this.lastPlayerInputMillis >= 300000L
                 && this.getSingleCombatTimer().hasElapsed()) {
             this.packetSender.sendLogout();

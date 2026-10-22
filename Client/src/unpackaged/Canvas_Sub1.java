@@ -47,11 +47,17 @@ public class Canvas_Sub1 extends Canvas
 	return scaleGameGraphics(super.getGraphics());
     }
 
+    /** Unscaled graphics for the whole canvas (margins, buttons). */
+    Graphics rawGraphics() {
+	return super.getGraphics();
+    }
+
     Graphics scaleGameGraphics(Graphics graphics) {
 	if (graphics instanceof Graphics2D && IsaacPrng.anInt1087 > 0 && Deque.anInt919 > 0) {
 	    Graphics2D graphics2d = (Graphics2D) graphics;
-	    graphics2d.scale((double) Math.max(1, getWidth()) / IsaacPrng.anInt1087,
-		(double) Math.max(1, getHeight()) / Deque.anInt919);
+	    double[] m = ModHook.geom(getWidth(), getHeight());
+	    graphics2d.translate(m[2], m[3]);
+	    graphics2d.scale(m[0], m[1]);
 	    graphics2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 		RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 	}
@@ -59,8 +65,11 @@ public class Canvas_Sub1 extends Canvas
     }
 
     private MouseEvent gameMouseEvent(MouseEvent event) {
-	int x = (int) Math.floor((double) event.getX() * IsaacPrng.anInt1087 / Math.max(1, getWidth()));
-	int y = (int) Math.floor((double) event.getY() * Deque.anInt919 / Math.max(1, getHeight()));
+	double[] m = ModHook.geom(getWidth(), getHeight());
+	int x = (int) Math.floor((event.getX() - m[2]) / m[0]);
+	int y = (int) Math.floor((event.getY() - m[3]) / m[1]);
+	x = Math.max(0, Math.min(IsaacPrng.anInt1087 - 1, x));
+	y = Math.max(0, Math.min(Deque.anInt919 - 1, y));
 	return new MouseEvent(this, event.getID(), event.getWhen(),
 	    event.getModifiersEx(), x, y, event.getXOnScreen(), event.getYOnScreen(),
 	    event.getClickCount(), event.isPopupTrigger(), event.getButton());
@@ -68,6 +77,7 @@ public class Canvas_Sub1 extends Canvas
 
     @Override
     protected void processMouseEvent(MouseEvent event) {
+	if (ModHook.mouse(event, this)) { event.consume(); return; }
 	MouseEvent gameEvent = gameMouseEvent(event);
 	super.processMouseEvent(gameEvent);
 	if (gameEvent.isConsumed()) event.consume();
@@ -75,6 +85,7 @@ public class Canvas_Sub1 extends Canvas
 
     @Override
     protected void processMouseMotionEvent(MouseEvent event) {
+	if (ModHook.mouse(event, this)) { event.consume(); return; }
 	MouseEvent gameEvent = gameMouseEvent(event);
 	super.processMouseMotionEvent(gameEvent);
 	if (gameEvent.isConsumed()) event.consume();
@@ -82,11 +93,13 @@ public class Canvas_Sub1 extends Canvas
 
     // The web bridge supplies coordinates in the original game resolution.
     int toCanvasX(int x) {
-	return (int) Math.ceil((double) x * getWidth() / Math.max(1, IsaacPrng.anInt1087));
+	double[] m = ModHook.geom(getWidth(), getHeight());
+	return (int) Math.ceil(m[2] + x * m[0]);
     }
 
     int toCanvasY(int y) {
-	return (int) Math.ceil((double) y * getHeight() / Math.max(1, Deque.anInt919));
+	double[] m = ModHook.geom(getWidth(), getHeight());
+	return (int) Math.ceil(m[3] + y * m[1]);
     }
     
     public static void method39(int i) {

@@ -28,8 +28,10 @@ public final class ModernPlayerUpdateTask {
                 - (player.getLastKnownRegionPosition().getRegionX() << 3);
         int localY = player.getPosition().getY()
                 - (player.getLastKnownRegionPosition().getRegionY() << 3);
-        boolean regionRebuilt = localX < 16 || localX >= 88
-                || localY < 16 || localY > 88;
+        // Rebuild the 104x104 scene early so the player stays near its middle and
+        // the view always has at least ~30 tiles of world around it.
+        boolean regionRebuilt = localX < 40 || localX >= 64
+                || localY < 40 || localY >= 64;
         if (regionRebuilt) {
             player.packetSender.sendMapRegion();
             player.lastRegionChangeMillis = System.currentTimeMillis();

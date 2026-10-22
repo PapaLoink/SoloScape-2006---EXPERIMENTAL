@@ -39,6 +39,12 @@ public class JKeyListener implements KeyListener, FocusListener {
     public static IndexedColorSprite aClass39_Sub5_Sub10_Sub4_629;
 
     public synchronized void keyPressed(KeyEvent keyevent) {
+        KeyEvent filtered = ModHook.keyPressed(keyevent);
+        if (filtered == null) {
+            keyevent.consume();
+            return;
+        }
+        keyevent = filtered;
         if (Npc.aClass35_2499 != null) {
             Class39_Sub5_Sub7.anInt1779 = 0;
             int i = keyevent.getKeyCode();
@@ -293,6 +299,7 @@ public class JKeyListener implements KeyListener, FocusListener {
     }
 
     public synchronized void keyReleased(KeyEvent keyevent) {
+        keyevent = ModHook.keyReleased(keyevent);
         if (Npc.aClass35_2499 != null) {
             Class39_Sub5_Sub7.anInt1779 = 0;
             int i = keyevent.getKeyCode();

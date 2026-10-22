@@ -1004,7 +1004,7 @@ public class Model extends Class39_Sub5_Sub4
 	int i_230_ = i_226_ * i_221_ + i_229_ * i_222_ >> 16;
 	int i_231_ = anInt2386 * i_222_ >> 16;
 	int i_232_ = i_230_ + i_231_;
-	if (i_232_ > 50 && i_230_ < 3500) {
+	if (i_232_ > 50 && i_230_ < 14000) {
 	    int i_233_ = i_227_ * i_223_ + i_225_ * i_224_ >> 16;
 	    int i_234_ = i_233_ - anInt2386 << 9;
 	    if (i_234_ / i_232_ < Class39_Sub5_Sub10_Sub2.anInt2457) {

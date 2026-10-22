@@ -437,10 +437,35 @@ public final class QuestManager {
     public final void refreshQuestPointText() {
         Player player = this.player;
         player.packetSender.sendInterfaceText("QP: " + this.player.getQuestPoints(), 3985);
+        player.packetSender.sendQuestListColors();
+    }
+
+    /** Quests listed by the stock 443 client that have no entry in the legacy quest table (flat ids 20200+). */
+    private static final String[] UNSCRIPTED_QUESTS = {
+        "Royal Trouble", "Death to the Dorgeshuun", "Fairytale II - Cure a Queen", "Lunar Diplomacy",
+        "The Eyes of Glouphrie", "Darkness of Hallowvale", "Slug Menace", "Elemental Workshop II",
+        "My Arm's Big Adventure", "Enlightened Journey", "Eagles' Peak", "Animal Magnetism"};
+
+    private boolean showUnscriptedQuest(int buttonId) {
+        int index = buttonId - 20200;
+        if (index < 0 || index >= UNSCRIPTED_QUESTS.length) return false;
+        Player p = this.player;
+        p.packetSender.sendInterfaceText("", 8145);
+        for (int line = 8147; line <= 8195; line++) p.packetSender.sendInterfaceText("", line);
+        for (int line = 12174; line <= 12223; line++) p.packetSender.sendInterfaceText("", line);
+        p.packetSender.sendInterfaceText(UNSCRIPTED_QUESTS[index], 8144);
+        p.packetSender.sendInterfaceText("This quest has not been added to the server yet.", 8145);
+        p.packetSender.sendInterfaceText("", 8147);
+        p.packetSender.sendInterfaceText("It appears in the quest list because the", 8148);
+        p.packetSender.sendInterfaceText("game client includes it, but there is no", 8149);
+        p.packetSender.sendInterfaceText("quest content for it here yet.", 8150);
+        p.packetSender.showInterface(8134);
+        return true;
     }
 
     public final boolean handleButtonClick(int buttonId) {
         boolean enabled;
+        if (showUnscriptedQuest(buttonId)) return true;
         handleButtonClickControlExit1: {
             int value;
             int value2;

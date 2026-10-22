@@ -761,7 +761,6 @@ implements ActionListener {
             }
             catch (Exception exception) {}
         }
-        this.worldMapFrame.setVisible(true);
     }
 
     public static void main(String[] args) {
@@ -923,7 +922,8 @@ implements ActionListener {
             if (World.getPlayerCount() > 0 && World.getNonBotPlayerCount() == 0) {
                 World.logoutBotsAndScheduleShutdown(true);
             } else {
-                Server.scheduleShutdown(false);
+                // Single-player world: save and close right away instead of the 5 minute countdown.
+                Server.scheduleShutdown(true);
             }
             ControlPanel.refreshStatusDisplay();
         }
