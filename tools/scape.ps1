@@ -20,7 +20,7 @@ function Invoke-Build([string]$Component) {
 function Start-Component([string]$Component, [string]$Script, [string]$Arguments = '') {
     $directory = Join-Path $Root $Component
     # Each component keeps its own interactive console for logs and shutdown.
-    $commandLine = '/d /k ""{0}" {1}"' -f (Join-Path $directory $Script), $Arguments
+    $commandLine = '/d /c ""{0}" {1}"' -f (Join-Path $directory $Script), $Arguments
     Start-Process -FilePath $env:ComSpec -ArgumentList $commandLine -WorkingDirectory $directory | Out-Null
 }
 

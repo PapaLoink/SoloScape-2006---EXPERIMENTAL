@@ -175,7 +175,7 @@ final class ModPanel extends JPanel {
         setPreferredSize(new Dimension(WIDTH, 100));
         JPanel top = new JPanel(new GridLayout(0, 1)); top.setBackground(BG);
         top.add(new Icon("Hiscores", TROPHY, () -> openTool("hs", "Hiscores", 380, 480, HiscoreView::new)));
-        top.add(new Icon("Wiki", DOC, () -> openTool("wiki", "Wiki", 300, 160, WikiView::new)));
+        top.add(new Icon("Wiki", DOC, () -> openTool("wiki", "Wiki", 320, 460, WikiView::new)));
         top.add(new Icon("My stats", BARS, () -> openTool("stats", "My stats", 300, 520, StatsView::new)));
         top.add(new Icon("Level calculator", CALC, () -> openTool("calc", "Level calculator", 300, 240, CalcView::new)));
         top.add(new Icon("World map", MAP, () -> openTool("map", "World map", 560, 480, MapView::new)));
@@ -236,20 +236,61 @@ final class ModPanel extends JPanel {
 
     static final class CalcView extends JPanel {
         CalcView() {
-            super(new GridLayout(0, 1, 4, 4));
-            setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+            super(new BorderLayout());
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             JComboBox<String> sk = new JComboBox<>(SKILLS); sk.setFocusable(false);
             JSpinner tgt = new JSpinner(new SpinnerNumberModel(99, 2, 99, 1));
-            JLabel cur = new JLabel(" "), need = new JLabel(" ");
+            JLabel lvl = valueLabel(), curXp = valueLabel(), tgtXp = valueLabel(), left = valueLabel(), pct = valueLabel();
+            JLabel note = new JLabel(" "); note.setFont(note.getFont().deriveFont(Font.ITALIC, 11f));
+            JProgressBar bar = new JProgressBar(0, 100); bar.setStringPainted(true); bar.setFocusable(false);
             Runnable up = () -> {
                 int[][] my = ModHook.mySkills(); int i = sk.getSelectedIndex(); int t = (Integer) tgt.getValue();
-                if (my == null) { cur.setText("Log in first to see your current xp."); need.setText("XP for level " + t + ": " + xpFor(t)); return; }
-                cur.setText("Current: level " + my[i][1] + ", " + my[i][2] + " xp");
-                need.setText("XP for level " + t + ": " + xpFor(t) + "   (remaining: " + Math.max(0, xpFor(t) - my[i][2]) + ")");
+                long goal = xpFor(t);
+                tgtXp.setText(fmt(goal));
+                if (my == null) {
+                    lvl.setText("-"); curXp.setText("-"); left.setText("-"); pct.setText("-"); bar.setValue(0); bar.setString("");
+                    note.setText("Log in to see your current xp.");
+                    return;
+                }
+                long cur = my[i][2];
+                lvl.setText(String.valueOf(my[i][1]));
+                curXp.setText(fmt(cur));
+                left.setText(fmt(Math.max(0, goal - cur)));
+                int p = goal <= 0 ? 100 : (int) Math.min(100, Math.round(cur * 100.0 / goal));
+                pct.setText(p + "%"); bar.setValue(p); bar.setString(p + "%");
+                note.setText(cur >= goal ? "Target reached." : " ");
             };
             sk.addActionListener(e -> up.run()); tgt.addChangeListener(e -> up.run());
-            add(new JLabel("Skill")); add(sk); add(new JLabel("Target level")); add(tgt); add(cur); add(need);
+
+            JPanel grid = new JPanel(new GridBagLayout());
+            grid.setOpaque(false);
+            GridBagConstraints c = new GridBagConstraints();
+            c.insets = new Insets(3, 0, 3, 8); c.anchor = GridBagConstraints.WEST; c.gridy = 0;
+            row(grid, c, "Skill", sk);
+            row(grid, c, "Target level", tgt);
+            c.insets = new Insets(10, 0, 3, 8);
+            row(grid, c, "Current level", lvl);
+            c.insets = new Insets(3, 0, 3, 8);
+            row(grid, c, "Current xp", curXp);
+            row(grid, c, "XP for target", tgtXp);
+            row(grid, c, "XP remaining", left);
+            row(grid, c, "Progress", pct);
+            c.gridx = 0; c.gridwidth = 2; c.fill = GridBagConstraints.HORIZONTAL; c.insets = new Insets(8, 0, 3, 0);
+            grid.add(bar, c); c.gridy++;
+            grid.add(note, c);
+            add(grid, BorderLayout.NORTH);
             up.run();
+        }
+
+        private static JLabel valueLabel() { JLabel l = new JLabel("-"); l.setFont(l.getFont().deriveFont(Font.BOLD)); return l; }
+        private static String fmt(long n) { return String.format("%,d", n); }
+        private static void row(JPanel p, GridBagConstraints c, String label, JComponent comp) {
+            c.gridx = 0; c.gridwidth = 1; c.fill = GridBagConstraints.NONE; c.weightx = 0;
+            p.add(new JLabel(label), c);
+            c.gridx = 1; c.weightx = 1;
+            c.fill = comp instanceof JLabel ? GridBagConstraints.NONE : GridBagConstraints.HORIZONTAL;
+            p.add(comp, c);
+            c.gridy++;
         }
     }
 
@@ -263,6 +304,7 @@ final class ModPanel extends JPanel {
             {"", "::master", "all stats to maximum"}, {"", "::setlevel S L", "set skill S to level L"}, {"", "::god", "toggle god mode"},
             {"", "::run", "refill run energy"}, {"", "::irun", "toggle infinite run"}, {"", "::statsme", "show your account stats"},
             {"Teleport & magic", "", ""},
+            {"", "::pos", "show your coordinates (x, y, height)"},
             {"", "::tele X Y [H]", "teleport to coordinates"}, {"", "::home", "go home, normal spellbook"},
             {"", "::modern", "normal spellbook"}, {"", "::ancient", "ancient spellbook"},
             {"Quests", "", ""},
@@ -616,6 +658,14 @@ final class ModPanel extends JPanel {
             xpd.setFocusable(false);
             xpd.addActionListener(e -> { XpOverlay.enabled = xpd.isSelected(); ModHook.saveSettings(); ModHook.focusGame(); });
             add(xpd, c); c.gridy++;
+            JCheckBox roofs = new JCheckBox("Hide roofs", ModHook.noRoofs);
+            roofs.setFocusable(false);
+            roofs.addActionListener(e -> { ModHook.noRoofs = roofs.isSelected(); ModHook.saveSettings(); ClientScript.aBoolean1690 = true; ModHook.focusGame(); });
+            add(roofs, c); c.gridy++;
+            JCheckBox rem = new JCheckBox("Remember username and password", ModHook.rememberLogin);
+            rem.setFocusable(false);
+            rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });
+            add(rem, c); c.gridy++;
             add(new JLabel("Log out when idle for:"), c); c.gridy++;
             JComboBox<String> idle = new JComboBox<>(ModHook.IDLE_NAMES);
             idle.setSelectedIndex(ModHook.idleChoice);
@@ -737,15 +787,299 @@ final class ModPanel extends JPanel {
     }
 
     // ------------------------------------------------------------------ wiki
+    /** Quest guide browser: opens the local copy in ./guides when it has been downloaded, the online page otherwise. */
     static final class WikiView extends JPanel {
+        static final String BASE = "https://2004.losthq.rs/";
+        static final String[][] GUIDES = {
+            {"Free Quests", ""},
+            {"blackknightsfortress", "Black Knight's Fortress"}, {"cooksassistant", "Cook's Assistant"}, {"demonslayer", "Demon Slayer"},
+            {"dorics", "Doric's Quest"}, {"dragonslayer", "Dragon Slayer"}, {"ernestthechicken", "Ernest the Chicken"},
+            {"gobdip", "Goblin Diplomacy"}, {"impcatcher", "Imp Catcher"}, {"knightssword", "The Knight's Sword"},
+            {"piratestreasure", "Pirate's Treasure"}, {"princealirescue", "Prince Ali Rescue"}, {"restlessghost", "The Restless Ghost"},
+            {"romeojuliet", "Romeo & Juliet"}, {"runemysteries", "Rune Mysteries Quest"}, {"sheepshearer", "Sheep Shearer"},
+            {"shieldofarrav", "Shield of Arrav"}, {"vampireslayer", "Vampire Slayer"}, {"witchspotion", "Witch's Potion"},
+            {"Members Quests", ""},
+            {"bigchompybirdhunting", "Big Chompy Bird Hunting"}, {"biohazard", "Biohazard"}, {"clocktower", "Clock Tower"},
+            {"deathplateau", "Death Plateau"}, {"digsite", "Digsite Quest"}, {"druidicritual", "Druidic Ritual"},
+            {"dwarfcannon", "Dwarf Cannon"}, {"eadgar", "Eadgar's Ruse"}, {"elementalworkshop", "Elemental Workshop"},
+            {"familycrest", "Family Crest"}, {"fightarena", "Fight Arena"}, {"fishingcontest", "Fishing Contest"},
+            {"fremtrials", "The Fremennik Trials"}, {"gertrudescat", "Gertrude's Cat"}, {"grandtree", "The Grand Tree"},
+            {"hazeelcult", "Hazeel Cult"}, {"heros", "Hero's Quest"}, {"holygrail", "Holy Grail"},
+            {"horror", "Horror from the Deep"}, {"junglepotion", "Jungle Potion"}, {"legends", "Legends Quest"},
+            {"lostcity", "Lost City"}, {"merlinscrystal", "Merlin's Crystal"}, {"monksfriend", "Monk's Friend"},
+            {"murdermystery", "Murder Mystery"}, {"naturespirit", "Nature Spirit"}, {"observatory", "Observatory Quest"},
+            {"plaguecity", "Plague City"}, {"priestinperil", "Priest in Peril"}, {"regicide", "Regicide"},
+            {"scorpioncatcher", "Scorpion Catcher"}, {"seaslug", "Sea Slug Quest"}, {"shades", "Shades of Mort'ton"},
+            {"sheepherder", "Sheep Herder"}, {"shilovillage", "Shilo Village"}, {"tbwt", "Tai Bwo Wannai Trio"},
+            {"templeofikov", "Temple of Ikov"}, {"touristtrap", "The Tourist Trap"}, {"treegnomevillage", "Tree Gnome Village"},
+            {"tribaltotem", "Tribal Totem"}, {"trollstronghold", "Troll Stronghold"}, {"undergroundpass", "Underground Pass"},
+            {"watchtower", "Watch Tower"}, {"waterfall", "Waterfall Quest"}, {"witchshouse", "Witches House"},
+            {"Mini Quests", ""},
+            {"barcrawl", "Alfred Grimhand's Barcrawl"}, {"magearena", "Mage Arena"}
+        };
+        static final File DIR = new File("./guides");
+
+        private final DefaultListModel<String> model = new DefaultListModel<>();
+        private final List<String[]> shown = new ArrayList<>();
+        private final JList<String> list = new JList<>(model);
+        private final JTextField search = new JTextField();
+        private final JLabel status = new JLabel(" ");
+
         WikiView() {
-            super(new BorderLayout());
-            JPanel p = new JPanel(new GridLayout(0, 1, 4, 4));
-            p.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-            p.add(new JLabel("LostHQ 2004 guides"));
-            p.add(button("Open LostHQ (online)", e -> open("https://2004.losthq.rs/")));
-            add(p, BorderLayout.NORTH);
+            super(new CardLayout());
+            setBackground(BG);
+            JPanel listCard = new JPanel(new BorderLayout(0, 4));
+            listCard.setBackground(BG);
+            listCard.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+            JPanel top = new JPanel(new GridLayout(0, 1, 0, 4)); top.setBackground(BG);
+            JLabel t = new JLabel("Quest guides (LostHQ 2004)"); t.setForeground(FG); top.add(t);
+            top.add(search);
+            JPanel btns = new JPanel(new GridLayout(1, 0, 4, 0)); btns.setBackground(BG);
+            btns.add(button("Open LostHQ online", e -> open(BASE)));
+            top.add(btns);
+            status.setForeground(FG); top.add(status);
+            listCard.add(top, BorderLayout.NORTH);
+            list.setBackground(TAN); list.setForeground(INK);
+            list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            list.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) { if (e.getClickCount() >= 2) openSelected(); }
+            });
+            list.addKeyListener(new KeyAdapter() {
+                public void keyPressed(KeyEvent e) { if (e.getKeyCode() == KeyEvent.VK_ENTER) openSelected(); }
+            });
+            listCard.add(new JScrollPane(list), BorderLayout.CENTER);
+            add(listCard, "list");
+            add(buildReader(), "reader");
+            search.addKeyListener(new KeyAdapter() {
+                public void keyReleased(KeyEvent e) { refill(); }
+            });
+            refill();
+            updateStatus();
+            autoDownload();
         }
+
+        private static volatile boolean attempted, running;
+
+        /** Saves any guides that are not on disk yet, quietly in the background (once per session). */
+        private void autoDownload() {
+            if (attempted) return;
+            attempted = true;
+            int missing = 0;
+            for (String[] g : GUIDES) if (!g[1].isEmpty() && !local(g[0]).exists()) missing++;
+            if (missing == 0) return;
+            final int missing0 = missing;
+            running = true;
+            new Thread(() -> {
+                int fails = 0, total = 0;
+                try {
+                    GuideDownloader d = new GuideDownloader(System.getProperty("guides.base", BASE), DIR);
+                    for (String[] g : GUIDES) {
+                        if (g[1].isEmpty() || local(g[0]).exists()) continue;
+                        total++;
+                        final String msg = "Saving guides offline... " + total + "/" + missing0;
+                        SwingUtilities.invokeLater(() -> status.setText(msg));
+                        try { d.fetchGuide(g[0]); } catch (Throwable t) { fails++; if (fails >= 3 && total == fails) break; }
+                    }
+                } catch (Throwable t) { t.printStackTrace(); }
+                running = false;
+                SwingUtilities.invokeLater(() -> { refill(); updateStatus(); });
+            }, "guide-save").start();
+        }
+
+        static File local(String id) { return new File(DIR, id + ".html"); }
+
+        private void refill() {
+            String q = search.getText().trim().toLowerCase();
+            model.clear(); shown.clear();
+            String header = null; boolean headerAdded = false;
+            for (String[] g : GUIDES) {
+                if (g[1].isEmpty()) { header = g[0]; headerAdded = false; continue; }
+                if (!q.isEmpty() && !g[1].toLowerCase().contains(q)) continue;
+                if (!headerAdded) { model.addElement("-- " + header + " --"); shown.add(null); headerAdded = true; }
+                model.addElement("  " + g[1] + (local(g[0]).exists() ? "" : "  (not saved yet)"));
+                shown.add(g);
+            }
+        }
+
+        private void updateStatus() {
+            int n = 0;
+            for (String[] g : GUIDES) if (!g[1].isEmpty() && local(g[0]).exists()) n++;
+            status.setText(n > 0 ? n + " guides saved offline" : "No guides saved yet");
+        }
+
+        private final JEditorPane pane = new JEditorPane();
+        private final JLabel readerTitle = new JLabel(" ");
+
+        private JPanel buildReader() {
+            JPanel p = new JPanel(new BorderLayout(0, 4));
+            p.setBackground(BG);
+            p.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+            JPanel head = new JPanel(new BorderLayout(6, 0)); head.setBackground(BG);
+            head.add(button("< Guides", e -> ((CardLayout) getLayout()).show(this, "list")), BorderLayout.WEST);
+            readerTitle.setForeground(FG); head.add(readerTitle, BorderLayout.CENTER);
+            p.add(head, BorderLayout.NORTH);
+            pane.setEditable(false);
+            pane.setContentType("text/html");
+            pane.setBackground(Color.WHITE);
+            pane.addHyperlinkListener(e -> {
+                if (e.getEventType() != javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) return;
+                try {
+                    URL u = e.getURL();
+                    if (u != null && "file".equals(u.getProtocol())) showFile(new File(u.toURI()), null);
+                    else if (u != null) open(u.toString());
+                } catch (Throwable t) { t.printStackTrace(); }
+            });
+            p.add(new JScrollPane(pane), BorderLayout.CENTER);
+            return p;
+        }
+
+        private File current;
+        private String currentTitle;
+
+        private void showFile(File f, String title) {
+            current = f; currentTitle = title;
+            String nm = title;
+            if (nm == null) { String id = f.getName().replace(".html", ""); nm = id; for (String[] g : GUIDES) if (g[0].equals(id)) nm = g[1]; }
+            readerTitle.setText(nm);
+            ((CardLayout) getLayout()).show(this, "reader");
+            // load once the pane has its real width so everything can be fitted to it
+            SwingUtilities.invokeLater(this::renderCurrent);
+        }
+
+        private void renderCurrent() {
+            try {
+                if (current == null) return;
+                java.awt.Container sp = pane.getParent();
+                int w = sp != null && sp.getWidth() > 60 ? sp.getWidth() - 24 : 300;
+                File view = new File(DIR, "_view.html");
+                java.nio.file.Files.write(view.toPath(), prepare(current, w).getBytes(StandardCharsets.UTF_8));
+                pane.getDocument().putProperty(javax.swing.text.Document.StreamDescriptionProperty, null);
+                pane.setPage(view.getAbsoluteFile().toURI().toURL());
+                pane.setCaretPosition(0);
+            } catch (Throwable t) { t.printStackTrace(); status.setText("Could not open that guide."); }
+        }
+
+        private static final java.util.regex.Pattern BAD_DECL = java.util.regex.Pattern.compile(
+            "(?i)^\\s*(width|height|min-[a-z-]+|max-[a-z-]+|font-size|font|line-height|margin[a-z-]*|padding[a-z-]*|position|display|float|top|left|right|bottom|flex[a-z-]*|grid[a-z-]*|overflow[a-z-]*|transform|zoom|box-sizing|vertical-align)\\s*:");
+
+        private static String cleanDecls(String decls) {
+            StringBuilder sb = new StringBuilder();
+            for (String d : decls.split(";")) {
+                if (d.trim().isEmpty() || BAD_DECL.matcher(d).find() || d.contains("var(") || d.contains("calc(")) continue;
+                sb.append(d.trim().replaceAll("#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])(?![0-9a-fA-F])", "#$1$1$2$2$3$3")).append(';');
+            }
+            return sb.toString();
+        }
+
+        private static String cleanCss(String css) {
+            css = css.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?s)@(media|font-face|keyframes|supports)[^{]*\\{(?:[^{}]*\\{[^{}]*\\})*[^{}]*\\}", "").replaceAll("(?i)@import[^;]*;", "");
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("([^{}]+)\\{([^{}]*)\\}").matcher(css);
+            StringBuilder out = new StringBuilder();
+            while (m.find()) {
+                String sel = m.group(1).trim();
+                if (sel.isEmpty() || sel.startsWith(":root") || sel.contains("::") || sel.contains(":not") || sel.contains("[")) continue;
+                String d = cleanDecls(m.group(2));
+                if (!d.isEmpty()) out.append(sel).append('{').append(d).append("}\n");
+            }
+            return out.toString();
+        }
+
+        /** Swing cannot decode some formats (webp icons): show the item's name instead of a missing picture. */
+        private static String altText(String tag, String srcPath) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)\\b(?:alt|title)\\s*=\\s*[\"']([^\"']+)[\"']").matcher(tag);
+            String name = m.find() ? m.group(1).trim() : "";
+            if (name.isEmpty()) {
+                String n = srcPath.split("[?#]")[0];
+                n = n.substring(n.lastIndexOf('/') + 1).replaceAll("(?i)\\.[a-z0-9]+$", "").replaceAll("[_\\-+]+", " ").replaceAll("%20", " ").trim();
+                if (n.isEmpty()) return "";
+                name = Character.toUpperCase(n.charAt(0)) + n.substring(1);
+            }
+            return "<b>" + name.replace("<", "&lt;") + "</b> ";
+        }
+
+        /** Rewrites a saved guide so Swing's simple HTML renderer fits it to the panel width. */
+        static String prepare(File page, int availW) throws IOException {
+            String html = new String(java.nio.file.Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8);
+            // gather and sanitise the site's own styles
+            StringBuilder css = new StringBuilder();
+            java.util.regex.Matcher lm = java.util.regex.Pattern.compile("(?i)<link[^>]*rel\\s*=\\s*[\"']stylesheet[\"'][^>]*>").matcher(html);
+            while (lm.find()) {
+                java.util.regex.Matcher hm = java.util.regex.Pattern.compile("(?i)href\\s*=\\s*[\"']([^\"']+)[\"']").matcher(lm.group());
+                if (hm.find() && !hm.group(1).startsWith("http")) {
+                    File cf = new File(DIR, hm.group(1).split("[?#]")[0]);
+                    if (cf.exists()) css.append(cleanCss(new String(java.nio.file.Files.readAllBytes(cf.toPath()), StandardCharsets.UTF_8)));
+                }
+            }
+            java.util.regex.Matcher sm = java.util.regex.Pattern.compile("(?is)<style[^>]*>(.*?)</style>").matcher(html);
+            while (sm.find()) css.append(cleanCss(sm.group(1)));
+            // item icons are <canvas itemname="red_bead"> drawn by the site's scripts: write the item name out instead
+            java.util.regex.Matcher cv = java.util.regex.Pattern.compile("(?is)<canvas\\b([^>]*)>\\s*(?:</canvas>)?").matcher(html);
+            StringBuffer cb = new StringBuffer();
+            while (cv.find()) {
+                String attrs = cv.group(1), rep = "";
+                java.util.regex.Matcher nm = java.util.regex.Pattern.compile("(?i)itemname\\s*=\\s*[\"']([^\"']+)[\"']").matcher(attrs);
+                if (nm.find()) {
+                    String n = nm.group(1).replace('_', ' ').trim();
+                    if (!n.isEmpty()) n = Character.toUpperCase(n.charAt(0)) + n.substring(1);
+                    java.util.regex.Matcher am = java.util.regex.Pattern.compile("(?i)(?:amount|qty|quantity|count|stack)\\s*=\\s*[\"']?(\\d+)").matcher(attrs);
+                    if (am.find() && !am.group(1).equals("1")) n += " x " + am.group(1);
+                    rep = "<b>" + n.replace("<", "&lt;") + "</b>";
+                }
+                cv.appendReplacement(cb, java.util.regex.Matcher.quoteReplacement(rep));
+            }
+            cv.appendTail(cb); html = cb.toString();
+            // site chrome that is useless offline
+            html = html.replaceAll("(?is)<div id=\"site-options-container\".*?</body>", "</body>")
+                       .replaceAll("(?is)<div class=\"main-menu[^\"]*\">.*?</div>", "")
+                       .replaceAll("(?is)<a href=\"https://2004\\.losthq\\.rs/\"><img src=\"img/losthq\\.png\"[^>]*></a>", "");
+            html = html.replaceAll("(?is)<script.*?</script>", "").replaceAll("(?is)<style.*?</style>", "")
+                       .replaceAll("(?i)<link[^>]*>", "").replaceAll("(?is)<!--.*?-->", "");
+            // inline styles and size attributes
+            java.util.regex.Matcher st = java.util.regex.Pattern.compile("(?i)\\sstyle\\s*=\\s*\"([^\"]*)\"").matcher(html);
+            StringBuffer sb = new StringBuffer();
+            while (st.find()) {
+                String d = cleanDecls(st.group(1));
+                st.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(d.isEmpty() ? "" : " style=\"" + d + "\""));
+            }
+            st.appendTail(sb); html = sb.toString();
+            html = html.replaceAll("(?i)\\s(width|height)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)(?=[^<]*>)", "");
+            // fit images to the panel
+            java.util.regex.Matcher im = java.util.regex.Pattern.compile("(?i)<img\\b[^>]*>").matcher(html);
+            sb = new StringBuffer();
+            while (im.find()) {
+                String tag = im.group();
+                java.util.regex.Matcher src = java.util.regex.Pattern.compile("(?i)src\\s*=\\s*[\"']([^\"']+)[\"']").matcher(tag);
+                String rep = tag;
+                if (src.find() && !src.group(1).startsWith("http")) {
+                    try {
+                        java.awt.image.BufferedImage bi = javax.imageio.ImageIO.read(new File(DIR, src.group(1).split("[?#]")[0]));
+                        if (bi != null) {
+                            int w = bi.getWidth(), h = bi.getHeight();
+                            if (w > availW) { h = Math.max(1, h * availW / w); w = availW; }
+                            rep = tag.replaceFirst("(?i)<img", "<img width=\"" + w + "\" height=\"" + h + "\"");
+                        } else rep = altText(tag, src.group(1));
+                    } catch (Throwable t) { rep = altText(tag, src.group(1)); }
+                }
+                im.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(rep));
+            }
+            im.appendTail(sb); html = sb.toString();
+            String base = "body{font-family:SansSerif;font-size:11px;color:#ffffff;background-color:#000000;} p,td,th,li,div,b,i,u,center{font-size:11px;color:#ffffff;} span,font{font-size:11px;} h1{font-size:15px;} h2{font-size:13px;} h3{font-size:12px;} table{width:" + availW + ";}";
+            String head = "<style>" + css + base + "</style>";
+            if (html.toLowerCase().contains("</head>")) html = html.replaceFirst("(?i)</head>", java.util.regex.Matcher.quoteReplacement(head + "</head>"));
+            else html = "<html><head>" + head + "</head><body>" + html + "</body></html>";
+            return html;
+        }
+
+        private void openSelected() {
+            int i = list.getSelectedIndex();
+            if (i < 0 || i >= shown.size() || shown.get(i) == null) return;
+            String[] g = shown.get(i);
+            File f = local(g[0]);
+            if (f.exists()) showFile(f, g[1]);
+            else status.setText(attemptedRunning() ? "Still saving guides - try again in a moment." : "Guide not saved yet - check your internet connection and reopen this tab.");
+        }
+
+        private static boolean attemptedRunning() { return running; }
 
         static void open(String url) {
             try { Desktop.getDesktop().browse(new URI(url)); } catch (Throwable t) { t.printStackTrace(); }

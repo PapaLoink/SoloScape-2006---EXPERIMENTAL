@@ -68,6 +68,14 @@ public final class ModHook {
 
     // ---- remembered login (./login.dat, base64 of the raw field bytes)
     static boolean loginPrefilled, loginLoaded;
+    /** When off, the login is neither prefilled nor saved, and any saved login is deleted. */
+    static volatile boolean rememberLogin = true;
+
+    static void setRememberLogin(boolean b) {
+        rememberLogin = b;
+        if (!b) { try { new File("./login.dat").delete(); } catch (Throwable t) { } savedUser = ""; savedPass = ""; }
+        saveSettings();
+    }
     static String savedUser = "", savedPass = "";
     static byte[] rawBytes(JString j) {
         if (j == null || j.bytes == null) return new byte[0];
@@ -89,6 +97,7 @@ public final class ModHook {
                     if (p.length >= 2) { savedUser = p[0]; savedPass = p[1]; }
                 } else loginPrefilled = true;
             }
+            if (!rememberLogin) return;
             JString u = Class39_Sub5_Sub14.aClass3_1897, pw = Class39_Sub5_Sub14.aClass3_1905;
             if (u == null || pw == null) return;
             int st = Class31.state;
@@ -131,6 +140,8 @@ public final class ModHook {
         panelVisible = !"0".equals(SET.getProperty("panel"));
         muted = "1".equals(SET.getProperty("mute"));
         XpOverlay.enabled = !"0".equals(SET.getProperty("xpdrops"));
+        noRoofs = "1".equals(SET.getProperty("noroofs"));
+        rememberLogin = !"0".equals(SET.getProperty("remember"));
         try { idleChoice = Math.max(0, Math.min(4, Integer.parseInt(SET.getProperty("idle", "0")))); } catch (Exception e) { idleChoice = 0; }
     }
 
@@ -140,9 +151,14 @@ public final class ModHook {
         SET.setProperty("panel", panelVisible ? "1" : "0");
         SET.setProperty("mute", muted ? "1" : "0");
         SET.setProperty("xpdrops", XpOverlay.enabled ? "1" : "0");
+        SET.setProperty("noroofs", noRoofs ? "1" : "0");
+        SET.setProperty("remember", rememberLogin ? "1" : "0");
         SET.setProperty("idle", Integer.toString(idleChoice));
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
+
+    /** When set, the scene only draws up to the player's own floor, so roofs and upper floors are never drawn. */
+    public static volatile boolean noRoofs;
 
     static boolean isWasd() { return wasd; }
     static void setWasd(boolean b) { wasd = b; chatFocus = false; saveSettings(); }
@@ -151,6 +167,9 @@ public final class ModHook {
 
     // ------------------------------------------------------------ game state
     static boolean inGame() { return Class31.state == 30; }
+
+    /** True on the title / login screens only (before the world starts loading). The mute button only applies here. */
+    static boolean onLoginScreen() { return Class31.state < 25; }
 
     /** {worldX, worldY} of the local player, or null when not in game. */
     static int[] playerPos() {
@@ -185,9 +204,16 @@ public final class ModHook {
     }
 
     // ----------------------------------------------------------------- music
+    /** True while the track that is playing was started on the title/login screen. */
+    private static volatile boolean titleTrack;
+
+    /** Called just before the game starts a new MIDI track. */
+    public static void trackStarting() { titleTrack = onLoginScreen(); }
+
     public static boolean midiMuted(javax.sound.midi.MidiMessage msg) {
         try {
-            if (!muted) return false;
+            // the title music keeps playing for a moment after the state leaves the login screen: keep it silent
+            if (!muted || !(onLoginScreen() || titleTrack)) return false;
             byte[] b = msg.getMessage();
             return b.length >= 3 && (b[0] & 0xF0) == 0x90 && b[2] != 0;
         } catch (Throwable t) { return false; }
@@ -393,7 +419,7 @@ public final class ModHook {
     static final int SW = 36, SH = 28, PAD = 4, MW = 72, MH = 58, MRIGHT = 22, MBOTTOM = 20;
     private static int kw(int kind) { return kind != 1 ? SW : MW; }
     private static int kh(int kind) { return kind != 1 ? SH : MH; }
-    private static boolean active(int kind) { return kind == 0 || (kind == 1 ? !inGame() : "map".equals(ModPanel.openKey)); }
+    private static boolean active(int kind) { return kind == 0 || (kind == 1 ? onLoginScreen() : "map".equals(ModPanel.openKey)); }
     private static boolean state(int kind) { return kind == 0 ? (ModPanel.openKey != null || panelVisible) : kind == 2 ? ModPanel.mapWide : muted; }
 
     private static int[] screenRect(int kind, int w, int h) {
@@ -444,12 +470,45 @@ public final class ModHook {
     }
 
     /** Draws the buttons in canvas pixel coordinates; g must be at the canvas' base transform. */
+    private static int[] muteGhost;
     private static void drawButtons(Graphics g, int w, int h) {
         for (int kind = 0; kind < 3; kind++) {
-            if (!active(kind)) continue;
+            if (!active(kind)) {
+                // The login screen's mute button was painted straight onto the canvas; wipe it once when it goes away.
+                if (kind == 1 && muteGhost != null) {
+                    g.setColor(Color.BLACK); g.fillRect(muteGhost[0], muteGhost[1], muteGhost[2], muteGhost[3]); muteGhost = null;
+                }
+                continue;
+            }
             int[] r = screenRect(kind, w, h);
+            if (kind == 1) muteGhost = r;
             g.drawImage(glyph(kind, state(kind), r[2], r[3]), r[0], r[1], null);
         }
+    }
+
+    /** Keeps the game's picture from painting over the buttons (they would flicker). Returns the old clip. */
+    public static Shape beforeBlit(Graphics g0) {
+        try {
+            if (!(app instanceof Canvas_Sub1) || !(g0 instanceof Graphics2D)) return null;
+            Canvas_Sub1 c = (Canvas_Sub1) app;
+            Graphics2D g = (Graphics2D) g0;
+            Shape old = g.getClip();
+            int w = c.getWidth(), h = c.getHeight();
+            double[] m = geom(w, h);
+            java.awt.geom.Area area = new java.awt.geom.Area(old != null ? old : new Rectangle(-100000, -100000, 200000, 200000));
+            for (int kind = 0; kind < 3; kind++) {
+                if (!active(kind)) continue;
+                int[] r = screenRect(kind, w, h);
+                area.subtract(new java.awt.geom.Area(new java.awt.geom.Rectangle2D.Double(
+                    (r[0] - m[2]) / m[0], (r[1] - m[3]) / m[1], r[2] / m[0], r[3] / m[1])));
+            }
+            g.setClip(area);
+            return old == null ? NOCLIP : old;
+        } catch (Throwable t) { return null; }
+    }
+    private static final Shape NOCLIP = new Rectangle(0, 0, 0, 0);
+    public static void afterBlitRestore(Graphics g0, Shape old) {
+        try { if (old != null) ((Graphics2D) g0).setClip(old == NOCLIP ? null : old); } catch (Throwable t) { }
     }
 
     /** Called straight after the game draws a picture: puts the buttons back on top of it. */
@@ -480,7 +539,32 @@ public final class ModHook {
         } catch (Throwable t) { }
     }
 
-    private static void overlayTick() { paintButtons(); }
+    private static void overlayTick() { wipeMargins(); paintButtons(); }
+
+    /** In game (not stretched) the game never paints outside its own area, so stale login-screen art there is wiped. */
+    private static void wipeMargins() {
+        try {
+            if (stretch || Class31.state < 25 || !(app instanceof Canvas_Sub1)) return;
+            Canvas_Sub1 c = (Canvas_Sub1) app;
+            int w = c.getWidth(), h = c.getHeight();
+            if (w <= 0 || h <= 0) return;
+            double[] m = geom(w, h);
+            Graphics g = c.rawGraphics();
+            if (g == null) return;
+            java.awt.geom.Area a = new java.awt.geom.Area(new Rectangle(0, 0, w, h));
+            a.subtract(new java.awt.geom.Area(new Rectangle((int) Math.floor(m[2]), (int) Math.floor(m[3]),
+                (int) Math.ceil(BASE_W * m[0]) + 1, (int) Math.ceil(BASE_H * m[1]) + 1)));
+            for (int kind = 0; kind < 3; kind++) {
+                if (!active(kind)) continue;
+                int[] r = screenRect(kind, w, h);
+                a.subtract(new java.awt.geom.Area(new Rectangle(r[0], r[1], r[2], r[3])));
+            }
+            g.setClip(a);
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, w, h);
+            g.dispose();
+        } catch (Throwable t) { }
+    }
 
     /** Clicks on the on-screen buttons never reach the game. */
     public static boolean mouse(MouseEvent e, Component c) {

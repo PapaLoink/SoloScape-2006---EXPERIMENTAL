@@ -246,7 +246,9 @@ public class JImage extends AbstractImage
 	unpackaged.XpOverlay.paintBuffer(buffer, width, height, i_23_, i_24_);
 	method1016((byte) -66);
 	WebClientBridge.blit(buffer, width, height, i_23_, i_24_);
+	java.awt.Shape clip0 = unpackaged.ModHook.beforeBlit(graphics);
 	graphics.drawImage(image, i_23_, i_24_, this);
+	unpackaged.ModHook.afterBlitRestore(graphics, clip0);
 	unpackaged.ModHook.afterBlit(graphics, i_23_, i_24_, width, height);
     }
     

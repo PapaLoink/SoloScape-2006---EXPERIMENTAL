@@ -38,6 +38,7 @@ public class Class62_Sub1_Sub1 extends Class62_Sub1 implements Receiver
 		    method1054(-47);
 		sequencer.setLoopCount(bool ? -1 : 0);
 		method1068((byte) -9, 0, -1L, i);
+		ModHook.trackStarting();
 		aBoolean2161 = true;
 		sequencer.start();
 	    } catch (Exception exception) {

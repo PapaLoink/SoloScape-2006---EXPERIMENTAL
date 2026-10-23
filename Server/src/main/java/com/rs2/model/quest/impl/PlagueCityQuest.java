@@ -34,7 +34,7 @@ public final class PlagueCityQuest extends QuestScript {
         PICTURE = 1510, MASK = 1506, DWELL = 2126, SCROLL = 1505;
     // objects
     private static final int MUD_PATCH = 2531, PIPE = 2542, GRILL = 2342, MUD_PILE = 2533, MANHOLE = 2543, SINK = 874,
-        CUPBOARD = 2524, BARREL = 2530, PH_DOOR = 2535, STAIRS_DOWN = 2522, STAIRS_UP = 2523, CELL_DOOR = 2526,
+        CUPBOARD = 2524, BARREL = 2530, PH_DOOR = 2535, STAIRS_DOWN = 2522, STAIRS_UP = 2523, REHN_STAIRS_UP = 2539, REHN_STAIRS_DOWN = 2540, CELL_DOOR = 2526,
         BRAVEK_DOOR = 2528, REHN_DOOR = 2537;
 
     private final java.util.Map<Player, Object[]> active = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<Player, Object[]>());
@@ -55,6 +55,10 @@ public final class PlagueCityQuest extends QuestScript {
 
     // ------------------------------------------------------------ helpers
     private static QuestDlg D() { return new QuestDlg(); }
+    /** Bit in questProgressFlags[71] set once the Ardougne Teleport scroll has been read (saved with the character). */
+    private static final int SCROLL_READ_FLAG = 1;
+    public static boolean hasReadScroll(Player p) { return (p.questProgressFlags[ID] & SCROLL_READ_FLAG) != 0; }
+
     private static void stage(Player p, int s) { p.setQuestState(ID, s); }
     private static int st(Player p) { return p.getQuestState(ID, true); }
     private static boolean done(Player p) { return st(p) == S_DONE; }
@@ -837,6 +841,7 @@ public final class PlagueCityQuest extends QuestScript {
         if (item == SCROLL) {
             take(p, SCROLL);
             if (stage != S_DONE) { box(p, "The scroll bursts into flame."); return true; }
+            p.questProgressFlags[ID] |= SCROLL_READ_FLAG;
             say(p, BOX, D()
                 .mes("You memorise what is written on the scroll.")
                 .mes("You can now cast the Ardougne Teleport spell provided you have the required runes and magic level.")
@@ -847,8 +852,92 @@ public final class PlagueCityQuest extends QuestScript {
     }
 
     // ----------------------------------------------------------------- doors
-    /** Moves the player across a door wall at (x,y) with the given orientation. */
-    private static void cross(Player p, int x, int y, int orient) {
+    /** Moves the player across a door wall at (x,y) with the given orientation (instant move). */
+    private static void cross(Player p, int x, int y, int orient) { cross(p, -1, x, y, orient); }
+
+    /**
+     * Takes the player through the door object {@code id} at (x,y): the door opens, the player walks one tile
+     * through it and the door closes again behind them. Falls back to an instant move if the player is not
+     * standing right next to the door.
+     */
+    private static void cross(final Player p, final int id, final int x, final int y, final int orient) {
+        int px = p.getPosition().getX(), py = p.getPosition().getY(), pl = p.getPosition().getPlane();
+        int tx = px, ty = py;
+        int ax = x, ay = y; // tile directly in front of the door on the player's side
+        switch (orient) {
+            case 0: if (px >= x) { tx = x - 1; ax = x; } else { tx = x; ax = x - 1; } ty = y; ay = y; break;
+            case 1: if (py <= y) { ty = y + 1; ay = y; } else { ty = y; ay = y + 1; } tx = x; ax = x; break;
+            case 2: if (px <= x) { tx = x + 1; ax = x; } else { tx = x; ax = x + 1; } ty = y; ay = y; break;
+            default: if (py >= y) { ty = y - 1; ay = y; } else { ty = y; ay = y - 1; } tx = x; ax = x; break;
+        }
+        if (id >= 0 && (px != ax || py != ay)) {
+            // walk to the tile in front of the door first, then go through
+            final int fax = ax, fay = ay;
+            p.getMovementQueue().clear();
+            if (com.rs2.util.path.PathFinder.findPath(p, ax, ay, false, 0, 0)) {
+                com.rs2.model.task.CycleEventHandler.getInstance().schedule(p, new com.rs2.model.task.CycleEvent() {
+                    int waited = 0;
+                    public void execute(com.rs2.model.task.CycleEventContainer c) {
+                        boolean there = p.getPosition().getX() == fax && p.getPosition().getY() == fay;
+                        if (there && !p.isMoving()) {
+                            c.stop();
+                            cross(p, id, x, y, orient);
+                        } else if (++waited > 20 || (!p.isMoving() && !there)) {
+                            c.stop();
+                            if (!there) cross2(p, id, x, y, orient);
+                        }
+                    }
+                    public void onStop() { }
+                }, 1);
+                return;
+            }
+        }
+        cross2(p, id, x, y, orient);
+    }
+
+    /**
+     * Where the player must stand to use the plague house staircases: the closer of the two tiles in front of it.
+     * Returns null when the object is not one of them or the player is already on one of the tiles.
+     */
+    public static Position stairApproach(Player p, int id, int x, int y) {
+        int[][] tiles;
+        if (id == STAIRS_DOWN && x == 2536 && y == 3268) tiles = new int[][]{{2536, 3271}, {2537, 3271}};
+        else if (id == STAIRS_UP && x == 2536 && y == 9671) tiles = new int[][]{{2536, 9670}, {2537, 9670}};
+        else return null;
+        int px = p.getPosition().getX(), py = p.getPosition().getY();
+        int[] best = null; long bd = Long.MAX_VALUE;
+        for (int[] t : tiles) {
+            if (t[0] == px && t[1] == py) return null;
+            long d = (long) (t[0] - px) * (t[0] - px) + (long) (t[1] - py) * (t[1] - py);
+            if (d < bd) { bd = d; best = t; }
+        }
+        return new Position(best[0], best[1], p.getPosition().getPlane());
+    }
+
+    /** Walks to the closest of the given tiles, then runs {@code then}. Does nothing if no tile can be reached. */
+    private static void walkToThen(final Player p, int[][] tiles, final Runnable then) {
+        int px = p.getPosition().getX(), py = p.getPosition().getY();
+        int[] best = null; long bd = Long.MAX_VALUE;
+        for (int[] t : tiles) {
+            if (t[0] == px && t[1] == py) { then.run(); return; }
+            long d = (long) (t[0] - px) * (t[0] - px) + (long) (t[1] - py) * (t[1] - py);
+            if (d < bd) { bd = d; best = t; }
+        }
+        final int tx = best[0], ty = best[1];
+        p.getMovementQueue().clear();
+        if (!com.rs2.util.path.PathFinder.findPath(p, tx, ty, false, 0, 0)) return;
+        com.rs2.model.task.CycleEventHandler.getInstance().schedule(p, new com.rs2.model.task.CycleEvent() {
+            int waited = 0;
+            public void execute(com.rs2.model.task.CycleEventContainer c) {
+                boolean there = p.getPosition().getX() == tx && p.getPosition().getY() == ty;
+                if (there && !p.isMoving()) { c.stop(); then.run(); }
+                else if (++waited > 25 || (!p.isMoving() && !there)) c.stop();
+            }
+            public void onStop() { }
+        }, 1);
+    }
+
+    private static void cross2(Player p, int id, int x, int y, int orient) {
         int px = p.getPosition().getX(), py = p.getPosition().getY(), pl = p.getPosition().getPlane();
         int tx = px, ty = py;
         switch (orient) {
@@ -857,14 +946,31 @@ public final class PlagueCityQuest extends QuestScript {
             case 2: tx = px <= x ? x + 1 : x; ty = y; break;
             default: ty = py >= y ? y - 1 : y; tx = x; break;
         }
+        int dx = tx - px, dy = ty - py;
+        if (id >= 0 && Math.abs(dx) + Math.abs(dy) == 1) {
+            try {
+                com.rs2.model.objects.functions.DoorHandler.handleDoorMovement(p, id, x, y, pl, dx, dy, 3);
+                final int fx = tx + dx, fy = ty + dy, fpl = pl;
+                com.rs2.model.task.CycleEventHandler.getInstance().schedule(p, new com.rs2.model.task.CycleEvent() {
+                    public void execute(com.rs2.model.task.CycleEventContainer c) {
+                        p.getUpdateState().setFacePosition(new Position(fx, fy, fpl));
+                        c.stop();
+                    }
+                    public void onStop() { }
+                }, 2);
+                return;
+            } catch (Throwable t) {
+                // fall through to the instant move
+            }
+        }
         p.moveTo(new Position(tx, ty, pl));
     }
 
     private boolean cellDoor(Player p, boolean usedKey) {
         int s = st(p);
-        if (s == S_FREED || s == S_DONE) { cross(p, 2539, 9672, 2); return true; }
+        if (s == S_FREED || s == S_DONE) { cross(p, CELL_DOOR, 2539, 9672, 2); return true; }
         if (has(p, KEY)) {
-            say(p, BOX, D().mes("You unlock the door.").act(q -> cross(q, 2539, 9672, 2)).end());
+            say(p, BOX, D().mes("You unlock the door.").act(q -> cross(q, CELL_DOOR, 2539, 9672, 2)).end());
             return true;
         }
         QuestDlg locked = D().mes("The door is locked.").end();
@@ -887,16 +993,17 @@ public final class PlagueCityQuest extends QuestScript {
     }
 
     private boolean plagueHouseDoor(Player p, int x, int y) {
-        boolean inside = p.getPosition().getY() >= y;
+        // Both doors have their wall on the south edge of the door tile; the plague house lies to the south (y < door y).
+        boolean inside = p.getPosition().getY() < y;
         int s = st(p);
-        if (inside || s == S_FREED || s == S_DONE) { cross(p, x, y, 3); return true; }
+        if (inside || s == S_FREED || s == S_DONE) { cross(p, PH_DOOR, x, y, 3); return true; }
         int m = npcNear(p, 717, 719, 14);
         if (s == S_CURED && has(p, WARRANT) && m >= 0) {
             say(p, m, D()
                 .npc("I'd stand away from there. That black cross means that house has been touched by the plague.")
                 .player("I have a warrant from Bravek to enter here.")
                 .npc("This is highly irregular. Please wait while I speak to the Head Mourner.")
-                .act(q -> cross(q, x, y, 3))
+                .act(q -> cross(q, PH_DOOR, x, y, 3))
                 .mes("You wait until the mourner's back is turned and sneak into the building.")
                 .end());
             return true;
@@ -931,14 +1038,14 @@ public final class PlagueCityQuest extends QuestScript {
     private boolean rehnisonDoor(Player p, int x, int y) {
         int s = st(p);
         boolean inside = p.getPosition().getY() > y; // north wall: the house is north of the door tile
-        if (inside || s >= S_BOOK || s == S_DONE) { cross(p, x, y, 1); return true; }
+        if (inside || s >= S_BOOK || s == S_DONE) { cross(p, REHN_DOOR, x, y, 1); return true; }
         if (npcNear(p, TED, TED, 7) < 0) { msg(p, "The door is locked."); return true; }
         if (s == S_PIC && has(p, BOOK)) {
             say(p, TED, D()
                 .npc("Go away. We don't want any.")
                 .player("I'm a friend of Jethick's, I have come to return a book he borrowed.")
                 .npc("Oh... Why didn't you say, come in then.")
-                .act(q -> { stage(q, S_BOOK); take(q, BOOK); cross(q, x, y, 1); })
+                .act(q -> { stage(q, S_BOOK); take(q, BOOK); cross(q, REHN_DOOR, x, y, 1); })
                 .mes("You hand the book to Ted as you enter.")
                 .npc("Thanks, I've been missing that.")
                 .end());
@@ -988,13 +1095,44 @@ public final class PlagueCityQuest extends QuestScript {
         }
         if (id == PH_DOOR && ((x == 2533 && y == 3272) || (x == 2540 && y == 3273))) return plagueHouseDoor(p, x, y);
         if (id == STAIRS_DOWN && x == 2536 && y == 3268) {
-            msg(p, "You walk down the stairs...");
-            p.moveTo(new Position(2537, 9671, 0));
+            walkToThen(p, new int[][]{{2536, 3271}, {2537, 3271}}, () -> {
+                // turn towards the staircase, pause a beat, then go down and land in front of it on the same column
+                final int landX = p.getPosition().getX() == 2537 ? 2537 : 2536;
+                p.getUpdateState().setFacePosition(new Position(landX, 3268, 0));
+                com.rs2.model.task.CycleEventHandler.getInstance().schedule(p, new com.rs2.model.task.CycleEvent() {
+                    public void execute(com.rs2.model.task.CycleEventContainer c) {
+                        c.stop();
+                        msg(p, "You walk down the stairs...");
+                        p.moveTo(new Position(landX, 9670, 0));
+                    }
+                    public void onStop() { }
+                }, 2);
+            });
             return true;
         }
         if (id == STAIRS_UP && x == 2536 && y == 9671) {
-            msg(p, "You walk up the stairs...");
-            p.moveTo(new Position(2536, 3269, 0));
+            walkToThen(p, new int[][]{{2536, 9670}, {2537, 9670}}, () -> {
+                final int col = p.getPosition().getX() == 2537 ? 2537 : 2536;
+                p.getUpdateState().setFacePosition(new Position(col, 9671, 0));
+                com.rs2.model.task.CycleEventHandler.getInstance().schedule(p, new com.rs2.model.task.CycleEvent() {
+                    public void execute(com.rs2.model.task.CycleEventContainer c) {
+                        c.stop();
+                        msg(p, "You walk up the stairs...");
+                        p.moveTo(new Position(col, 3271, 0));
+                    }
+                    public void onStop() { }
+                }, 2);
+            });
+            return true;
+        }
+        if (id == REHN_STAIRS_UP && x == 2527 && y == 3332) {
+            msg(p, "You walk up the stairs.");
+            p.moveTo(new Position(2527, 3331, 1));
+            return true;
+        }
+        if (id == REHN_STAIRS_DOWN && x == 2527 && y == 3332) {
+            msg(p, "You walk down the stairs.");
+            p.moveTo(new Position(2527, 3331, 0));
             return true;
         }
         if (id == CELL_DOOR && x == 2539 && y == 9672) return cellDoor(p, false);
@@ -1004,7 +1142,7 @@ public final class PlagueCityQuest extends QuestScript {
                 say(p, BRAVEK, D().npc("Go away, I'm busy! I'm... Umm... In a meeting!").end());
                 return true;
             }
-            cross(p, x, y, 0);
+            cross(p, BRAVEK_DOOR, x, y, 0);
             return true;
         }
         return false;

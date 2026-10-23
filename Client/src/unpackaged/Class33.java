@@ -53,6 +53,7 @@ public class Class33
     }
     
     public static int method330(int i) {
+	if (ModHook.noRoofs) return NameTable.height;
 	int i_2_ = 3;
 	if (Class43.anInt799 < 310) {
 	    int i_3_ = Class39_Sub11.anInt1470 >> 7;

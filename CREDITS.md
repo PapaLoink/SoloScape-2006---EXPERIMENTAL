@@ -19,7 +19,7 @@
 
 ## This fork
 - Client tool bar, XP drops, ID lists, settings, the four quest implementations and the server changes listed in
-  CHANGES.md were written in collaboration with Claude (Anthropic) for the fork's maintainer, PapaLoink.
+  CHANGES.md were written in collaboration with Claude (Anthropic) for the fork's maintainer, **PapaLoink**.
 
 ## Trademarks
 RuneScape is a trademark of Jagex Ltd. This is a fan project for personal, non-commercial use.

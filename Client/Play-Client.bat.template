@@ -33,7 +33,9 @@ if "%~1"=="" (
 )
 
 set "EXIT_CODE=%ERRORLEVEL%"
-echo Client exited with code %EXIT_CODE%.
-if exist "%CLIENT_LOG%" type "%CLIENT_LOG%"
-pause
+if not "%EXIT_CODE%"=="0" (
+    echo Client exited with code %EXIT_CODE%.
+    if exist "%CLIENT_LOG%" type "%CLIENT_LOG%"
+    pause
+)
 exit /b %EXIT_CODE%

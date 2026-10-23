@@ -38,12 +38,16 @@ public final class SpellWidgets {
             case 32: return 1184; case 33: return 1185; case 34: return 1186;
             case 35: return 1187; case 36: return 1188; case 37: return 1189;
             case 38: return 1190; case 39: return 1191; case 40: return 1192;
-            case 387: return 1539; case 390: return 1542; case 391: return 1543;
+            case 387: return 1539; case 388: return 1540; case 389: return 1541; case 390: return 1542; case 391: return 1543;
             case 410: return 1562; case 420: return 1572; case 430: return 1582;
             case 440: return 1592; case 500: return 12037; case 511: return 12425;
             case 521: return 12435; case 531: return 12445; case 541: return 12455;
             case 549: return 6003;
             case 591: return 30000;
+            // standard teleports and self spells (children from the 443 cache, interface 192)
+            case 7: return 1159;  case 12: return 1164; case 15: return 1167;
+            case 18: return 1170; case 22: return 1174; case 41: return 1193;
+            case 492: return 7455; case 559: return 15877; case 569: return 18470;
             default: return InterfaceBridge.UNMAPPED;
         }
     }

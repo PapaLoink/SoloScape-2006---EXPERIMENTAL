@@ -35,7 +35,9 @@ set "AUTO_START=false"
 if /I "%~1"=="--auto-start" set "AUTO_START=true"
 "%JAVA_HOME%\bin\java.exe" -Xmx1024m -Dprs.audit443=%PRS_AUDIT443% -Dprs.traceGameplay=true -Dprs.exitOnServerShutdown=true -Dprs.dev.autoStart=%AUTO_START% -jar "dist\server.jar"
 set "EXIT_CODE=%ERRORLEVEL%"
-echo.
-echo Server exited with code %EXIT_CODE%.
-pause
+if not "%EXIT_CODE%"=="0" (
+    echo.
+    echo Server exited with code %EXIT_CODE%.
+    pause
+)
 exit /b %EXIT_CODE%

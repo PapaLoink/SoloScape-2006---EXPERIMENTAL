@@ -290,6 +290,11 @@ public final class DoorHandler {
     }
 
     public static void handleDoorMovement(Player player, int value7, int value22, int value32, int value42, int value52, int value62) {
+        handleDoorMovement(player, value7, value22, value32, value42, value52, value62, 2);
+    }
+
+    /** Same as above, but the door stays open for {@code closeDelayTicks} game ticks before it closes again. */
+    public static void handleDoorMovement(Player player, int value7, int value22, int value32, int value42, int value52, int value62, int closeDelayTicks) {
         DoorHandler doorHandler = DoorHandler.getOrCreateDoorState(value7, value22, value32, value42);
         if (doorHandler == null) {
             player.setActionLocked(false);
@@ -300,7 +305,7 @@ public final class DoorHandler {
         Player player2 = player;
         // Door traversal deliberately crosses the door's collision boundary.
         player2.packetSender.queueRelativeMovementStep(value52, value62, true);
-        CycleEventHandler.getInstance().schedule(player, new DoorResetEvent(player, doorHandler2), 2);
+        CycleEventHandler.getInstance().schedule(player, new DoorResetEvent(player, doorHandler2), closeDelayTicks);
     }
 
     private static boolean isInitiallyOpenObjectId(int objectId) {

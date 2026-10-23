@@ -1028,12 +1028,6 @@ public class GameplayHelper {
                 GameplayHelper.showThreeOptionProductionInterface((Player)interfaceId, 1714, 2961, 5525, "Unstrung symbol", "Silver sickle", "Tiara");
             }
         } else if (interfaceId2 == "spinning") {
-            // Revision 443 uses the full-screen spinning widget (459), not
-            // the unmapped legacy make-item chatboxes 8866/8880.
-            if (ServerSettings.clientBuild == 443) {
-                ((Player)interfaceId).packetSender.showInterface(8880);
-                return;
-            }
             if (!ItemDefinition.isDefined(6051)) {
                 GameplayHelper.showTwoOptionProductionInterface((Player)interfaceId, 1737, 1779, "Wool", "Flax");
             } else {
@@ -2885,12 +2879,6 @@ public class GameplayHelper {
                     if (CacheCoordinateTranslator.dungeonCoordinateShiftActive && CacheCoordinateTranslator.isDungeonCoordinateShiftSourceRegion(value5, value4)) {
                         value5 += 768;
                         value4 += 5120;
-                    }
-                    // Urhney's old south-east swamp spawn predates the 443 map.
-                    if (ServerSettings.cacheVersion == 443 && value7 == 458
-                            && value5 == 3234 && value4 == 3154 && value3 == 0) {
-                        value5 = 3145;
-                        value4 = 3175;
                     }
                     GameplayHelper.spawnNpc(value7, value5, value4, value3, value6);
                     NpcDefinition npcDefinition = NpcDefinition.forId(value7);

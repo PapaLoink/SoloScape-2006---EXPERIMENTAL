@@ -151,6 +151,15 @@ extends TickTask {
             return;
         }
 
+        Position questApproach = com.rs2.model.quest.impl.PlagueCityQuest.stairApproach(
+                this.player, this.objectId, this.objectX, this.objectY);
+        if (questApproach != null) {
+            if (!PathFinder.findPath(this.player, questApproach.getX(), questApproach.getY(), false, 0, 0)) {
+                this.stop();
+            }
+            return;
+        }
+
         Position castleWarsStairApproach = CastleWarsManager.getStairTraversalApproach(
                 this.player, this.objectId, this.objectX, this.objectY);
         if (castleWarsStairApproach != null) {

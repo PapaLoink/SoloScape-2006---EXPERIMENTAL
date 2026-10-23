@@ -123,10 +123,11 @@ extends MagicSpellAction {
             }
             case ARDOUGNE_TELEPORT: {
                 if (this.caster.getQuestState(71) != 1) {
-                    Object value5 = QuestDefinition.forId(71);
-                    value5 = ((QuestDefinition)value5).getName();
-                    Player player = this.caster;
-                    player.packetSender.sendGameMessage("You need to complete " + (String)value5 + " to do this.");
+                    this.caster.packetSender.sendGameMessage("You need to complete " + QuestDefinition.forId(71).getName() + " to do this.");
+                    return false;
+                }
+                if (!com.rs2.model.quest.impl.PlagueCityQuest.hasReadScroll(this.caster)) {
+                    this.caster.packetSender.sendGameMessage("You havn't learnt how to cast this spell yet.");
                     return false;
                 }
                 return this.caster.getTeleportManager().castSpellbookTeleport(new Position(2662 + GameUtil.randomInclusive(1), 3305 + GameUtil.randomInclusive(1), 0));

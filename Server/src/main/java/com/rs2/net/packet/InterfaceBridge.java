@@ -725,6 +725,11 @@ public final class InterfaceBridge {
         // Keep newly-added spell mappings visible to a live HotSwap server; the
         // static reverse table is built only once when this class is first loaded.
         if (packedId == (192 << 16 | 591)) return 30000;
+        // Spellbook clicks (standard 192, ancient 193): resolve through SpellWidgets, which holds the full child -> legacy button table.
+        if ((packedId >>> 16) == 192 || (packedId >>> 16) == 193) {
+            int spellButton = SpellWidgets.toLegacySpellButton(packedId, 0xFFFF);
+            if (spellButton != UNMAPPED) return spellButton;
+        }
         // Cook All is a reverse-only action on child 3. The same legacy
         // ID 13717 writes the food name to synthetic child 8, not the button.
         // Keep this explicit reverse mapping ahead of the component table.
