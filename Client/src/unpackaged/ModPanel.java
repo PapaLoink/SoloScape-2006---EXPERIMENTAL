@@ -650,6 +650,11 @@ final class ModPanel extends JPanel {
             wasd.setFocusable(false);
             wasd.addActionListener(e -> { ModHook.setWasd(wasd.isSelected()); ModHook.focusGame(); });
             add(wasd, c); c.gridy++;
+            JCheckBox chatLock = new JCheckBox("Lock chat after sending (back to WASD camera)", ModHook.lockChatAfterSend);
+            chatLock.setFocusable(false);
+            chatLock.setToolTipText("With WASD camera on: Enter sends your line, then the chatbox locks again");
+            chatLock.addActionListener(e -> { ModHook.setLockChatAfterSend(chatLock.isSelected()); ModHook.focusGame(); });
+            add(chatLock, c); c.gridy++;
             JCheckBox stretch = new JCheckBox("Stretch game to fill window", ModHook.stretch);
             stretch.setFocusable(false);
             stretch.addActionListener(e -> { ModHook.setStretch(stretch.isSelected()); ModHook.focusGame(); });
@@ -666,6 +671,11 @@ final class ModPanel extends JPanel {
             rem.setFocusable(false);
             rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });
             add(rem, c); c.gridy++;
+            JCheckBox classic = new JCheckBox("Classic interface (2004 tab icons, options and controls)", ClassicInterface.enabled);
+            classic.setFocusable(false);
+            classic.setToolTipText("The 2004 tab icons, Game Options tab and Player controls tab");
+            classic.addActionListener(e -> { ModHook.setClassicUi(classic.isSelected()); ModHook.focusGame(); });
+            add(classic, c); c.gridy++;
             JCheckBox post = new JCheckBox("Post-2006 content (God Wars, Grand Exchange)", ModHook.postCutoff);
             post.setToolTipText("Content added after revision 443 (18 December 2006)");
             post.addActionListener(e -> { ModHook.setPostCutoff(post.isSelected()); ModHook.focusGame(); });

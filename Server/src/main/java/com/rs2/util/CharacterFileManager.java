@@ -67,6 +67,9 @@ import org.joda.time.base.AbstractDateTime;
 
 public final class CharacterFileManager {
     public static int[] musicUnlockConfigIds = new int[]{20, 21, 22, 23, 24, 25, 298, 311, 346, 414, 464, 598, 662, 721};
+    // Revision 443 unlock bits for the late-2006 tracks (Roc and Roll, High Spirits, Floating Free,
+    // the three Christmas tracks and Where Eagles Lair). Saved after the older fields so existing files still load.
+    public static final int LATE_MUSIC_UNLOCK_CONFIG_ID = 906;
     private static ConcurrentHashMap loginIpReservations = new ConcurrentHashMap();
     public static ArrayList deadHardcoreIronmanRecords = new ArrayList();
     public static ArrayList liveHiscoreRecords = new ArrayList();
@@ -1381,6 +1384,7 @@ public final class CharacterFileManager {
             }
             ((DataOutputStream)value6).writeLong(((Player)value).homeTeleportAvailableAtMillis);
             ((DataOutputStream)value6).writeBoolean(((Player)value).automaticMusicEnabled);
+            ((DataOutputStream)value6).writeInt(((Player)value).configStates[LATE_MUSIC_UNLOCK_CONFIG_ID]);
             ((DataOutputStream)value6).flush();
             ((FilterOutputStream)value6).close();
             return;
@@ -2165,6 +2169,7 @@ public final class CharacterFileManager {
             }
             ((DataOutputStream)value3).writeLong(((CharacterFileRecord)value).homeTeleportAvailableAtMillis);
             ((DataOutputStream)value3).writeBoolean(((CharacterFileRecord)value).automaticMusicEnabled);
+            ((DataOutputStream)value3).writeInt(((CharacterFileRecord)value).configStates[LATE_MUSIC_UNLOCK_CONFIG_ID]);
             ((DataOutputStream)value3).flush();
             ((FilterOutputStream)value3).close();
             return;
@@ -4145,6 +4150,10 @@ public final class CharacterFileManager {
             if (dataInputStream.available() >= 1) {
                 ((CharacterFileRecord)value2).automaticMusicEnabled = dataInputStream.readBoolean();
             }
+            // Files written before late music unlocks were saved relock those tracks.
+            if (dataInputStream.available() >= 4) {
+                ((CharacterFileRecord)value2).configStates[LATE_MUSIC_UNLOCK_CONFIG_ID] = dataInputStream.readInt();
+            }
             dataInputStream.close();
             ((FileInputStream)value).close();
             ((CharacterFileRecord)value2).getStoredItemValue();
@@ -4229,6 +4238,7 @@ public final class CharacterFileManager {
         player.lastSavedMillis = record.lastSavedMillis;
         player.homeTeleportAvailableAtMillis = record.homeTeleportAvailableAtMillis;
         player.automaticMusicEnabled = record.automaticMusicEnabled;
+        player.configStates[LATE_MUSIC_UNLOCK_CONFIG_ID] = record.configStates[LATE_MUSIC_UNLOCK_CONFIG_ID];
         player.totalPlaytimeMillis = record.totalPlayTimeMillis;
         player.createdAtMillis = record.createdAtMillis;
         player.loginRestrictionExempt = record.loginRestrictionExempt;

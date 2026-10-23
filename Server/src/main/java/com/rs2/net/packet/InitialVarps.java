@@ -51,6 +51,7 @@ public final class InitialVarps {
         player.packetSender.refreshAutocastConfig();
         player.packetSender.refreshSpecialAttackConfig();
         com.rs2.model.music.Music.sendUnlocks(player);
+        com.rs2.model.player.EmoteUnlockManager.sendUnlockVarps(player);
 
         // Ernest the Chicken: lever state (33) and its derived basement-door state (668).
         player.packetSender.sendConfig(ERNEST_LEVER_VARP,

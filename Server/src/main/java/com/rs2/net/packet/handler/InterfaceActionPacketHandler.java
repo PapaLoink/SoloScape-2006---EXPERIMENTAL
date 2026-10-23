@@ -329,6 +329,28 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
 
         int widgetGroup = packedWidgetId >>> 16;
         int widgetChild = packedWidgetId & 0xffff;
+        // Classic (2004) combat tabs: handle each click as the native 443 combat tab widget it stands for.
+        if (com.rs2.net.packet.ClassicCombat.isClassicGroup(widgetGroup)) {
+            int legacyComponent = com.rs2.net.packet.ClassicCombat.legacyComponent(packedWidgetId);
+            if (com.rs2.net.packet.ClassicSidebar.handleCombat(player, legacyComponent)) return;
+            int nativeWidget = legacyComponent == -1 ? InterfaceBridge.UNMAPPED : InterfaceBridge.translate(legacyComponent);
+            if (nativeWidget == InterfaceBridge.UNMAPPED) return;
+            packedWidgetId = nativeWidget;
+            widgetGroup = nativeWidget >>> 16;
+            widgetChild = nativeWidget & 0xffff;
+        }
+        // Classic (2004) sidebar tabs: settings use the legacy actions, emotes the native emote tab below.
+        if ((widgetGroup == com.rs2.net.packet.ClassicSidebar.OPTIONS_GROUP
+                || widgetGroup == com.rs2.net.packet.ClassicSidebar.CONTROLS_GROUP)
+                && (operation == -1 || parameter == 0)) {
+            if (com.rs2.net.packet.ClassicSidebar.handleSetting(player, widgetGroup, widgetChild)) {
+                return;
+            }
+            int emote = com.rs2.net.packet.ClassicSidebar.nativeEmoteChild(widgetGroup, widgetChild);
+            if (emote == -1) return;
+            widgetGroup = 464;
+            widgetChild = emote;
+        }
         if (widgetGroup == 271 && player.isInterfaceIdOpen(5609)
                 && (operation == -1 || parameter == 0)
                 && player.getPrayerManager().handleAdditionalPrayerClick(widgetChild)) {
@@ -360,14 +382,14 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
         if (handleMusicTrack(player, widgetGroup, widgetChild, operation, parameter)) {
             return;
         }
-        if (widgetGroup == 464 && widgetChild >= 1 && widgetChild <= 38
+        if (widgetGroup == 464 && widgetChild >= 1 && widgetChild <= 37
                 && (operation == -1 || parameter == 0)) {
             if (EmoteUnlockManager.isLockedChild(widgetChild)
                     && !EmoteUnlockManager.isUnlocked(player, widgetChild)) {
                 player.packetSender.sendGameMessage(EmoteUnlockManager.getUnlockHint(widgetChild));
                 return;
             }
-            if (widgetChild == 38) {
+            if (widgetChild == 37) { // Skill Cape
                 int capeId = player.getEquipmentManager().getItemIdAtSlot(1);
                 int[] skillCapeAnimations = {
                     4959, 4981, 4961, 4973, 4979, 4939, 4947, 4971, 4977, 4969, 4965,
@@ -405,20 +427,20 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
                 return;
             }
 
+            // Children 1-36 in cache order: Yes ... Glass Wall, Slap Head, Stamp, Flap, Idea,
+            // Zombie Walk, Zombie Dance, Scared, Rabbit Hop (37 is Skill Cape, above).
             int[] emoteAnimations = {
                 855, 856, 858, 859, 857, 863, 2113, 862, 864, 861, 2109, 2111,
                 866, 2106, 2107, 2108, 860, 1368, 2105, 2110, 865, 2112,
-                2127, 2128, 1131, 1130, 1129, 1128, 4276, 4278, 4280, 4275,
-                3544, 3543, 7272, 2836, 6111
+                2127, 2128, 1131, 1130, 1129, 1128, 4275, 4278, 4280, 4276,
+                3544, 3543, 2836, 6111
             };
             int animationId = emoteAnimations[widgetChild - 1];
             player.getUpdateState().setAnimation(animationId, 0);
             if (widgetChild == 18) {
                 player.getUpdateState().setGraphic(574);
-            } else if (widgetChild == 29) {
+            } else if (widgetChild == 32) { // Idea
                 player.getUpdateState().setGraphic(712);
-            } else if (widgetChild == 35) {
-                player.getUpdateState().setGraphic(1244);
             }
             if (player.getQuestState(0) == 23 && !player.isTutorialEmoteCompleted()) {
                 player.setTutorialEmoteCompleted();

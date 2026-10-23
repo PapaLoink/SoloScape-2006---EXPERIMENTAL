@@ -64,7 +64,7 @@ public final class ModHook {
                 relayout();
             } catch (Throwable t) { t.printStackTrace(); }
         });
-        new javax.swing.Timer(250, e -> { overlayTick(); loginTick(); if (!inGame()) postCutoffSent = false; }).start();
+        new javax.swing.Timer(250, e -> { overlayTick(); loginTick(); if (!inGame()) { postCutoffSent = false; classicUiSent = false; } }).start();
     }
 
     // ---- remembered login (./login.dat, base64 of the raw field bytes)
@@ -139,12 +139,31 @@ public final class ModHook {
     private static volatile boolean postCutoffSent;
     static void setPostCutoff(boolean b) { postCutoff = b; postCutoffSent = false; saveSettings(); }
 
-    /** Game thread, once per logged-in cycle: sends the post-2006 setting as a ::postcutoff command when needed. */
+    // classic interface: 2004 tab icons and Game Options / Player controls tabs (see ClassicInterface)
+    private static volatile boolean classicUiSent;
+    static void setClassicUi(boolean b) {
+        ClassicInterface.enabled = b;
+        classicUiSent = false;
+        ClientScript.aBoolean1690 = true;
+        saveSettings();
+    }
+
+    /** Game thread, once per logged-in cycle: sends server-side settings as :: commands when needed. */
     public static void serverSettingsTick() {
-        if (postCutoffSent || !inGame()) return;
-        postCutoffSent = true;
+        if (!inGame()) return;
+        if (!postCutoffSent) {
+            postCutoffSent = true;
+            sendCommand(postCutoff ? "postcutoff on" : "postcutoff off");
+        }
+        if (!classicUiSent) {
+            classicUiSent = true;
+            sendCommand(ClassicInterface.enabled ? "classicui on" : "classicui off");
+        }
+    }
+
+    private static void sendCommand(String text) {
         FrameBuffer.outgoingGameBuffer.putFrame(174);
-        JString cmd = Class39_Sub5_Sub9.createJstring(postCutoff ? "postcutoff on" : "postcutoff off");
+        JString cmd = Class39_Sub5_Sub9.createJstring(text);
         FrameBuffer.outgoingGameBuffer.putByte(cmd.getLength() + 1);
         FrameBuffer.outgoingGameBuffer.putJstr((byte) 81, cmd);
     }
@@ -152,6 +171,7 @@ public final class ModHook {
     static void loadSettings() {
         try (InputStream in = new FileInputStream("./modsettings.properties")) { SET.load(in); } catch (Throwable t) { }
         if (SET.getProperty("wasd") != null) wasd = SET.getProperty("wasd").equals("1");
+        lockChatAfterSend = "1".equals(SET.getProperty("chatlock"));
         stretch = "1".equals(SET.getProperty("stretch"));
         panelVisible = !"0".equals(SET.getProperty("panel"));
         muted = "1".equals(SET.getProperty("mute"));
@@ -160,10 +180,12 @@ public final class ModHook {
         rememberLogin = !"0".equals(SET.getProperty("remember"));
         try { idleChoice = Math.max(0, Math.min(4, Integer.parseInt(SET.getProperty("idle", "0")))); } catch (Exception e) { idleChoice = 0; }
         postCutoff = "1".equals(SET.getProperty("postcutoff"));
+        ClassicInterface.enabled = "1".equals(SET.getProperty("classicui"));
     }
 
     static void saveSettings() {
         SET.setProperty("wasd", wasd ? "1" : "0");
+        SET.setProperty("chatlock", lockChatAfterSend ? "1" : "0");
         SET.setProperty("stretch", stretch ? "1" : "0");
         SET.setProperty("panel", panelVisible ? "1" : "0");
         SET.setProperty("mute", muted ? "1" : "0");
@@ -172,11 +194,16 @@ public final class ModHook {
         SET.setProperty("remember", rememberLogin ? "1" : "0");
         SET.setProperty("idle", Integer.toString(idleChoice));
         SET.setProperty("postcutoff", postCutoff ? "1" : "0");
+        SET.setProperty("classicui", ClassicInterface.enabled ? "1" : "0");
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 
     /** When set, the scene only draws up to the player's own floor, so roofs and upper floors are never drawn. */
     public static volatile boolean noRoofs;
+
+    /** WASD mode: lock the chatbox again after Enter sends a line. */
+    static volatile boolean lockChatAfterSend;
+    static void setLockChatAfterSend(boolean b) { lockChatAfterSend = b; saveSettings(); }
 
     static boolean isWasd() { return wasd; }
     static void setWasd(boolean b) { wasd = b; chatFocus = false; saveSettings(); }
@@ -385,6 +412,13 @@ public final class ModHook {
                     clearTyped();
                     if (empty) chatFocus = false;
                     return null;
+                }
+                if (code == KeyEvent.VK_ENTER && lockChatAfterSend) {
+                    // Send the line, then hand the keys back to the WASD camera.
+                    boolean empty = typed().isEmpty();
+                    chatFocus = false;
+                    Class14.aBoolean245 = true;
+                    return empty ? null : e;
                 }
                 return e;                                   // Enter sends the line; chat stays focused
             }

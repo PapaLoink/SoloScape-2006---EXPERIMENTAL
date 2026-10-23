@@ -85,6 +85,25 @@ public final class PacketSender {
         }
     }
 
+    /** Legacy component -> 443 widget; with the classic interface, the classic combat tab's widget. */
+    private int translateComponent(int legacyId) {
+        return this.translateComponent(legacyId, null);
+    }
+
+    private int translateComponent(int legacyId, String payload) {
+        if (this.player.classicSidebar) {
+            int classic = ClassicCombat.component(legacyId);
+            if (classic != -1) return classic;
+        }
+        return InterfaceBridge.translate(legacyId, payload);
+    }
+
+    /** Classic combat tabs show special energy from varp 300 instead of moving bar segments. */
+    private int translatePositionComponent(int legacyId, String payload) {
+        if (this.player.classicSidebar && ClassicCombat.component(legacyId) != -1) return InterfaceBridge.UNMAPPED;
+        return InterfaceBridge.translate(legacyId, payload);
+    }
+
     public final void sendRevision443MusicTrack(String name, int trackId) {
         this.sendRevision443InterfaceText("AUTO", 239 << 16 | 183);
         this.sendInterfaceText(name, 4439);
@@ -625,7 +644,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "zoom=" + value2 + " rotation=" + value32 + " angle=" + value42);
+            interfaceId = this.translateComponent(interfaceId, "zoom=" + value2 + " rotation=" + value32 + " angle=" + value42);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(11);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 147);
@@ -673,7 +692,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "x=" + value2 + " y=" + value32);
+            interfaceId = this.translatePositionComponent(interfaceId, "x=" + value2 + " y=" + value32);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(9);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 232);
@@ -805,7 +824,7 @@ public final class PacketSender {
         if (slot < 0 || slot > 32767) {
             return this;
         }
-        componentId = InterfaceBridge.translate(componentId, "slot=" + slot + " item=" + (itemStack == null ? -1 : itemStack.getId()) + " amount=" + amount);
+        componentId = this.translateComponent(componentId, "slot=" + slot + " item=" + (itemStack == null ? -1 : itemStack.getId()) + " amount=" + amount);
         if (componentId == InterfaceBridge.UNMAPPED) {
             return this;
         }
@@ -873,7 +892,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            itemId = InterfaceBridge.translate(itemId, "slots=" + itemStackArray.length);
+            itemId = this.translateComponent(itemId, "slots=" + itemStackArray.length);
             if (itemId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(8192);
             packetWriter.startVariableShortPacket(this.player.getOutboundCipher(), 228);
@@ -1042,8 +1061,10 @@ public final class PacketSender {
         }
         if (ServerSettings.clientBuild == 443) {
             boolean clear = value2 == -1;
+            int legacyGroup = value2;
             value2 = InterfaceBridge.translateGroup(value2, "tab=" + interfaceId);
             if (value2 == InterfaceBridge.UNMAPPED && !clear) return this;
+            value2 = ClassicSidebar.tabGroup(this.player, interfaceId, legacyGroup, value2);
             PacketWriter packetWriter = PacketBuffer.allocateWriter(4);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 90);
             packetWriter.writeByte(interfaceId);
@@ -1256,7 +1277,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "scroll=" + value2);
+            interfaceId = this.translateComponent(interfaceId, "scroll=" + value2);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(7);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 88);
@@ -1446,7 +1467,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "rgb=" + color.getRGB());
+            interfaceId = this.translateComponent(interfaceId, "rgb=" + color.getRGB());
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             int rgb555 = (color.getRed() >> 3 & 0x1F) << 10
                     | (color.getGreen() >> 3 & 0x1F) << 5
@@ -1477,7 +1498,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId2 = InterfaceBridge.translate(interfaceId2, "text=\"" + interfaceId + "\"");
+            interfaceId2 = this.translateComponent(interfaceId2, "text=\"" + interfaceId + "\"");
             if (interfaceId2 == InterfaceBridge.UNMAPPED) return this;
             return this.sendRevision443InterfaceText(interfaceId, interfaceId2);
         }
@@ -1608,7 +1629,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "itemModel=" + value32 + " legacyZoom=" + value2);
+            interfaceId = this.translateComponent(interfaceId, "itemModel=" + value32 + " legacyZoom=" + value2);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(11);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 137);
@@ -1643,7 +1664,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "model=" + value2);
+            interfaceId = this.translateComponent(interfaceId, "model=" + value2);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(7);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 24);
@@ -1717,7 +1738,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "animation=" + value2);
+            interfaceId = this.translateComponent(interfaceId, "animation=" + value2);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(7);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 95);
@@ -1766,7 +1787,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId);
+            interfaceId = this.translateComponent(interfaceId);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(5);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 31);
@@ -1786,7 +1807,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            int packedComponentId = InterfaceBridge.translate(legacyComponentId, "npc=" + npcId);
+            int packedComponentId = this.translateComponent(legacyComponentId, "npc=" + npcId);
             if (packedComponentId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(7);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 227);
@@ -1949,6 +1970,7 @@ public final class PacketSender {
             // Legacy autocast varp 108 has no native 443 counterpart.
             this.sendConfig(439, this.player.isAutocastEnabled() ? 256 : 0);
             this.sendConfig(43, this.player.isAutocastEnabled() ? 3 : this.player.getFightMode());
+            ClassicSidebar.refreshAutocast(this.player);
             return;
         }
         if (this.player.getAutocastSpell() == null) {
@@ -1966,7 +1988,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            value2 = InterfaceBridge.translate(value2, "hidden=" + (interfaceId != 0));
+            value2 = this.translateComponent(value2, "hidden=" + (interfaceId != 0));
             if (value2 == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(6);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 234);
@@ -2025,7 +2047,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "visible=" + interfaceId2);
+            interfaceId = this.translateComponent(interfaceId, "visible=" + interfaceId2);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(6);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 234);
@@ -2047,7 +2069,7 @@ public final class PacketSender {
             return this;
         }
         if (ServerSettings.clientBuild == 443) {
-            interfaceId = InterfaceBridge.translate(interfaceId, "x=" + value2 + " y=" + value32);
+            interfaceId = this.translatePositionComponent(interfaceId, "x=" + value2 + " y=" + value32);
             if (interfaceId == InterfaceBridge.UNMAPPED) return this;
             PacketWriter packetWriter = PacketBuffer.allocateWriter(9);
             packetWriter.writeOpcode(this.player.getOutboundCipher(), 232);
@@ -2082,6 +2104,10 @@ public final class PacketSender {
     }
 
     public final void refreshSpecialEnergyBar(int value5) {
+        // Classic combat tabs read special energy from varp 300 on LostCity's 0-1000 scale.
+        if (!this.player.isBot && this.player.classicSidebar) {
+            VarpPacket.send(this.player, 300, this.player.getSpecialEnergy() * 10);
+        }
         int value2 = 10;
         int specialEnergy = this.player.getSpecialEnergy() / 10;
         int index = 0;

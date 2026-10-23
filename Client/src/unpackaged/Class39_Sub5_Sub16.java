@@ -108,23 +108,19 @@ public class Class39_Sub5_Sub16 extends SubNode
 		    JKeyListener.aClass39_Sub5_Sub10_Sub4_629.method695(209, 9);
 	    }
 	    if (is[0] != -1 && i_4_ != 0)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[0].method695(29, 13);
+		drawSideIcon(0, 29, 13);
 	    if (is[1] != -1 && i_4_ != 1)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[1].method695(53, 11);
+		drawSideIcon(1, 53, 11);
 	    if (is[2] != -1 && i_4_ != 2)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[2].method695(82, 11);
+		drawSideIcon(2, 82, 11);
 	    if (is[3] != -1 && i_4_ != 3)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[3].method695(115,
-								       12);
+		drawSideIcon(3, 115, 12);
 	    if (is[4] != -1 && i_4_ != 4)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[4].method695(153,
-								       13);
+		drawSideIcon(4, 153, 13);
 	    if (is[5] != -1 && i_4_ != 5)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[5].method695(180,
-								       11);
+		drawSideIcon(5, 180, 11);
 	    if (is[6] != -1 && i_4_ != 6)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[6].method695(208,
-								       13);
+		drawSideIcon(6, 208, 13);
 	}
 	BufferedFile.aClass57_346.method1006(10);
 	Class68.aClass39_Sub5_Sub10_Sub4_1189.method695(0, 0);
@@ -148,20 +144,17 @@ public class Class39_Sub5_Sub16 extends SubNode
 		    Class30.aClass39_Sub5_Sub10_Sub4_539.method695(229, 0);
 	    }
 	    if (is[8] != -1 && i_4_ != 8)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[7].method695(74, 2);
+		drawSideIcon(7, 74, 2);
 	    if (is[9] != -1 && i_4_ != 9)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[8].method695(102, 3);
+		drawSideIcon(8, 102, 3);
 	    if (is[10] != -1 && i_4_ != 10)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[9].method695(137, 4);
+		drawSideIcon(9, 137, 4);
 	    if (is[11] != -1 && i_4_ != 11)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[10].method695(174,
-									2);
+		drawSideIcon(10, 174, 2);
 	    if (is[12] != -1 && i_4_ != 12)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[11].method695(201,
-									2);
+		drawSideIcon(11, 201, 2);
 	    if (is[13] != -1 && i_4_ != 13)
-		Class55.aClass39_Sub5_Sub10_Sub4Array1243[12].method695(226,
-									2);
+		drawSideIcon(12, 226, 2);
 	}
 	try {
 	    Graphics graphics = Class41.aCanvas778.getGraphics();
@@ -202,4 +195,10 @@ public class Class39_Sub5_Sub16 extends SubNode
 	aClass3_1987 = Class39_Sub5_Sub9.createJstring("From");
 	aClass3_1991 = aClass3_1987;
     }
+    /** Sidebar icon slot index at (x, y): the 2004 icon with the classic interface setting, else the cache icon. */
+    private static void drawSideIcon(int index, int x, int y) {
+	if (!ClassicInterface.drawSideIcon(index, x, y))
+	    Class55.aClass39_Sub5_Sub10_Sub4Array1243[index].method695(x, y);
+    }
+
 }

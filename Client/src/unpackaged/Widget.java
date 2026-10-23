@@ -28,6 +28,8 @@ import jagex.utils.Cache;
 public class Widget extends SubNode
 {
     public DirectColorSprite runtimeSprite;
+    /** Bundled sprite shown while the widget's condition is true (IF1 activegraphic). */
+    public DirectColorSprite runtimeActiveSprite;
     public int anInt1994;
     public static Cache varbitCache;
     public int anInt1996;
@@ -1051,6 +1053,7 @@ public class Widget extends SubNode
     
     public DirectColorSprite method774(int i, boolean bool) {
 	Class39_Sub5_Sub12.aBoolean1856 = false;
+        if (bool && runtimeActiveSprite != null) return runtimeActiveSprite;
         if (runtimeSprite != null) return runtimeSprite;
 	int i_60_;
 	if (!bool)

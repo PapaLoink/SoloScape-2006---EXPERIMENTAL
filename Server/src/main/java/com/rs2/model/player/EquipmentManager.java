@@ -628,8 +628,9 @@ public final class EquipmentManager {
         } else {
             ((Player)value).packetSender.sendConfig(43, this.player.getFightMode());
         }
+        // The 443 tab has no weapon picture; the classic (2004) tab does (if_setobject at zoom 200).
         if (weaponProfile.getInterfaceDefinition().getWeaponModelWidgetId() != -1
-                && ServerSettings.clientBuild != 443) {
+                && (ServerSettings.clientBuild != 443 || this.player.classicSidebar)) {
             value = this.player;
             ((Player)value).packetSender.sendInterfaceModel(weaponProfile.getInterfaceDefinition().getWeaponModelWidgetId(), 200, itemStack.getId());
         }

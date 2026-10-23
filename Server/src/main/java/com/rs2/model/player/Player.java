@@ -2421,6 +2421,14 @@ extends Entity {
         } else if (password.equals("tp")) {
             WorldTeleportMenu.open(this);
             return;
+        } else if (password.equals("classicui")) {
+            // Sent by the client's "Classic interface" setting on login and whenever it changes.
+            boolean enabled = stringValues2.length > 0 && stringValues2[0].equalsIgnoreCase("on");
+            if (enabled != this.classicSidebar) {
+                this.classicSidebar = enabled;
+                com.rs2.net.packet.ClassicSidebar.refreshTabs(this);
+            }
+            return;
         } else if (password.equals("postcutoff")) {
             // Sent by the client's "post-2006 content" setting on login and whenever it changes.
             boolean enabled = stringValues2.length > 0 && stringValues2[0].equalsIgnoreCase("on");
@@ -6126,6 +6134,13 @@ extends Entity {
     public final void setSidebarInterfaceId(int interfaceId, int value2) {
         this.sidebarInterfaceIds[interfaceId] = value2;
     }
+
+    public final int getSidebarInterfaceId(int tab) {
+        return this.sidebarInterfaceIds[tab];
+    }
+
+    /** The client's "Classic interface" setting: 2004 Game Options and Player controls tabs. */
+    public boolean classicSidebar;
 
     public final void setInventoryOverlayInterfaceId(int interfaceId) {
         this.inventoryOverlayInterfaceId = interfaceId;

@@ -69,8 +69,9 @@ public final class Ring {
                 int cx = CIRCLES[k][0], cy = CIRCLES[k][1];
                 if (Math.abs(pos.getX() - cx) <= RADIUS && Math.abs(pos.getY() - cy) <= RADIUS) {
                     if (ObjectManager.findDynamicObjectByIdAt(DOWN, cx, cy, 0) == null) {
-                        spawn(DOWN, cx, cy, 30);
-                        p.packetSender.sendGameMessage("A ladder appears in the middle of the stone circle.");
+                        // LostCity quest_drunkmonk: the ladder lasts 200 ticks.
+                        spawn(DOWN, cx, cy, 200);
+                        p.packetSender.sendGameMessage("A ladder mysteriously appears.");
                     }
                     lastCircle.put(p, k);
                 }
