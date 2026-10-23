@@ -1,0 +1,14 @@
+# Saved login
+login.dat
+
+# Server saves
+Server/data/characters/
+Server/data/dead_hcim_characters/
+Server/data/backups/
+Server/data/server.db
+
+# Build output
+Client/classes/
+Client/*.jar
+Server/dist/
+Server/build/
