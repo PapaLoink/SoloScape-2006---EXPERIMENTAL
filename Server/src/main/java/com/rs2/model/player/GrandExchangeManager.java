@@ -13,6 +13,10 @@ public final class GrandExchangeManager {
     private static int instantPriceFluctuationPercent = 0;
 
     public static void openGrandExchange(Player player) {
+        if (!ServerSettings.content2007Enabled) {
+            player.packetSender.sendGameMessage("The Grand Exchange is post-2006 content. Enable it in the client settings.");
+            return;
+        }
         if (player.gameMode != 0) {
             player.packetSender.sendGameMessage("You are not playing on normal gamemode and cannot use grand exchange.");
             return;
@@ -27,6 +31,10 @@ public final class GrandExchangeManager {
     }
 
     public static void openGrandExchangeCollection(Player player) {
+        if (!ServerSettings.content2007Enabled) {
+            player.packetSender.sendGameMessage("The Grand Exchange is post-2006 content. Enable it in the client settings.");
+            return;
+        }
         if (player.gameMode != 0) {
             player.packetSender.sendGameMessage("You are not playing on normal gamemode and cannot use grand exchange.");
             return;

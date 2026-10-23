@@ -1,0 +1,12 @@
+/Server/qa-output
+Server/data/errors.txt
+Server/docs/combat-audio.md
+/Server/docs
+/Server/build-release
+
+# Play launchers are created after a successful build.
+/Client/Play-Client.bat
+/Server/Start-Server.bat
+/Play-Client.bat
+/Start-Server.bat
+/qa-output

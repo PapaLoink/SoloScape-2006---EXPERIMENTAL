@@ -75,6 +75,11 @@ public final class NpcActionRouter {
                 + (slot + 1) + " label=" + npc.getDefinition().getAction(slot) + " route=" + action);
         if (action == Action.LEGACY || action == Action.ATTACK) return false;
         if (action == Action.NONE) return true;
+        if (action == Action.PELT) {
+            // Claim the approach immediately, before generic NPC following runs.
+            new RoutedNpcActionTask(player, player.nextActionSequence(), npc, slot, action).execute();
+            return true;
+        }
         if (action == Action.TALK || action == Action.WOODCUT) {
             InteractionDispatcher.setCurrentInteractionType(InteractionType.FIRST_NPC);
             InteractionDispatcher.dispatchCurrentInteraction(player);

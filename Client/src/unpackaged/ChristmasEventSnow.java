@@ -110,6 +110,65 @@ public final class ChristmasEventSnow {
 
     private ChristmasEventSnow() {}
 
+    // Original white stone/fleck decorations from the snowy Gublinch cave.
+    private static final int[] GROUND_SNOW_OBJECTS = {20129, 20130, 20131};
+
+    /** Request these extra scenery models during the normal region readiness pass. */
+    static boolean groundSnowModelsReady() {
+        if (Class63.aBoolean1120 || Class65.anInt1145 > 2879
+                || Class65.anInt1145 + 103 < 2816 || JKeyListener.anInt618 > 3199
+                || JKeyListener.anInt618 + 103 < DUNGEON_ENTRANCE_Y - DUNGEON_SNOW_RADIUS) {
+            return true;
+        }
+        boolean ready = true;
+        for (int id : GROUND_SNOW_OBJECTS) {
+            ready &= Canvas_Sub1.method40(id, (byte) 65).method731(0);
+        }
+        return ready;
+    }
+
+    /** Build persistent, non-blocking snow scenery before terrain lighting/cleanup. */
+    static void buildOutdoorGroundSnow(Class38 scene) {
+        byte[][][] floors = Class39_Sub14.aByteArrayArrayArray1516;
+        byte[][][] overlays = Class33.aByteArrayArrayArray596;
+        if (!Class63.aBoolean1120 && floors != null && overlays != null) {
+            for (int x = 1; x < 103; x++) for (int y = 1; y < 103; y++) {
+                // Extend the white ground to the dry approach tiles with snowfall.
+                // Keep water, lava, paths, bridge tiles and blocked terrain intact.
+                if (isNearChristmasDungeon(Class65.anInt1145 + x, JKeyListener.anInt618 + y, 0)
+                        && floors[0][x][y] != 0 && overlays[0][x][y] == 0
+                        && (Class55.tileFlags[0][x][y] & 3) == 0) {
+                    floors[0][x][y] = 58;
+                }
+            }
+        }
+        captureGroundSnow();
+        if (Class63.aBoolean1120 || scene == null || floors == null || overlays == null) return;
+
+        for (int x = 1; x < 103; x++) for (int y = 1; y < 103; y++) {
+            int worldX = baseX + x, worldY = baseY + y;
+            if ((!isSnowArea(worldX, worldY, 0) && !isNearChristmasDungeon(worldX, worldY, 0))
+                    || floors[0][x][y] == 0 || overlays[0][x][y] != 0
+                    || (Class55.tileFlags[0][x][y] & 3) != 0
+                    || scene.method400(0, x, y) != null) continue;
+
+            // World coordinates keep the pattern stable across region reloads/rebasing.
+            int seed = worldX * 73428767 ^ worldY * 912931;
+            int id = GROUND_SNOW_OBJECTS[(seed & 0x7fffffff) % GROUND_SNOW_OBJECTS.length];
+            int rotation = (seed >>> 8) & 3;
+            int h00 = Class67.heightMap[0][x][y];
+            int h01 = Class67.heightMap[0][x][y + 1];
+            int h11 = Class67.heightMap[0][x + 1][y + 1];
+            int h10 = Class67.heightMap[0][x + 1][y];
+            Model model = Canvas_Sub1.method40(id, (byte) 65)
+                    .method742(66, 22, h00, rotation, h01, h11, h10);
+            int tag = 0xc0000000 | (id << 14) | (y << 7) | x;
+            // Place only in the scene: never alter walking/projectile collision maps.
+            scene.method381(0, x, y, (h00 + h01 + h11 + h10) >> 2,
+                    model, tag, 22 | (rotation << 6));
+        }
+    }
+
     /** Record the cache's footprint before the temporary floor arrays are discarded. */
     static void captureGroundSnow() {
         baseX = Class65.anInt1145;

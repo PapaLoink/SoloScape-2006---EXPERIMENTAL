@@ -6,6 +6,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Properties;
+import jagex.io.FrameBuffer;
 import jagex.utils.Cache;
 import jagex.utils.JString;
 import jagex.utils.SubNode;
@@ -63,7 +64,7 @@ public final class ModHook {
                 relayout();
             } catch (Throwable t) { t.printStackTrace(); }
         });
-        new javax.swing.Timer(250, e -> { overlayTick(); loginTick(); }).start();
+        new javax.swing.Timer(250, e -> { overlayTick(); loginTick(); if (!inGame()) postCutoffSent = false; }).start();
     }
 
     // ---- remembered login (./login.dat, base64 of the raw field bytes)
@@ -133,6 +134,21 @@ public final class ModHook {
     }
     static void setIdle(int c) { idleChoice = c; saveSettings(); }
 
+    // post-2006 content (God Wars Dungeon, Grand Exchange): the server is told on login and whenever this changes
+    public static volatile boolean postCutoff;
+    private static volatile boolean postCutoffSent;
+    static void setPostCutoff(boolean b) { postCutoff = b; postCutoffSent = false; saveSettings(); }
+
+    /** Game thread, once per logged-in cycle: sends the post-2006 setting as a ::postcutoff command when needed. */
+    public static void serverSettingsTick() {
+        if (postCutoffSent || !inGame()) return;
+        postCutoffSent = true;
+        FrameBuffer.outgoingGameBuffer.putFrame(174);
+        JString cmd = Class39_Sub5_Sub9.createJstring(postCutoff ? "postcutoff on" : "postcutoff off");
+        FrameBuffer.outgoingGameBuffer.putByte(cmd.getLength() + 1);
+        FrameBuffer.outgoingGameBuffer.putJstr((byte) 81, cmd);
+    }
+
     static void loadSettings() {
         try (InputStream in = new FileInputStream("./modsettings.properties")) { SET.load(in); } catch (Throwable t) { }
         if (SET.getProperty("wasd") != null) wasd = SET.getProperty("wasd").equals("1");
@@ -143,6 +159,7 @@ public final class ModHook {
         noRoofs = "1".equals(SET.getProperty("noroofs"));
         rememberLogin = !"0".equals(SET.getProperty("remember"));
         try { idleChoice = Math.max(0, Math.min(4, Integer.parseInt(SET.getProperty("idle", "0")))); } catch (Exception e) { idleChoice = 0; }
+        postCutoff = "1".equals(SET.getProperty("postcutoff"));
     }
 
     static void saveSettings() {
@@ -154,6 +171,7 @@ public final class ModHook {
         SET.setProperty("noroofs", noRoofs ? "1" : "0");
         SET.setProperty("remember", rememberLogin ? "1" : "0");
         SET.setProperty("idle", Integer.toString(idleChoice));
+        SET.setProperty("postcutoff", postCutoff ? "1" : "0");
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 

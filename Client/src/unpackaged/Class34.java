@@ -636,6 +636,8 @@ public abstract class Class34 {
                             StillGraphic.method535((byte) 106, 4000);
                             FrameBuffer.outgoingGameBuffer.putFrame(192);
                         }
+                        ModHook.serverSettingsTick();
+                        Class45.refreshMusicLoop();
                         Class41.anInt780++;
                         Class39_Sub4.anInt1335++;
                         FileLoader.anInt1290++;

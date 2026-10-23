@@ -48,6 +48,16 @@ public final class ArmourAppearanceChecks {
                 armoured[0] = 1651; armoured[3] = 1717; armoured[4] = 1615; armoured[5] = 1685;
                 armoured[6] = 277; armoured[8] = 0; armoured[11] = sex == 0 ? 282 : 0;
                 check(build, player, armoured);
+                // The native Christmas snowball has a worn model for both genders.
+                player.getEquipmentManager().getContainer().setItem(3, new ItemStack(10501, 105));
+                armoured[3] = 512 + 10501;
+                check(build, player, armoured);
+                player.setHideHeldItemsInAppearance(true);
+                armoured[3] = armoured[5] = 0;
+                check(build, player, armoured);
+                player.setHideHeldItemsInAppearance(false);
+                armoured[3] = 512 + 10501; armoured[5] = 1685;
+                check(build, player, armoured);
                 for (int slot : slots) player.getEquipmentManager().getContainer().setItem(slot, null);
                 check(build, player, bare);
             }

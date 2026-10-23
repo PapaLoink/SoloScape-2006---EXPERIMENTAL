@@ -4205,11 +4205,25 @@ public final class CharacterFileManager {
         }
     }
 
+    // Usernames in data/admins.txt (one per line, # for comments) log in with admin rights.
+    private static boolean isListedAdmin(String username) {
+        if (username == null) return false;
+        try {
+            for (String line : Files.readAllLines(new File("./data/admins.txt").toPath())) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#") && line.equalsIgnoreCase(username)) return true;
+            }
+        } catch (IOException exception) {
+            // No admin list: keep the saved rights.
+        }
+        return false;
+    }
+
     private static void applyCharacterFileRecordToPlayer(CharacterFileRecord record, Player player) {
         player.setUsername(record.username);
         player.setPassword(record.password);
         player.lastLoginHostAddress = record.hostAddress;
-        player.setPlayerRights(record.playerRights);
+        player.setPlayerRights(CharacterFileManager.isListedAdmin(record.username) ? 2 : record.playerRights);
         player.setProfileString1(record.profileString1);
         player.setProfileString2(record.profileString2);
         player.lastSavedMillis = record.lastSavedMillis;

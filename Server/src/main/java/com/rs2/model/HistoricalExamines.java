@@ -10,6 +10,7 @@ import java.util.Map;
 
 /** Server-side descriptions absent from the revision 443 client cache. */
 public final class HistoricalExamines {
+    private static final Map<String, String[]> REVISION_443 = loadFile("examines443.tsv");
     private static final Map<String, String[]> TEXTS = loadFile("examines2006.tsv");
     private static final Map<String, String[]> SUPPLEMENTS = loadFile("examines2009scape.tsv");
 
@@ -38,7 +39,9 @@ public final class HistoricalExamines {
     }
 
     public static String find(String kind, int id, String name) {
-        String[] text = TEXTS.get(kind + ":" + id);
+        String[] text = REVISION_443.get(kind + ":" + id);
+        if (text != null && text[0].equalsIgnoreCase(name)) return text[1];
+        text = TEXTS.get(kind + ":" + id);
         // Custom replacements must not inherit the original entity's description.
         if (text != null && (text[0].isEmpty() || text[0].equalsIgnoreCase(name))) return text[1];
         text = SUPPLEMENTS.get(kind + ":" + id);

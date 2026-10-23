@@ -666,6 +666,10 @@ final class ModPanel extends JPanel {
             rem.setFocusable(false);
             rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });
             add(rem, c); c.gridy++;
+            JCheckBox post = new JCheckBox("Post-2006 content (God Wars, Grand Exchange)", ModHook.postCutoff);
+            post.setToolTipText("Content added after revision 443 (18 December 2006)");
+            post.addActionListener(e -> { ModHook.setPostCutoff(post.isSelected()); ModHook.focusGame(); });
+            add(post, c); c.gridy++;
             add(new JLabel("Log out when idle for:"), c); c.gridy++;
             JComboBox<String> idle = new JComboBox<>(ModHook.IDLE_NAMES);
             idle.setSelectedIndex(ModHook.idleChoice);

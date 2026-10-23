@@ -48,10 +48,13 @@ public final class GodWarsDungeonManager {
     private static String[] generalGraardorBattleCries = new String[]{"Death to our enemies!", "Brargh!", "Break their bones!", "For the glory of Bandos!", "Split their skulls!", "We feast on the bones of our enemies tonight!", "CHAAARGE!", "Crush them underfoot!", "All glory to Bandos!", "GRRRAAAAAR!", "FOR THE GLORY OF THE BIG HIGH WAR GOD!"};
     private static String[] commanderZilyanaBattleCries = new String[]{"Death to the enemies of the light!", "Slay the evil ones!", "Saradomin lend me strength!", "By the power of Saradomin!", "May Saradomin be my sword!", "Good will always triumph!", "Forward! Our allies are with us!", "Saradomin is with us!", "In the name of Saradomin!", "All praise Saradomin!", "Attack! Find the Godsword!"};
 
+    private static boolean godWarsNpcsSpawned;
+
     public static void spawnGodWarsNpcs() {
-        if (ServerSettings.freeToPlayWorld) {
+        if (ServerSettings.freeToPlayWorld || godWarsNpcsSpawned) {
             return;
         }
+        godWarsNpcsSpawned = true;
         GameplayHelper.spawnNpc(6203, 2924, 5322, 2, 1);
         GameplayHelper.spawnNpc(6204, 2920, 5328, 2, 1);
         GameplayHelper.spawnNpc(6206, 2932, 5328, 2, 1);

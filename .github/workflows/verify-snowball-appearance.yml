@@ -1,0 +1,44 @@
+name: Verify Snowball Appearance
+on:
+  push:
+    branches:
+      - feature/fix-held-snowball
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/test/java/ArmourAppearanceChecks.java'
+      - 'Server/src/test/java/GublinchChristmasEventChecks.java'
+      - 'Client/tests/SnowballAppearanceChecks.java'
+      - 'Client/tests/ChildAnimationChecks.java'
+      - '.github/workflows/verify-snowball-appearance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  snowball-appearance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile client, server and focused checks
+        working-directory: Server
+        run: |
+          mkdir -p /tmp/snowball-classes data/characters
+          find src/main/java ../Client/src -name '*.java' > /tmp/snowball-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/snowball-classes @/tmp/snowball-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/snowball-classes:lib/*' -d /tmp/snowball-classes src/test/java/ArmourAppearanceChecks.java src/test/java/GublinchChristmasEventChecks.java ../Client/tests/SnowballAppearanceChecks.java ../Client/tests/ChildAnimationChecks.java
+      - name: Check actual appearance packets and native hand models
+        working-directory: Server
+        run: |
+          java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' ArmourAppearanceChecks
+          java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' unpackaged.SnowballAppearanceChecks
+      - name: Check rescued child animation meshes
+        working-directory: Server
+        run: java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' unpackaged.ChildAnimationChecks
+      - name: Check Christmas event and pelting
+        working-directory: Server
+        run: timeout 180 java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' GublinchChristmasEventChecks

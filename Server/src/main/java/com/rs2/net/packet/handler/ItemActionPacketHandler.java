@@ -661,6 +661,16 @@ implements PacketHandler {
             }
             return;
         }
+        // Native 443 equipment lists Remove first and Operate second.
+        // Legacy option 2 otherwise routes to bank/shop amount-five handling.
+        if (widgetOption && interfaceId == 1688 && option == 2
+                && itemId == com.rs2.model.quest.event.GublinchChristmasEvent.REINDEER_HAT) {
+            if (slot == 0 && player.isInterfaceIdOpen(1688)
+                    && player.getEquipmentManager().getItemIdAtSlot(0) == itemId) {
+                com.rs2.model.quest.event.GublinchChristmasEvent.operateHat(player);
+            }
+            return;
+        }
         if (widgetOption && handleRevision443BankShopItemOption(player, packedInterface, slot, itemId, option)) {
             return;
         }
@@ -1477,13 +1487,16 @@ implements PacketHandler {
         BarrowsRepairHandler barrowsRepairHandler = BarrowsRepairHandler.forItem(itemStack);
         if (itemStack.getDefinition().hasDestroyOption() || barrowsRepairHandler != null && itemStack.getDefinition().isUntradeable()) {
             String destroyMessage = "Dropping this item will make you lose it forever.";
+            String destroyMessage2 = "";
             if (itemStack.getId() == 10507 || itemStack.getId() == 10508) {
-                destroyMessage = "Diango in Draynor Village can replace this Christmas reward.";
+                // 2006 wording from the RuneScape wiki item pages, split across the dialog's two lines.
+                destroyMessage = "You got this " + (itemStack.getId() == 10507 ? "hat" : "tree") + " from Shanty Claws;";
+                destroyMessage2 = "you can get another from Diango.";
             }
             if (barrowsRepairHandler != null) {
                 destroyMessage = "Dropping this item will make it degrade to 0.";
             }
-            String[][] destroyDialogRows = new String[][]{{"Are you sure you want to drop this item?", "14174"}, {"Yes.", "14175"}, {"No.", "14176"}, {"", "14177"}, {destroyMessage, "14182"}, {"", "14183"}, {itemStack.getDefinition().getName(), "14184"}};
+            String[][] destroyDialogRows = new String[][]{{"Are you sure you want to drop this item?", "14174"}, {"Yes.", "14175"}, {"No.", "14176"}, {"", "14177"}, {destroyMessage, "14182"}, {destroyMessage2, "14183"},{itemStack.getDefinition().getName(), "14184"}};
             player.packetSender.sendInterfaceSlotItem(itemStack, 0, 14171, 1);
             int rowIndex = 0;
             while (rowIndex < 7) {

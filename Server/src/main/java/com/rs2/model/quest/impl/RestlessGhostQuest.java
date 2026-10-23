@@ -1,6 +1,7 @@
 package com.rs2.model.quest.impl;
 
 import com.rs2.cache.InterfaceDefinition;
+import com.rs2.ServerSettings;
 import com.rs2.model.GameplayHelper;
 import com.rs2.model.Position;
 import com.rs2.model.World;
@@ -22,6 +23,12 @@ import java.util.ArrayList;
 
 public final class RestlessGhostQuest
 extends QuestScript {
+    // Revision 443's legacy morph (2146) resolves to altar models.
+    // Use the concrete open, headless coffin definition instead.
+    public static int getOpenCoffinId() {
+        return ServerSettings.cacheVersion == 443 ? 15052 : 2146;
+    }
+
     public RestlessGhostQuest(int value2) {
         super(12);
         super.setQuestPointReward(1);
@@ -44,7 +51,7 @@ extends QuestScript {
 
     @Override
     public final boolean handleItemOnObject(Player objectId, int objectId2, int value2, int value32) {
-        if (((Player)objectId).getQuestState(this.getQuestId()) >= 5 && objectId2 == 553 && value2 == 2146 && Npc.findByDefinitionId(457) != null) {
+        if (((Player)objectId).getQuestState(this.getQuestId()) >= 5 && objectId2 == 553 && value2 == getOpenCoffinId() && Npc.findByDefinitionId(457) != null) {
             Player player = (Player)objectId;
             player.packetSender.sendGameMessage("You put the skull in the coffin.");
             ObjectManager.getInstance().removeDynamicObjectAt(3249, 3192, 0, 0);
@@ -108,10 +115,11 @@ extends QuestScript {
 
     @Override
     public final boolean handleFirstObjectAction(Player player, int objectId, int value6, int value32, int value42) {
+        if (player.getPosition().getPlane() != 0) return false;
         if (objectId == 2145 && value6 == 3249 && value32 == 3192) {
             if (value42 >= 2) {
                 ObjectManager.getInstance().removeDynamicObjectAt(3249, 3192, 0, 0);
-                ObjectManager.getInstance().addDynamicObject(new DynamicObject(2146, 3249, 3192, 0, 0, 10, 2145, 999999999), true);
+                ObjectManager.getInstance().addDynamicObject(new DynamicObject(getOpenCoffinId(), 3249, 3192, 0, 0, 10, 2145, 999999999), true);
                 Player player2 = player;
                 player2.packetSender.sendGameMessage("You open the coffin.");
                 if (Npc.findByDefinitionId(457) == null) {
@@ -128,7 +136,7 @@ extends QuestScript {
             }
             return true;
         }
-        if (objectId == 2146 && value6 == 3249 && value32 == 3192) {
+        if (objectId == getOpenCoffinId() && value6 == 3249 && value32 == 3192) {
             if (value42 >= 2) {
                 ObjectManager.getInstance().removeDynamicObjectAt(3249, 3192, 0, 0);
                 ObjectManager.getInstance().addDynamicObject(new DynamicObject(2145, 3249, 3192, 0, 0, 10, 2145, 999999999), true);
@@ -139,6 +147,18 @@ extends QuestScript {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public final boolean handleSecondObjectAction(Player player, int objectId, int x, int y, int questState) {
+        if (player.getPosition().getPlane() != 0 || x != 3249 || y != 3192
+                || (objectId != 2145 && objectId != getOpenCoffinId())) return false;
+        // Both 443 coffin definitions have Search in the second menu slot.
+        if (ServerSettings.cacheVersion != 443) return false;
+        player.packetSender.sendGameMessage(questState == 1
+                ? "The skeleton is now complete."
+                : "There is a skeleton without a skull in the coffin.");
+        return true;
     }
 
     @Override
@@ -192,7 +212,7 @@ extends QuestScript {
                     return true;
                 }
                 if (value2 == 9) {
-                    player.getDialogueManager().showNpcThreeLineDialogue("I believe he is currently living as a hermit in Lumbridge", "swamp. He has a little shack in the south-east of the", "swamps.", 591);
+                    player.getDialogueManager().showNpcThreeLineDialogue("I believe he is currently living as a hermit in Lumbridge", ServerSettings.cacheVersion == 443 ? "swamp. He has a little shack in the south-west of the" : "swamp. He has a little shack in the south-east of the", "swamps.", 591);
                     return true;
                 }
                 if (value2 == 10) {
@@ -229,7 +249,7 @@ extends QuestScript {
                     return true;
                 }
                 if (value2 == 4) {
-                    player.getDialogueManager().showNpcTwoLineDialogue("You'll have to go right into the eastern depths of the", "swamp, near the coastline. That is where his house is.", 591);
+                    player.getDialogueManager().showNpcTwoLineDialogue(ServerSettings.cacheVersion == 443 ? "You'll have to go right into the western depths of the" : "You'll have to go right into the eastern depths of the", ServerSettings.cacheVersion == 443 ? "swamp. That is where his house is." : "swamp, near the coastline. That is where his house is.", 591);
                     player.getDialogueManager().finishDialogue();
                     return true;
                 }

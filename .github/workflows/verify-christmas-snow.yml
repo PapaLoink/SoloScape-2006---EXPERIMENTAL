@@ -1,0 +1,31 @@
+name: Verify Christmas Snow
+on:
+  push:
+    branches:
+      - feature/outdoor-ground-snow
+  pull_request:
+    paths:
+      - 'Client/src/unpackaged/ChristmasEventSnow.java'
+      - 'Client/src/unpackaged/Class62_Sub2.java'
+      - 'Client/tests/ChristmasSnowChecks.java'
+      - '.github/workflows/verify-christmas-snow.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  christmas-snow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile client and server and check Christmas snow
+        working-directory: Server
+        run: |
+          mkdir -p /tmp/christmas-snow-classes ../qa-output
+          find src/main/java ../Client/src -name '*.java' > /tmp/christmas-snow-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/christmas-snow-classes @/tmp/christmas-snow-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/christmas-snow-classes:lib/*' -d /tmp/christmas-snow-classes ../Client/tests/ChristmasSnowChecks.java
+          java -Djava.awt.headless=true -cp '/tmp/christmas-snow-classes:lib/*:../Client/src' unpackaged.ChristmasSnowChecks

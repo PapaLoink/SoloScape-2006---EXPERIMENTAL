@@ -200,6 +200,20 @@ public class WoodcuttingHandler {
         this(entity, entity2, entity2.getPosition(), projectileDefinition);
     }
 
+    /** Override arrival for scripted projectiles with a fixed client-cycle timeline. */
+    public WoodcuttingHandler setEndDelay(int endDelay) {
+        if (endDelay <= this.projectileDefinition.getTiming().getStartDelay()) {
+            throw new IllegalArgumentException("Projectile arrival must follow its launch");
+        }
+        this.endDelay = endDelay;
+        return this;
+    }
+
+    /** Arrival time in 20 ms client cycles, including the launch delay. */
+    public int getEndDelay() {
+        return this.endDelay;
+    }
+
     public void sendProjectileToNearbyPlayers() {
         if (this.projectileDefinition.getProjectileId() == -1) {
             return;

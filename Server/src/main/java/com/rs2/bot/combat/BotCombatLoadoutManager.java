@@ -856,7 +856,8 @@ public final class BotCombatLoadoutManager {
             }
 
             int dragonClawsId = ItemDefinition.findIdByName("Dragon claws");
-            if (dragonClawsId > 0
+            if (ServerSettings.content2007Enabled
+                    && dragonClawsId > 0
                     && ItemDefinition.isDefined(dragonClawsId)
                     && player.getEquipmentManager().canEquipItem(dragonClawsId)) {
                 highTierPrimaryWeapons.add(dragonClawsId);

@@ -110,6 +110,21 @@ extends TickTask {
             CombatManager.stopCombat(entity);
             return;
         }
+        // Christmas snowballs are projectiles only for the separate Gublinch Pelt action.
+        // Remove them before selecting a normal NPC attack, so combat uses bare hands.
+        if (entity.isPlayer() && entity2.isNpc()
+                && !com.rs2.model.quest.event.GublinchChristmasEvent.isGublinch(((Npc)entity2).getNpcId())) {
+            Player player = (Player)entity;
+            if (player.getEquipmentManager().getItemIdAtSlot(3)
+                    == com.rs2.model.quest.event.GublinchChristmasEvent.SNOWBALL) {
+                player.getEquipmentManager().unequipSlot(3);
+                if (player.getEquipmentManager().getItemIdAtSlot(3)
+                        == com.rs2.model.quest.event.GublinchChristmasEvent.SNOWBALL) {
+                    CombatManager.stopCombat(entity);
+                    return;
+                }
+            }
+        }
         List attackOptions = new LinkedList();
         int distance = GameUtil.getDistance(entity.getPosition(), entity2.getPosition());
         entity.collectCombatAttackOptions(attackOptions, entity2, distance);

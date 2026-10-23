@@ -374,6 +374,7 @@ public class Class62_Sub2 extends Class62
 		    bool &= Class14.method207(false, i_24_, i_25_, is);
 		}
 	    }
+	    bool &= ChristmasEventSnow.groundSnowModelsReady();
 	    System.out.println("[MAPDBG] readiness ok=" + bool
 		    + " missingModels=" + RuntimeException_Sub1.anInt1222);
 	    if (!bool)
@@ -538,7 +539,7 @@ public class Class62_Sub2 extends Class62
 		}
 		Class53.method985(true, false);
 		Class62.method1045(false);
-		ChristmasEventSnow.captureGroundSnow();
+		ChristmasEventSnow.buildOutdoorGroundSnow(Class44.aClass38_836);
 		ClientScript.method479(-128, Class44.aClass38_836,
 					    (Class39_Sub5_Sub12
 					     .aClass27Array1857));

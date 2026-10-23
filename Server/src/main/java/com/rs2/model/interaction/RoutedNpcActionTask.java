@@ -52,13 +52,17 @@ public final class RoutedNpcActionTask extends TickTask {
             reject("This npc is not interested in interacting with you right now.");
             return;
         }
+        if (action == NpcActionRouter.Action.PELT) {
+            player.setInteractionTarget(npc);
+            com.rs2.model.quest.event.GublinchChristmasEvent.startPelting(player, npc);
+            stop();
+            return;
+        }
         if (player.isOverlapping(npc)) return;
         boolean bankCounter = action == NpcActionRouter.Action.BANK && npc.isBanker();
         // Fishing spots occupy water, so they do not require a walkable NPC tile.
         // Counter bankers retain their existing facing-position rule.
-        boolean withinReach = action == NpcActionRouter.Action.PELT
-                ? GameUtil.getDistance(player.getPosition(), npc.getPosition()) <= 6
-                : bankCounter ? npc.isFacingInteractionPosition(player.getPosition(), 2)
+        boolean withinReach = bankCounter ? npc.isFacingInteractionPosition(player.getPosition(), 2)
                 : player.isWithinReach(npc, 1);
         boolean needsWalkablePath = !bankCounter && action != NpcActionRouter.Action.FISH;
         if (!withinReach || needsWalkablePath
@@ -70,9 +74,6 @@ public final class RoutedNpcActionTask extends TickTask {
         player.getUpdateState().setFaceEntity(npc.getEncodedIndex());
         npc.getUpdateState().setFaceEntity(player.getEncodedIndex());
         switch (action) {
-            case PELT:
-                com.rs2.model.quest.event.GublinchChristmasEvent.startPelting(player, npc);
-                break;
             case BANK:
                 BankManager.openBank(player);
                 break;

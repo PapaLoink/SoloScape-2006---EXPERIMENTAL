@@ -39,6 +39,12 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
             MusicManager.setAutomaticMode(player, false);
             return true;
         }
+        if (child == 251) { // Native Loop toggle: the client loops songs while config 19 is 1.
+            player.configStates[19] = player.configStates[19] == 1 ? 0 : 1;
+            // Native 443 varp: sendConfig drops ids outside its verified legacy set.
+            com.rs2.net.packet.VarpPacket.send(player, 19, player.configStates[19]);
+            return true;
+        }
         return com.rs2.model.music.Music.play(player, child);
     }
 

@@ -1,0 +1,2 @@
+# Accounts listed here (one username per line) get admin rights when they log in.
+Test

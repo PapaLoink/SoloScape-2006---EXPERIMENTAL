@@ -185,7 +185,114 @@ public final class ChristmasSnowChecks {
         require(ChristmasEventSnow.isSnowArea(2844, 3152, 0),
                 "Snow moved after region rebase");
 
+        verifyOutdoorGroundSnow();
         System.out.println("Christmas snow checks passed: native footprint, snowballs, bright-tile flakes, ten-tile dungeon approach flakes, viewport clipping, overlay, instances and region rebasing.");
+    }
+
+    /** Exercise scene placement using the real cave definitions and model bytes. */
+    private static void verifyOutdoorGroundSnow() throws Exception {
+        final java.util.Map<Integer, byte[]> definitions;
+        final java.util.Map<Integer, byte[]> models = new java.util.HashMap<Integer, byte[]>();
+        try (Js5CacheStore store = new Js5CacheStore(new File("cache"))) {
+            definitions = store.readFiles(2, 6);
+            for (int id : new int[]{20129, 20130, 20131}) {
+                ObjectDefinition definition = new ObjectDefinition();
+                definition.decode(new Buffer(definitions.get(id)));
+                require(definition.anIntArray1960[0] == 22, "Snow asset is not ground decoration");
+                for (int model : definition.anIntArray1954) {
+                    byte[] bytes = store.readFiles(7, model).get(0);
+                    require(bytes != null, "Missing native cave snow model " + model);
+                    models.put(model, bytes);
+                }
+            }
+        }
+        Deque.objectFileLoader = new FileTable(false, false) {
+            @Override public byte[] lookupFile(int archive, int child) {
+                return archive == 6 ? definitions.get(child) : null;
+            }
+        };
+        jagex.world.actors.Npc.modelFileLoader = new FileTable(false, false) {
+            @Override public byte[] lookupFile(int archive, int child) {
+                return child == 0 ? models.get(archive) : null;
+            }
+            @Override public boolean isArchiveLoaded(int archive, int child) {
+                return child == 0 && models.containsKey(archive);
+            }
+        };
+        Class63.aBoolean1120 = false;
+        Class65.anInt1145 = 2816;
+        JKeyListener.anInt618 = 3136;
+        require(ChristmasEventSnow.groundSnowModelsReady(), "Native snow models not ready");
+        Class39_Sub14.aByteArrayArrayArray1516 = new byte[4][104][104];
+        Class33.aByteArrayArrayArray596 = new byte[4][104][104];
+        Class55.tileFlags = new byte[4][104][104];
+        Class67.heightMap = new int[4][105][105];
+        for (int[] row : Class67.heightMap[0]) Arrays.fill(row, 96);
+        byte[][][] floors = Class39_Sub14.aByteArrayArrayArray1516;
+        floors[0][7][4] = 58; // Native snow, outside the entrance radius.
+        floors[0][8][4] = 58; // An existing floor decoration must survive.
+        floors[0][9][4] = 58; // Snow underlay beneath water must stay undecorated.
+        Class33.aByteArrayArrayArray596[0][9][4] = 6;
+        floors[0][27][5] = 72; // Dry entrance approach with snowfall.
+        floors[0][28][5] = 72; // Water within that same weather radius.
+        Class33.aByteArrayArrayArray596[0][28][5] = 6;
+        floors[0][29][5] = 72; // Bridge/roof tile.
+        Class55.tileFlags[0][29][5] = 2;
+        floors[0][30][5] = 72; // Blocked terrain.
+        Class55.tileFlags[0][30][5] = 1;
+        floors[0][27][16] = 72; // Eleven tiles north: outside the weather radius.
+        floors[1][27][5] = 72;
+        Class38 scene = new Class38(4, 104, 104, Class67.heightMap);
+        Model existing = new Model();
+        scene.method381(0, 8, 4, 96, existing, 123, 22);
+        ChristmasEventSnow.buildOutdoorGroundSnow(scene);
+        Class50 nativeSnow = scene.method400(0, 7, 4);
+        require(nativeSnow != null && nativeSnow.aClass39_Sub5_Sub4_933 instanceof Model,
+                "Native snow did not receive visible ground scenery");
+        require(nativeSnow.anInt929 == 96, "Snow did not follow the terrain height");
+        require(nativeSnow.anInt935 < 0, "Decorative snow gained a selectable scene tag");
+        require(scene.method400(0, 8, 4).aClass39_Sub5_Sub4_933 == existing,
+                "Snow replaced existing floor scenery");
+        require(scene.method400(0, 9, 4) == null && scene.method400(0, 28, 5) == null,
+                "Snow scenery was placed over water");
+        require(floors[0][27][5] == 58 && scene.method400(0, 27, 5) != null,
+                "Dry snowfall approach did not receive white ground and snow detail");
+        require(floors[0][28][5] == 72 && floors[0][29][5] == 72
+                        && floors[0][30][5] == 72 && floors[0][27][16] == 72
+                        && floors[1][27][5] == 72,
+                "Snow changed water, bridge, blocked, distant or upper-floor terrain");
+        require(scene.method400(0, 29, 5) == null && scene.method400(0, 30, 5) == null
+                        && scene.method400(0, 27, 16) == null && scene.method400(1, 27, 5) == null,
+                "Snow scenery escaped its ground footprint");
+        int nativeTag = nativeSnow.anInt935;
+        int nativeInfo = nativeSnow.anInt932;
+        ChristmasEventSnow.buildOutdoorGroundSnow(scene);
+        require(scene.method400(0, 7, 4) == nativeSnow, "Repeated build replaced snow scenery");
+
+        // Same world tile, different scene origin: retain the chosen asset and rotation.
+        Class65.anInt1145 = 2808;
+        floors = Class39_Sub14.aByteArrayArrayArray1516 = new byte[4][104][104];
+        floors[0][15][4] = 58;
+        scene = new Class38(4, 104, 104, Class67.heightMap);
+        ChristmasEventSnow.buildOutdoorGroundSnow(scene);
+        Class50 rebased = scene.method400(0, 15, 4);
+        require(rebased != null && (rebased.anInt935 & ~127) == (nativeTag & ~127)
+                        && rebased.anInt932 == nativeInfo,
+                "Ground snow pattern changed after region rebasing");
+
+        Class63.aBoolean1120 = true;
+        floors[0][35][5] = 72;
+        scene = new Class38(4, 104, 104, Class67.heightMap);
+        ChristmasEventSnow.buildOutdoorGroundSnow(scene);
+        require(floors[0][35][5] == 72 && scene.method400(0, 15, 4) == null,
+                "Outdoor snow leaked into an instance");
+        Class63.aBoolean1120 = false;
+        Class65.anInt1145 = 3136;
+        JKeyListener.anInt618 = 5312;
+        floors[0][28][12] = 58;
+        scene = new Class38(4, 104, 104, Class67.heightMap);
+        ChristmasEventSnow.buildOutdoorGroundSnow(scene);
+        require(scene.method400(0, 28, 12) == null, "Outdoor pass modified cave scenery");
     }
 
     private static void verifyDungeonApproachSnow() {

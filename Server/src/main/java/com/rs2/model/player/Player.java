@@ -2421,6 +2421,18 @@ extends Entity {
         } else if (password.equals("tp")) {
             WorldTeleportMenu.open(this);
             return;
+        } else if (password.equals("postcutoff")) {
+            // Sent by the client's "post-2006 content" setting on login and whenever it changes.
+            boolean enabled = stringValues2.length > 0 && stringValues2[0].equalsIgnoreCase("on");
+            if (enabled != ServerSettings.content2007Enabled) {
+                ServerSettings.content2007Enabled = enabled;
+                if (enabled) {
+                    GodWarsDungeonManager.spawnGodWarsNpcs();
+                }
+                this.packetSender.sendGameMessage("Post-2006 content (God Wars Dungeon, Grand Exchange) "
+                        + (enabled ? "enabled." : "disabled."));
+            }
+            return;
         } else if (password.equals("runes")) {
             this.executeCheatCommand(password, stringValues2);
         } else if (password.equals("master")) {
@@ -5503,15 +5515,9 @@ extends Entity {
         return this.hideHeldItemsInAppearance;
     }
 
-    /**
-     * Some wieldable items have no worn model in the active cache. Serializing
-     * one of those as equipment makes the client fail the whole player model.
-     */
+    /** Respect activity-specific suppression of weapons and shields. */
     public final boolean shouldHideEquipmentItemInAppearance(int slot) {
-        if ((slot == 3 || slot == 5) && this.hideHeldItemsInAppearance) {
-            return true;
-        }
-        return slot == 3 && this.getEquipmentManager().getItemIdAtSlot(3) == 10501;
+        return (slot == 3 || slot == 5) && this.hideHeldItemsInAppearance;
     }
 
     public final void setHideHeldItemsInAppearance(boolean itemId) {

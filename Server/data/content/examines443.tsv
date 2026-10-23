@@ -1,0 +1,16 @@
+# Revision 443 content missing from the 2004 tables; checked before examines2006.tsv. kind	id	name	examine
+# 2006 Christmas event: https://runescape.wiki/w/2006_Christmas_event and its NPC and item pages.
+npc	828	Shanty Claws	A sea shanty-singing werewolf wearing a Santa Claus robe.
+npc	5017	Gublinch	A sweaty gublinch.
+npc	5018	Gublinch	A chilled, smelly gublinch.
+npc	5019	Gublinch	Freezing cold gublinch.
+npc	5023	Jack	A happy child, now that he has been freed.
+npc	5024	Jill	A happy child, now that she has been freed.
+npc	5025	Jeff	A happy child, now that he has been freed.
+npc	5046	Jack	A happy child, now that he has been freed.
+npc	5047	Jill	A happy child, now that she has been freed.
+npc	5048	Jeff	A happy child, now that he has been freed.
+item	10501	Snowball	Made from snow.
+item	10506	Gublinch shards	A gublinch frozen and crumbled into shards.
+item	10507	Reindeer hat	A reindeer hat and a matching flashing nose.
+item	10508	Wintumber tree	A wintumber tree for your player-owned house.

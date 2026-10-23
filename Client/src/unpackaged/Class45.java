@@ -53,6 +53,37 @@ public class Class45
 			      Class39_Sub5_Sub4_Sub4.anInt2313);
 	ArchiveWorker.anInt1205 = i;
     }
+
+    /** The music tab's LOOP toggle (config 19). */
+    public static boolean loopMusic() {
+	return Class66.stateValues != null && Class66.stateValues.length > 19
+	    && Class66.stateValues[19] == 1;
+    }
+
+    // Songs play once; LOOP replays the current one after a short silence.
+    private static final long LOOP_GAP_MS = 2500L;
+    private static long songEndedAt = -1L;
+
+    /** Game thread, once per cycle: replays the current song LOOP_GAP_MS after it ends while LOOP is on. */
+    public static void refreshMusicLoop() {
+	if (!loopMusic() || ArchiveWorker.anInt1205 == -1
+	    || Class39_Sub5_Sub4_Sub4.anInt2313 == 0 || JSocket.anInt313 != 0
+	    || Class55.aClass62_1251 == null || Class39_Sub5_Sub5.aBoolean1749
+	    || Class39_Sub5_Sub6.aByteArray1768 != null
+	    || Class55.aClass62_1251.isPlaying()) {
+	    songEndedAt = -1L;
+	    return;
+	}
+	long now = System.currentTimeMillis();
+	if (songEndedAt < 0L) {
+	    songEndedAt = now;
+	} else if (now - songEndedAt >= LOOP_GAP_MS) {
+	    songEndedAt = -1L;
+	    Class41.method894(Projectile.fileLoader6, ArchiveWorker.anInt1205, 0,
+			      false, 10, 0, -75,
+			      Class39_Sub5_Sub4_Sub4.anInt2313);
+	}
+    }
     
     public static void sleep(long l) {
 	if (l > 0L) {
