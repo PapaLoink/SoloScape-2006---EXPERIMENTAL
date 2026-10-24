@@ -181,6 +181,8 @@ public final class ModHook {
         try { idleChoice = Math.max(0, Math.min(4, Integer.parseInt(SET.getProperty("idle", "0")))); } catch (Exception e) { idleChoice = 0; }
         postCutoff = "1".equals(SET.getProperty("postcutoff"));
         ClassicInterface.enabled = "1".equals(SET.getProperty("classicui"));
+        shiftDrop = "1".equals(SET.getProperty("shiftdrop"));
+        spaceContinue = "1".equals(SET.getProperty("spacecontinue"));
     }
 
     static void saveSettings() {
@@ -195,11 +197,60 @@ public final class ModHook {
         SET.setProperty("idle", Integer.toString(idleChoice));
         SET.setProperty("postcutoff", postCutoff ? "1" : "0");
         SET.setProperty("classicui", ClassicInterface.enabled ? "1" : "0");
+        SET.setProperty("shiftdrop", shiftDrop ? "1" : "0");
+        SET.setProperty("spacecontinue", spaceContinue ? "1" : "0");
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 
     /** When set, the scene only draws up to the player's own floor, so roofs and upper floors are never drawn. */
     public static volatile boolean noRoofs;
+
+    /** Shift-drop (not in 2006): holding Shift makes an inventory item's Drop option the left-click action. */
+    static volatile boolean shiftDrop;
+    private static volatile boolean shiftHeld;
+    private static final int INVENTORY_WIDGET = 149 << 16;
+    static void setShiftDrop(boolean b) { shiftDrop = b; saveSettings(); }
+
+    /** Called after the menu is built each frame: moves an inventory Drop entry to the top (the left-click slot). */
+    public static void shiftDropMenu() {
+        if (!shiftDrop || !shiftHeld) return;
+        try {
+            int top = Class39_Sub5_Sub11.anInt1841 - 1;
+            if (top < 1 || Class43.anIntArray820[top] != INVENTORY_WIDGET) return;
+            for (int i = top - 1; i >= 0; i--) {
+                JString option = Class33.aClass3Array601[i];
+                if (Class43.anIntArray820[i] != INVENTORY_WIDGET || option == null
+                        || !new String(option.bytes, 0, option.length, "ISO-8859-1").startsWith("Drop ")) continue;
+                JString text = option;
+                int opcode = JKeyListener.anIntArray621[i], param0 = Class12.anIntArray196[i];
+                int param1 = Class43.anIntArray820[i], identifier = NameTable.anIntArray176[i];
+                for (int j = i; j < top; j++) {
+                    Class33.aClass3Array601[j] = Class33.aClass3Array601[j + 1];
+                    JKeyListener.anIntArray621[j] = JKeyListener.anIntArray621[j + 1];
+                    Class12.anIntArray196[j] = Class12.anIntArray196[j + 1];
+                    Class43.anIntArray820[j] = Class43.anIntArray820[j + 1];
+                    NameTable.anIntArray176[j] = NameTable.anIntArray176[j + 1];
+                }
+                Class33.aClass3Array601[top] = text;
+                JKeyListener.anIntArray621[top] = opcode;
+                Class12.anIntArray196[top] = param0;
+                Class43.anIntArray820[top] = param1;
+                NameTable.anIntArray176[top] = identifier;
+                return;
+            }
+        } catch (Throwable t) { }
+    }
+
+    /** Space continues dialogue (not in 2006). The key thread only queues it; pump() runs it on the game loop. */
+    static volatile boolean spaceContinue;
+    private static volatile boolean spaceQueued, spaceDown;
+    static void setSpaceContinue(boolean b) { spaceContinue = b; saveSettings(); }
+
+    public static void pump() {
+        if (!spaceQueued) return;
+        spaceQueued = false;
+        try { DeveloperToolsClient.continueDialogue(); } catch (Throwable t) { }
+    }
 
     /** WASD mode: lock the chatbox again after Enter sends a line. */
     static volatile boolean lockChatAfterSend;
@@ -396,8 +447,15 @@ public final class ModHook {
     public static KeyEvent keyPressed(KeyEvent e) {
         try {
             int code = e.getKeyCode();
+            if (code == KeyEvent.VK_SHIFT) shiftHeld = true;
             if (code == KeyEvent.VK_F11) { final boolean on = !fullscreen; javax.swing.SwingUtilities.invokeLater(() -> setFullscreen(on)); return null; }
             if (code == KeyEvent.VK_F9) { javax.swing.SwingUtilities.invokeLater(ModPanel::toggleAction); return null; }
+            if (code == KeyEvent.VK_SPACE && spaceContinue && inGame() && !inputPromptOpen()
+                    && Class39_Sub5_Sub14.anInt1912 != -1) {
+                if (!spaceDown) spaceQueued = true;         // holding Space does not skip lines
+                spaceDown = true;
+                return null;
+            }
             if (!wasd || !inGame() || inputPromptOpen()) { chatFocus = false; return e; }
             if (dialogueOpen()) {
                 chatFocus = false;
@@ -435,6 +493,8 @@ public final class ModHook {
     public static KeyEvent keyReleased(KeyEvent e) {
         try {
             int code = e.getKeyCode();
+            if (code == KeyEvent.VK_SHIFT) shiftHeld = false;
+            if (code == KeyEvent.VK_SPACE) spaceDown = false;
             if (wasd && inGame()) {
                 int a = arrowFor(code);
                 if (a != 0) return remap(e, a);
@@ -620,6 +680,7 @@ public final class ModHook {
 
     /** Clicks on the on-screen buttons never reach the game. */
     public static boolean mouse(MouseEvent e, Component c) {
+        shiftHeld = e.isShiftDown();                    // also clears Shift released while unfocused
         try {
             for (int kind = 0; kind < 3; kind++) {
                 if (!active(kind)) continue;

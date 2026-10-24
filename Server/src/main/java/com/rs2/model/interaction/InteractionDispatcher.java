@@ -210,6 +210,15 @@ public final class InteractionDispatcher {
             return true;
         }
 
+        // Objects with fixed access tiles: reachable once the player stands on the chosen tile.
+        Position fixedApproach = com.rs2.model.quest.impl.Ring.ladderApproach(player,
+                worldObject.getObjectId(), worldObject.getPosition().getX(), worldObject.getPosition().getY());
+        if (fixedApproach != null) {
+            return player.getPosition().getPlane() == worldObject.getPosition().getPlane()
+                    && player.getPosition().getX() == fixedApproach.getX()
+                    && player.getPosition().getY() == fixedApproach.getY();
+        }
+
         boolean exactApproachConfigured =
                 player.getInteractionTargetId() == worldObject.getObjectId()
                 && player.getInteractionTargetX() == worldObject.getPosition().getX()

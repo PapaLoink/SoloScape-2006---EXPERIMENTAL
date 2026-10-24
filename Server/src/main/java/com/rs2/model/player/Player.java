@@ -2576,6 +2576,7 @@ extends Entity {
                 this.sendStatsInterfaceLines(new String[]{"@whi@Your stats", "", "@blu@Account created: " + GameplayHelper.formatDateDayMonthYear(this.createdAtMillis) + " (d-m-y)", "Npcs killed: " + this.npcKillCount, "Players killed: " + this.playerKillCount, "Deaths: " + this.deathCount, "@whi@--Dueling--", "Wins: " + this.duelWins, "Losses: " + this.duelLosses, "@whi@--Barrows--", "Runs done: " + this.barrowsRunsCompleted, "@whi@--Clues Completed--", "Easy: " + this.easyCluesCompleted, "Medium: " + this.mediumCluesCompleted, "Hard: " + this.hardCluesCompleted, "@whi@--Shopping--", "Worth of sold items: " + GameUtil.formatCompactAmountHighThreshold(this.soldItemsValue), "Worth of bought items: " + GameUtil.formatCompactAmountHighThreshold(this.boughtItemsValue), "Profit: " + GameUtil.formatCompactAmountHighThreshold(this.soldItemsValue - this.boughtItemsValue), "@whi@--Playing time--", "This session: " + GameplayHelper.formatDurationHoursMinutes(this.getSessionPlaytimeMillis()), "Total: " + GameplayHelper.formatDurationHoursMinutes(this.getTotalPlaytimeMillis()), "Average per day: " + GameplayHelper.formatDurationHoursMinutes(this.getTotalPlaytimeMillis() / (long)value2)});
                 value = this;
                 ((Player)value).packetSender.showInterface(8134);
+                if (ServerSettings.clientBuild == 443) this.packetSender.sendInterfaceScrollPosition(8143, 0);
                 return;
             }
             if (password.equals("players")) {

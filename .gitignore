@@ -10,3 +10,7 @@ Server/docs/combat-audio.md
 /Play-Client.bat
 /Start-Server.bat
 /qa-output
+
+# Per-player client files, written next to wherever the client runs: saved login and client settings.
+login.dat
+modsettings.properties

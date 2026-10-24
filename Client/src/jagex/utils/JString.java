@@ -950,6 +950,7 @@ public class JString implements Interface1 {
                         }
                     }
                 }
+                unpackaged.ModHook.shiftDropMenu();
             }
         }
     }

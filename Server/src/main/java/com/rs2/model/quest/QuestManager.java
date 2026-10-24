@@ -460,6 +460,7 @@ public final class QuestManager {
         p.packetSender.sendInterfaceText("game client includes it, but there is no", 8149);
         p.packetSender.sendInterfaceText("quest content for it here yet.", 8150);
         p.packetSender.showInterface(8134);
+        if (ServerSettings.clientBuild == 443) p.packetSender.sendInterfaceScrollPosition(8143, 0);
         return true;
     }
 
@@ -499,15 +500,29 @@ public final class QuestManager {
                         QuestScript questScript = QuestDefinition.getQuestScript(value);
                         String[] questState = questScript.buildQuestJournal(questManager.player, questManager.player.getQuestState(value));
                         player = questManager.player;
-                        player.packetSender.sendInterfaceText(questState[0], 8145);
+                        player.packetSender.sendInterfaceText(JournalStyle.format(questState[0]), 8145);
                         int initialValue = 1;
                         while (initialValue < questState.length) {
                             player = questManager.player;
-                            player.packetSender.sendInterfaceText(questState[initialValue], initialValue + 8146);
+                            player.packetSender.sendInterfaceText(JournalStyle.format(questState[initialValue]), initialValue + 8146);
                             ++initialValue;
                         }
                         player = this.player;
                         player.packetSender.showInterface(8134);
+                        // In-progress quests open at the latest journal entry; others at the top.
+                        // The client keeps the previous journal's scroll, so always send one.
+                        if (ServerSettings.clientBuild == 443) {
+                            int scroll = 0;
+                            if (player.getQuestState(value, true) >= 2) {
+                                int last = questState.length - 1;
+                                while (last > 0 && (questState[last] == null || questState[last].trim().isEmpty())) {
+                                    --last;
+                                }
+                                // 443 journal lines sit 20px apart in a 215px-high scroll layer (275:1).
+                                scroll = Math.max(0, last * 20 + 24 - 215);
+                            }
+                            player.packetSender.sendInterfaceScrollPosition(8143, scroll);
+                        }
                         return true;
                     }
                     ++value2;

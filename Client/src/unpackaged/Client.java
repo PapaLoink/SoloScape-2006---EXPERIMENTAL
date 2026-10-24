@@ -449,6 +449,7 @@ public class Client extends ClientApplet {
 
     public void method33(byte i) {
         DeveloperToolsClient.pump();
+        ModHook.pump();
         Class2.logicCycle++;
         method38(0);
         StillGraphic.method534(32257);

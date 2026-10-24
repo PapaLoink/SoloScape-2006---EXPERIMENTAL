@@ -667,6 +667,16 @@ final class ModPanel extends JPanel {
             roofs.setFocusable(false);
             roofs.addActionListener(e -> { ModHook.noRoofs = roofs.isSelected(); ModHook.saveSettings(); ClientScript.aBoolean1690 = true; ModHook.focusGame(); });
             add(roofs, c); c.gridy++;
+            JCheckBox shiftDrop = new JCheckBox("Shift-click drops inventory items", ModHook.shiftDrop);
+            shiftDrop.setFocusable(false);
+            shiftDrop.setToolTipText("Hold Shift and left-click an item to drop it (not in the 2006 game)");
+            shiftDrop.addActionListener(e -> { ModHook.setShiftDrop(shiftDrop.isSelected()); ModHook.focusGame(); });
+            add(shiftDrop, c); c.gridy++;
+            JCheckBox space = new JCheckBox("Space continues dialogue", ModHook.spaceContinue);
+            space.setFocusable(false);
+            space.setToolTipText("Press Space for \"Click here to continue\" (not in the 2006 game)");
+            space.addActionListener(e -> { ModHook.setSpaceContinue(space.isSelected()); ModHook.focusGame(); });
+            add(space, c); c.gridy++;
             JCheckBox rem = new JCheckBox("Remember username and password", ModHook.rememberLogin);
             rem.setFocusable(false);
             rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });

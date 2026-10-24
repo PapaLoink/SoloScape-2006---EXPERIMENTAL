@@ -37,7 +37,7 @@ public final class ClassicInterface {
     static {
         VARPS.put("option_brightness", 166); VARPS.put("option_music", 168); VARPS.put("option_sounds", 169);
         VARPS.put("option_mouse", 170); VARPS.put("option_chat", 171); VARPS.put("option_nodef", 172);
-        VARPS.put("option_run", 173); VARPS.put("option_pm", 287);
+        VARPS.put("option_run", 173); VARPS.put("option_pm", 287); VARPS.put("option_areasounds", 872);
         VARPS.put("com_mode", 43); VARPS.put("attackstyle_magic", 108);
         VARPS.put("sa_energy", 300); VARPS.put("sa_attack", 301);
     }
@@ -154,7 +154,11 @@ public final class ClassicInterface {
         if (Class62_Sub1.widgets[group] != null && Class39_Sub5_Sub4.widgetsLoaded[group]) return true;
         if (group >= FIRST_COMBAT_GROUP) return loadCombat(group);
         List<Map<String, String>> components = parse(group == OPTIONS_GROUP ? "options" : "controls");
-        if (group == CONTROLS_GROUP) addLaterEmotes(components);
+        if (group == OPTIONS_GROUP) addAreaVolume(components);
+        if (group == CONTROLS_GROUP) {
+            addLaterEmotes(components);
+            addSplitPrivateChat(components);
+        }
         int size = 0;
         for (Map<String, String> c : components) size = Math.max(size, child(c.get("@name")) + 1);
         Widget[] widgets = new Widget[size];
@@ -382,6 +386,83 @@ public final class ClassicInterface {
             label.put("text", EXTRA_EMOTES[i]); label.put("colour", "0xFFFF00");
             components.add(label);
         }
+    }
+
+    // Game Options: Split Private-chat (com_46-50) moves to Player controls, and the music and effect rows
+    // move up to make room for an area sound row built like them (443 varp 872; children 51-61).
+    private static final int MUSIC_SHIFT = -55, EFFECT_SHIFT = -48, AREA_SHIFT = -11;
+    private static final int AREA_FIRST_CHILD = 51, EFFECT_FIRST_CHILD = 35, EFFECT_LAST_CHILD = 45;
+
+    private static void addAreaVolume(List<Map<String, String>> components) {
+        List<Map<String, String>> area = new ArrayList<Map<String, String>>();
+        for (java.util.Iterator<Map<String, String>> it = components.iterator(); it.hasNext(); ) {
+            Map<String, String> c = it.next();
+            if (!c.get("@name").startsWith("com_")) continue;
+            int child = child(c.get("@name"));
+            if (child >= 46 && child <= 50) {
+                it.remove();
+            } else if (child >= 24 && child <= 34) {
+                shiftY(c, MUSIC_SHIFT);
+            } else if (child >= EFFECT_FIRST_CHILD && child <= EFFECT_LAST_CHILD) {
+                Map<String, String> copy = new LinkedHashMap<String, String>(c);
+                copy.put("@name", "com_" + (AREA_FIRST_CHILD + child - EFFECT_FIRST_CHILD));
+                shiftY(copy, AREA_SHIFT);
+                if (child == EFFECT_FIRST_CHILD) copy.put("text", "Area\\nVolume");
+                if ("pushvar,option_sounds".equals(copy.get("script1op1"))) copy.put("script1op1", "pushvar,option_areasounds");
+                area.add(copy);
+                shiftY(c, EFFECT_SHIFT);
+            }
+        }
+        components.addAll(area);
+    }
+
+    private static void shiftY(Map<String, String> c, int dy) {
+        c.put("y", Integer.toString(number(c, "y", 0) + dy));
+    }
+
+    // Player controls: Auto retaliate moves left and Split Private-chat sits beside it (children 100-104).
+    private static final int SPLIT_CHAT_FIRST_CHILD = 100;
+
+    private static void addSplitPrivateChat(List<Map<String, String>> components) {
+        for (Map<String, String> c : components) {
+            String name = c.get("@name");
+            if (name.equals("com_7")) c.put("x", "6");         // "Auto retaliate", centred over its buttons
+            else if (name.equals("com_2")) c.put("x", "5");    // On button
+            else if (name.equals("com_3")) c.put("x", "49");   // Off button
+            else if (name.equals("com_9")) c.put("x", "15");   // "On"
+            else if (name.equals("com_8")) c.put("x", "57");   // "Off"
+        }
+        // The small font keeps it on one line between "Auto retaliate" and the tab edge, clear of the weight above.
+        Map<String, String> label = text(SPLIT_CHAT_FIRST_CHILD, 92, 90, 96, "Split Private-chat", 0xEE7C02);
+        label.put("font", "p11_full");
+        label.put("height", "11");
+        label.put("center", "yes");
+        components.add(label);
+        components.add(toggle(SPLIT_CHAT_FIRST_CHILD + 1, 100, 1));
+        components.add(toggle(SPLIT_CHAT_FIRST_CHILD + 2, 144, 0));
+        components.add(text(SPLIT_CHAT_FIRST_CHILD + 3, 110, 118, 15, "On", 0xFFFF00));
+        components.add(text(SPLIT_CHAT_FIRST_CHILD + 4, 152, 118, 20, "Off", 0xFFFF00));
+    }
+
+    private static Map<String, String> text(int child, int x, int y, int width, String text, int colour) {
+        Map<String, String> c = new LinkedHashMap<String, String>();
+        c.put("@name", "com_" + child); c.put("type", "text");
+        c.put("x", Integer.toString(x)); c.put("y", Integer.toString(y));
+        c.put("width", Integer.toString(width)); c.put("height", "14");
+        c.put("font", "p12_full"); c.put("shadowed", "yes");
+        c.put("text", text); c.put("colour", "0x" + Integer.toHexString(colour).toUpperCase());
+        return c;
+    }
+
+    /** A Split Private-chat button: lit while option_pm equals value (1 on, 0 off). */
+    private static Map<String, String> toggle(int child, int x, int value) {
+        Map<String, String> c = new LinkedHashMap<String, String>();
+        c.put("@name", "com_" + child); c.put("type", "graphic"); c.put("buttontype", "select");
+        c.put("x", Integer.toString(x)); c.put("y", "108");
+        c.put("width", "36"); c.put("height", "36");
+        c.put("script1op1", "pushvar,option_pm"); c.put("script1", "eq," + value);
+        c.put("graphic", "miscgraphics,0"); c.put("activegraphic", "miscgraphics,9");
+        return c;
     }
 
     private static int number(Map<String, String> c, String key, int otherwise) {

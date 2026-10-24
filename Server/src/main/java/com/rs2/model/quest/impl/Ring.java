@@ -79,18 +79,31 @@ public final class Ring {
         }
     }
 
+    /**
+     * The cave ladder up can only be reached from the tile south of it or the tile east of it; its other
+     * sides are outside the cave walls. Returns whichever is closer to the player, or null for other objects.
+     */
+    public static Position ladderApproach(Player p, int id, int x, int y) {
+        if (id != UP || x != UP_X || y != UP_Y) return null;
+        Position south = new Position(UP_X, UP_Y - 1, 0), east = new Position(UP_X + 1, UP_Y, 0);
+        int toSouth = com.rs2.util.GameUtil.getDistance(p.getPosition(), south);
+        int toEast = com.rs2.util.GameUtil.getDistance(p.getPosition(), east);
+        return toEast < toSouth ? east : south;
+    }
+
     static boolean click(Player p, int id, int x, int y) {
         if (id == DOWN) {
             for (int[] c : CIRCLES) if (c[0] == x && c[1] == y) {
                 if (p.getQuestState(MonksFriendQuest.ID, true) == 0) return true;
-                p.moveTo(new Position(ARR_X, ARR_Y, 0));
+                // Same climb as every other ladder: animation 828, then the move two ticks later.
+                com.rs2.model.combat.AttackStyleDefinition.startDelayedObjectMove(p, new Position(ARR_X, ARR_Y, 0));
                 return true;
             }
         }
         if (id == UP && x == UP_X && y == UP_Y) {
             Integer k = lastCircle.get(p);
             int[] c = CIRCLES[k == null ? 0 : k];
-            p.moveTo(new Position(c[0], c[1] - 1, 0));
+            com.rs2.model.combat.AttackStyleDefinition.startDelayedObjectMove(p, new Position(c[0], c[1] - 1, 0));
             return true;
         }
         return false;

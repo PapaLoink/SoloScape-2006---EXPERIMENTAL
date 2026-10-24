@@ -514,6 +514,11 @@ final class DeveloperToolsClient {
         return activate(buttons.get(selected - 1));
     }
 
+    /** Clicks the open dialogue's single Continue button; throws when there is none. */
+    static void continueDialogue() {
+        dialogueAction("continue_dialogue", Collections.<String, Object>emptyMap());
+    }
+
     private static Object activate(Widget widget) {
         requireLogin();
         if (!roots().contains(widget.anInt2084 >>> 16)) throw new IllegalArgumentException("Widget interface is not open");

@@ -283,7 +283,16 @@ extends Entity {
                                 x2 = GameUtil.getRandom().nextInt(x2);
                                 y2 = GameUtil.getRandom().nextInt(y2);
                                 value3 = new Position(x + x2, y + y2, npc2.getPosition().getPlane());
-                                npc2.queuePathTo((Position)value3, true);
+                                // Wander like the period game: step straight toward the target and stop at the
+                                // first obstacle. Pathfinding around walls let NPCs leave rooms through void tiles.
+                                com.rs2.model.path.PathResult wander = new com.rs2.model.path.DirectPathStrategy()
+                                        .buildPath(npc2, (Position)value3, true);
+                                npc2.getMovementQueue().clear();
+                                while (!wander.getSteps().isEmpty()) {
+                                    com.rs2.model.path.PathStep step = (com.rs2.model.path.PathStep)wander.getSteps().poll();
+                                    npc2.getMovementQueue().addStep(new Position(step.getX(), step.getY(), npc2.getPosition().getPlane()));
+                                }
+                                npc2.getMovementQueue().removeFirstStep();
                             }
                             value = value3 = npc2;
                             if (((Npc)value3).npcId == 1765) break processControlExit5;

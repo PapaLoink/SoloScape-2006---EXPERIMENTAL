@@ -387,6 +387,7 @@ public final class InterfaceBridge {
             put(mappings, 19641 + index, 137, unusedActionChildren[index]);
 
         // The old quest journal uses two flat ranges for the 443 qj lines.
+        put(mappings, 8143, 275, 1); // journal scroll layer
         put(mappings, 8144, 275, 2); // quest title
         put(mappings, 8145, 275, 3); // first journal line
         for (int legacyId = 8147; legacyId <= 8195; legacyId++)

@@ -427,6 +427,10 @@ implements PacketHandler {
 
         Position questStairApproach = com.rs2.model.quest.impl.PlagueCityQuest.stairApproach(
                 player, objectId, objectX, objectY);
+        if (questStairApproach == null) {
+            questStairApproach = com.rs2.model.quest.impl.Ring.ladderApproach(
+                    player, objectId, objectX, objectY);
+        }
         if (questStairApproach != null) {
             return PathFinder.findPath(player,
                     questStairApproach.getX(), questStairApproach.getY(),

@@ -6,6 +6,7 @@ import com.rs2.model.player.Player;
  * The optional 2004 sidebar ("Classic interface" client setting). The client builds
  * Game Options (group 506) and Player controls (group 507) from LostCity's revision 274
  * layouts; settings buttons set the player's values directly and emotes reuse the native 443 emote tab.
+ * The client adds an area sound row to Game Options and moves Split Private-chat to Player controls.
  */
 public final class ClassicSidebar {
     public static final int OPTIONS_GROUP = 506;
@@ -69,9 +70,9 @@ public final class ClassicSidebar {
             } else if (child >= 36 && child <= 40) {                     // sound effect volume 4..0
                 player.setEffectVolume(40 - child);
                 VarpPacket.send(player, 169, player.getEffectVolume());
-            } else if (child == 47 || child == 48) {                     // split private chat: 1 on, 0 off
-                player.setSplitPrivateChat(child == 47 ? 1 : 0);
-                VarpPacket.send(player, 287, player.getSplitPrivateChat());
+            } else if (child >= 52 && child <= 56) {                     // area sound volume 4..0 (client-added row)
+                player.configStates[872] = 56 - child;
+                VarpPacket.send(player, 872, player.configStates[872]);
             } else {
                 return false;
             }
@@ -86,6 +87,9 @@ public final class ClassicSidebar {
                 boolean energy = player.getRunEnergyPercent() > 0 && player.isTutorialRunUnlocked();
                 player.getMovementQueue().setRunning(energy);
                 if (!energy) player.packetSender.sendRunEnergy();
+            } else if (child == 101 || child == 102) {                   // split private chat (moved here): 1 on, 0 off
+                player.setSplitPrivateChat(child == 101 ? 1 : 0);
+                VarpPacket.send(player, 287, player.getSplitPrivateChat());
             } else {
                 return false;
             }

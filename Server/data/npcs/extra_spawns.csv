@@ -2289,9 +2289,3 @@ npc_id,name,x,y,plane,walk
 1706,Ghost Guard,3661,3508,0,3
 3155,Bill Teach,3679,3495,0,3
 2825,Pirate Pete,3680,3537,0,3
-# Monk's Friend thieves' cave (LostCityRS/Content May 2006 map), released from docs/audit/npc_spawns_held_back.csv.
-283,Head Thief,2569,9606,0,1
-282,Thief,2564,9609,0,1
-282,Thief,2566,9605,0,1
-47,Rat,2568,9620,0,1
-47,Rat,2573,9612,0,1
