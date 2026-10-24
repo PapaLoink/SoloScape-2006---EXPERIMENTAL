@@ -298,6 +298,9 @@ public final class MonksFriendQuest extends QuestScript {
 
     /** Four balloons on free monastery floor, from the two LostCity drop areas; they stay for 200 ticks. */
     private static void dropBalloons() {
+        // Tables and other solid scenery block a tile; wall edges do not, so floor along the walls still counts.
+        final int solid = 0x100 | 0x40000 | 0x200000;
+        // Four attempts per wave; a blocked or occupied pick is skipped, not retried (54 of the 61 tiles are free).
         for (int i = 0; i < BALLOONS_PER_DROP; i++) {
             int x, y;
             if (com.rs2.util.GameUtil.randomInt(3) > 0) {
@@ -305,7 +308,7 @@ public final class MonksFriendQuest extends QuestScript {
             } else {
                 x = 2605 + com.rs2.util.GameUtil.randomInt(3); y = 3212 + com.rs2.util.GameUtil.randomInt(7);
             }
-            if (com.rs2.util.path.WalkingCollisionMap.getTileFlags(x, y, 0) != 0
+            if ((com.rs2.util.path.WalkingCollisionMap.getTileFlags(x, y, 0) & solid) != 0
                     || com.rs2.model.objects.ObjectManager.findDynamicObjectAt(x, y, 0) != null) continue;
             new com.rs2.model.objects.DynamicObject(BALLOON_FIRST + com.rs2.util.GameUtil.randomInt(BALLOON_COLOURS),
                     x, y, 0, com.rs2.util.GameUtil.randomInt(4), 10,
