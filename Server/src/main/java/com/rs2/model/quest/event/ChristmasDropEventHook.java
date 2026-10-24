@@ -34,27 +34,14 @@ extends QuestHook {
             int index2 = 0;
             while (index2 < this.dropItemIds.length) {
                 int value = this.dropItemIds[index2];
-                int value2 = 2145 + GameUtil.randomInt(1695);
-                int value3 = 2560 + GameUtil.randomInt(1410);
-                boolean enabled = GameUtil.randomInt(2) == 0;
-                if (!enabled) {
-                    value2 = 2300 + GameUtil.randomInt(1390);
-                    value3 = 9085 + GameUtil.randomInt(1280);
-                }
-                enabled = false;
-                if (WalkingCollisionMap.getTileFlags(value2, value3, 0) != 0) {
-                    enabled = true;
-                }
-                while (enabled) {
+                // Surface only: underground, the void outside rooms has no collision flags either,
+                // so a drop there would look like free floor but be out of reach.
+                int value2;
+                int value3;
+                do {
                     value2 = 2145 + GameUtil.randomInt(1695);
                     value3 = 2560 + GameUtil.randomInt(1410);
-                    enabled = GameUtil.randomInt(2) == 0;
-                    if (!enabled) {
-                        value2 = 2300 + GameUtil.randomInt(1390);
-                        value3 = 9085 + GameUtil.randomInt(1280);
-                    }
-                    enabled = WalkingCollisionMap.getTileFlags(value2, value3, 0) != 0;
-                }
+                } while (WalkingCollisionMap.getTileFlags(value2, value3, 0) != 0);
                 Position position = new Position(value2, value3, 0);
                 GroundItem groundItem = new GroundItem(new ItemStack(value, 1), position, false, true);
                 GroundItemManager.getInstance().spawn(groundItem);

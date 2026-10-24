@@ -29,27 +29,14 @@ extends QuestHook {
     final void spawnDrops() {
         int index = 0;
         while (index < ServerSettings.holidayDropSets * 6) {
-            int value = 2145 + GameUtil.randomInt(1695);
-            int value2 = 2560 + GameUtil.randomInt(1410);
-            boolean enabled = GameUtil.randomInt(2) == 0;
-            if (!enabled) {
-                value = 2300 + GameUtil.randomInt(1390);
-                value2 = 9085 + GameUtil.randomInt(1280);
-            }
-            enabled = false;
-            if (WalkingCollisionMap.getTileFlags(value, value2, 0) != 0) {
-                enabled = true;
-            }
-            while (enabled) {
+            // Surface only: underground, the void outside rooms has no collision flags either,
+            // so a drop there would look like free floor but be out of reach.
+            int value;
+            int value2;
+            do {
                 value = 2145 + GameUtil.randomInt(1695);
                 value2 = 2560 + GameUtil.randomInt(1410);
-                enabled = GameUtil.randomInt(2) == 0;
-                if (!enabled) {
-                    value = 2300 + GameUtil.randomInt(1390);
-                    value2 = 9085 + GameUtil.randomInt(1280);
-                }
-                enabled = WalkingCollisionMap.getTileFlags(value, value2, 0) != 0;
-            }
+            } while (WalkingCollisionMap.getTileFlags(value, value2, 0) != 0);
             Object value3 = new Position(value, value2, 0);
             value3 = new GroundItem(new ItemStack(1961, 1), (Position)value3, false);
             GroundItemManager.getInstance().spawn((GroundItem)value3);

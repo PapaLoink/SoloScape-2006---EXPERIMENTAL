@@ -213,6 +213,10 @@ public final class InteractionDispatcher {
         // Objects with fixed access tiles: reachable once the player stands on the chosen tile.
         Position fixedApproach = com.rs2.model.quest.impl.Ring.ladderApproach(player,
                 worldObject.getObjectId(), worldObject.getPosition().getX(), worldObject.getPosition().getY());
+        if (fixedApproach == null) {
+            fixedApproach = com.rs2.model.quest.impl.ClockTowerQuest.passageApproach(player,
+                    worldObject.getObjectId(), worldObject.getPosition().getX(), worldObject.getPosition().getY());
+        }
         if (fixedApproach != null) {
             return player.getPosition().getPlane() == worldObject.getPosition().getPlane()
                     && player.getPosition().getX() == fixedApproach.getX()

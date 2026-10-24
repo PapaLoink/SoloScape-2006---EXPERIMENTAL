@@ -14,3 +14,7 @@ Server/docs/combat-audio.md
 # Per-player client files, written next to wherever the client runs: saved login and client settings.
 login.dat
 modsettings.properties
+
+# Jagex's original client EXE (download it from the SoloScape v1 release instead).
+/Client/WebClient/runescape.exe
+/Client/WebClient/Original/

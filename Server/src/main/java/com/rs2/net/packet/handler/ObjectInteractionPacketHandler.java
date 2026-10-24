@@ -431,6 +431,10 @@ implements PacketHandler {
             questStairApproach = com.rs2.model.quest.impl.Ring.ladderApproach(
                     player, objectId, objectX, objectY);
         }
+        if (questStairApproach == null) {
+            questStairApproach = com.rs2.model.quest.impl.ClockTowerQuest.passageApproach(
+                    player, objectId, objectX, objectY);
+        }
         if (questStairApproach != null) {
             return PathFinder.findPath(player,
                     questStairApproach.getX(), questStairApproach.getY(),

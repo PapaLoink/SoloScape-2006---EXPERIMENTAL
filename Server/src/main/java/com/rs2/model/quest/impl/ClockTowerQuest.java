@@ -153,7 +153,8 @@ public final class ClockTowerQuest extends QuestScript {
     // --------------------------------------------------- use item on ground item
     /** Bucket of water on the hot black cog (cog spawn at 2613,9639); LostCity accepts only a bucket. */
     public static void useOnGround(Player p, int item) {
-        if (item != BUCKET_WATER) return;
+        // Both callers set the ground item's id as the interaction target before calling.
+        if (item != BUCKET_WATER || p.getInteractionTargetId() != BLACK) return;
         if (p.getPosition().getPlane() != 0 || Math.abs(p.getPosition().getX() - 2613) > 3 || Math.abs(p.getPosition().getY() - 9639) > 3) return;
         int st = p.getQuestState(ID, true);
         if (st == 0) { msg(p, "You must speak to Brother Kojo to begin this quest."); return; }
@@ -170,12 +171,19 @@ public final class ClockTowerQuest extends QuestScript {
     public boolean handleItemOnObject(Player p, int item, int obj, int stage) {
         if (item == POISON && obj == TROUGH) {
             p.getInventoryManager().removeItem(new ItemStack(POISON, 1));
-            setBit(p, B_RATDOOR);
             msg(p, "The rats swarm towards the poisoned food...");
             msg(p, "...and devour it hungrily.");
             msg(p, "You see them smashing against the gates in panic.");
             msg(p, "They seem to be dying.");
             poisonRats(p.getPosition());
+            // LostCity unlocks the door at once; here it waits until the last rat has died, since the door
+            // message credits their death throes (4 + up to 7 ticks of running, then the death animation).
+            com.rs2.model.World.scheduleTickTask(new com.rs2.model.task.TickTask(12, false) {
+                @Override public void execute() {
+                    stop();
+                    setBit(p, B_RATDOOR);
+                }
+            });
             return true;
         }
         boolean cog = item >= WHITE && item <= RED;
@@ -240,10 +248,10 @@ public final class ClockTowerQuest extends QuestScript {
     public boolean handleFirstObjectAction(Player p, int id, int x, int y, int stage) {
         if ((id == 33 || id == 35) && x == 2591 && y == 9661) { pullLever(p); lever(x, y, 33, 35, 3, true); return true; }
         if ((id == 34 || id == 36) && x == 2593 && y == 9661) { pullLever(p); lever(x, y, 34, 36, 3, false); return true; }
-        if (id == 1586 && x == 2575 && y == 9631) {
+        if (id == SECRET_WALL && x == 2575 && y == 9631) {
+            // secretdoor2 swings open like a door (it has an open stage, secretdooropen2), rather than teleporting.
             msg(p, "You push the wall and it swings open.");
-            int px = p.getPosition().getX();
-            p.moveTo(new Position(px <= x ? x + 1 : x, p.getPosition().getY() == y ? y : y, p.getPosition().getPlane()));
+            passThrough(p, id, x, y, DOOR_OPEN_SOUND);
             return true;
         }
         if (id == RAT_GATE) {
@@ -251,12 +259,7 @@ public final class ClockTowerQuest extends QuestScript {
             p.getDialogueManager().showTwoLineStatement("The death throes of the rats seem to have shaken the door",
                     "loose of its hinges. You pick it up and go through.");
             // LostCity open_and_close_door2: the gate swings open, you walk through, and it closes behind you.
-            int plane = p.getPosition().getPlane();
-            com.rs2.model.objects.WorldObject gate = com.rs2.model.skill.SkillActionHelper.findWorldObjectById(RAT_GATE, x, y, plane);
-            int closed = gate == null ? 0 : gate.getOrientation(), type = gate == null ? 0 : gate.getType();
-            p.packetSender.passThroughDoor(RAT_GATE, x, y, plane, (closed + 1) & 3, closed, type,
-                    p.getPosition().getX() >= x ? -1 : 1, 0);
-            p.packetSender.sendSoundEffect(GRATE_OPEN_SOUND, 1, 0);
+            passThrough(p, id, x, y, GRATE_OPEN_SOUND);
             return true;
         }
         return false;
@@ -283,7 +286,8 @@ public final class ClockTowerQuest extends QuestScript {
         new com.rs2.model.objects.DynamicObject(3550, 2595, 9657, 0, 2, 0, 37, 500);
         new com.rs2.model.objects.DynamicObject(1541, 2596, 9657, 0, 3, 0, 3550, 500);
         // the engine does not drop the gate's walking block by itself
-        com.rs2.model.objects.ObjectManager.removeObjectCollision(37, 2595, 9657, 0, 2, 0);
+        // ObjectManager takes (id, x, y, plane, type, orientation): the gate is a straight wall (type 0) facing east (2).
+        com.rs2.model.objects.ObjectManager.removeObjectCollision(37, 2595, 9657, 0, 0, 2);
         final int tok = ++gateToken;
         Thread th = new Thread(() -> {
             try { Thread.sleep(500 * 600L); } catch (InterruptedException e) { return; }
@@ -307,12 +311,50 @@ public final class ClockTowerQuest extends QuestScript {
         gateToken++;
         Thread th = new Thread(() -> {
             try { Thread.sleep(1800); } catch (InterruptedException e) { }
-            com.rs2.model.objects.ObjectManager.removeObjectCollision(1541, 2596, 9657, 0, 3, 0);
+            com.rs2.model.objects.ObjectManager.removeObjectCollision(1541, 2596, 9657, 0, 0, 3);
             clipAdd(2595, 9657, clipA);
             clipAdd(2596, 9657, clipB);
         }, "mod-gate-close");
         th.setDaemon(true);
         th.start();
+    }
+
+    private static final int SECRET_WALL = 1586, DOOR_OPEN_SOUND = 318;
+
+    /**
+     * Walls you go through (the rat gate and the secret wall) are used from the tile on either side of them,
+     * never diagonally. Returns the nearer of the two tiles to walk to first, or null for other objects.
+     */
+    public static Position passageApproach(Player p, int id, int x, int y) {
+        if (id != RAT_GATE && id != SECRET_WALL) return null;
+        int plane = p.getPosition().getPlane();
+        int[] far = farSide(id, x, y, plane);
+        boolean onFarSide = far[0] != 0 ? Integer.signum(p.getPosition().getX() - x) == far[0]
+                : Integer.signum(p.getPosition().getY() - y) == far[1];
+        return onFarSide ? new Position(x + far[0], y + far[1], plane) : new Position(x, y, plane);
+    }
+
+    /** Step from a wall object's own tile to the tile on its other side, from the edge it sits on. */
+    private static int[] farSide(int id, int x, int y, int plane) {
+        com.rs2.model.objects.WorldObject wall = com.rs2.model.skill.SkillActionHelper.findWorldObjectById(id, x, y, plane);
+        switch (wall == null ? 0 : wall.getOrientation()) {
+            case 0: return new int[]{-1, 0};   // west edge
+            case 1: return new int[]{0, 1};    // north edge
+            case 2: return new int[]{1, 0};    // east edge
+            default: return new int[]{0, -1};  // south edge
+        }
+    }
+
+    /** Swings the wall open, steps the player straight across it, and closes it again behind them. */
+    private static void passThrough(Player p, int id, int x, int y, int sound) {
+        int plane = p.getPosition().getPlane();
+        com.rs2.model.objects.WorldObject wall = com.rs2.model.skill.SkillActionHelper.findWorldObjectById(id, x, y, plane);
+        int closed = wall == null ? 0 : wall.getOrientation(), type = wall == null ? 0 : wall.getType();
+        int[] far = farSide(id, x, y, plane);
+        boolean onObjectTile = p.getPosition().getX() == x && p.getPosition().getY() == y;
+        int dx = onObjectTile ? far[0] : -far[0], dy = onObjectTile ? far[1] : -far[1];
+        p.packetSender.passThroughDoor(id, x, y, plane, (closed + 1) & 3, closed, type, dx, dy);
+        p.packetSender.sendSoundEffect(sound, 1, 0);
     }
 
     // LostCity seq human_leverdown and synths lever / grate_open (274 ids; the sender maps them to 443).

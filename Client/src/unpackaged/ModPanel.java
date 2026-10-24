@@ -677,6 +677,10 @@ final class ModPanel extends JPanel {
             space.setToolTipText("Press Space for \"Click here to continue\" (not in the 2006 game)");
             space.addActionListener(e -> { ModHook.setSpaceContinue(space.isSelected()); ModHook.focusGame(); });
             add(space, c); c.gridy++;
+            JCheckBox fps = new JCheckBox("Show FPS (top left of the game view)", ModHook.showFps);
+            fps.setFocusable(false);
+            fps.addActionListener(e -> { ModHook.setShowFps(fps.isSelected()); ModHook.focusGame(); });
+            add(fps, c); c.gridy++;
             JCheckBox rem = new JCheckBox("Remember username and password", ModHook.rememberLogin);
             rem.setFocusable(false);
             rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });

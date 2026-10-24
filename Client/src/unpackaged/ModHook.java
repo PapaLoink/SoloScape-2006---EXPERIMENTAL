@@ -183,6 +183,8 @@ public final class ModHook {
         ClassicInterface.enabled = "1".equals(SET.getProperty("classicui"));
         shiftDrop = "1".equals(SET.getProperty("shiftdrop"));
         spaceContinue = "1".equals(SET.getProperty("spacecontinue"));
+        showFps = "1".equals(SET.getProperty("showfps"));
+        SET.remove("fpslimit");                             // from the removed frame rate limit
     }
 
     static void saveSettings() {
@@ -199,6 +201,7 @@ public final class ModHook {
         SET.setProperty("classicui", ClassicInterface.enabled ? "1" : "0");
         SET.setProperty("shiftdrop", shiftDrop ? "1" : "0");
         SET.setProperty("spacecontinue", spaceContinue ? "1" : "0");
+        SET.setProperty("showfps", showFps ? "1" : "0");
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 
@@ -251,6 +254,10 @@ public final class ModHook {
         spaceQueued = false;
         try { DeveloperToolsClient.continueDialogue(); } catch (Throwable t) { }
     }
+
+    /** FPS counter at the top left of the game view (not in 2006), drawn by Canvas_Sub1 into the game picture. */
+    static volatile boolean showFps;
+    static void setShowFps(boolean b) { showFps = b; saveSettings(); }
 
     /** WASD mode: lock the chatbox again after Enter sends a line. */
     static volatile boolean lockChatAfterSend;

@@ -44,7 +44,7 @@ Only the files listed here differ from that commit.
 | File | Purpose |
 |---|---|
 | `unpackaged/ModPanel.java` | The docked tool bar and its tool windows (hiscores, wiki, stats, calculator, world map, help, settings). |
-| `unpackaged/ModHook.java` | Hooks into the game: stretch and fullscreen, WASD camera, remembered login, idle-logout setting, chat prompt, optional shift-click drop and Space-to-continue dialogue (both off by default; not 2006 features). |
+| `unpackaged/ModHook.java` | Hooks into the game: stretch and fullscreen, WASD camera, remembered login, idle-logout setting, chat prompt, optional shift-click drop, Space-to-continue dialogue, and an FPS counter (all off by default; not 2006 features). |
 | `unpackaged/XpOverlay.java` | XP drops and level-progress card. |
 | `assets/mod/ids/items.txt`, `npcs.txt` | Full item and NPC ID lists for the Help tool. |
 

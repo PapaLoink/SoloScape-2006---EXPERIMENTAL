@@ -167,6 +167,15 @@ public class Canvas_Sub1 extends Canvas
 		Class39_Sub5_Sub14.aBoolean1908 = false;
 		NameTable.aBoolean183 = false;
 	    }
+	    // Client setting: small yellow FPS counter at the top left of the game view. It is drawn into the
+	    // game picture itself, so it scales with it when stretched or fullscreen.
+	    jagex.graphics.BitmapFont small = jagex.world.actors.Npc.aClass39_Sub5_Sub10_Sub1_2495;   // p11_full
+	    if (ModHook.showFps && small != null) {
+		JString fps = Class39_Sub5_Sub9.createJstring("Fps:" + Class39_Sub5_Sub18.anInt2119);
+		// Below the "Walk here" hover text, which the game draws along the top edge.
+		small.method647(fps, 5, 32, 0);
+		small.method647(fps, 4, 31, 16776960);
+	    }
 	    if (Class39_Sub7.anInt1380 != 0) {
 		int i_4_ = Class39_Sub7.anInt1380 / 50;
 		int i_5_ = i_4_ / 60;

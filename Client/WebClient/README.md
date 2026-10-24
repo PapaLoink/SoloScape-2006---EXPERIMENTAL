@@ -51,9 +51,13 @@ Its game area stays at 765x503 pixels at 1:1 scale. The patched original EXE has
 a fixed window with resizing and maximize disabled. The game remains focusable
 for keyboard input without drawing a dotted focus outline.
 
-Start the game server and `Start-Original-Client.bat` before opening the EXE.
-The latter runs Java in the background with an off-screen utility window so
-rendering remains available without a second visible game window. Rebuild the
+Save the EXE from the [v1 release](https://github.com/SoloScape/SoloScape-2006/releases/tag/v1)
+as `Client/WebClient/runescape.exe` or `Client/WebClient/Original/runescape.exe` (git ignores
+both), start the game server, then run
+`Start-Original-Client.bat`. It starts Java in the background with an off-screen
+utility window, opens the EXE once the page is ready, and stops the background
+client when you close the EXE. Any background client left from an earlier session
+is replaced, so a stale one cannot leave the EXE on a black screen. Rebuild the
 client after pulling this change. Normal desktop/phone startup stays visible.
 The game server on port 43594 does not serve the webpage on port 8081; the Java
 client bridge provides that page. Modern browsers keep using the existing view.
