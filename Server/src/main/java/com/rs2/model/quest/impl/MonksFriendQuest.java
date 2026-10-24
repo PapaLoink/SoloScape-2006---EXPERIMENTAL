@@ -123,12 +123,13 @@ public final class MonksFriendQuest extends QuestScript {
             .item(LAW, "Brother Omad gives you 8 Law Runes.")
             .player("<p,happy>Thanks Brother Omad!")
             .npc("<p,happy>OK, let's party!")
-            .act(p -> this.startParty(p))
+            .act(p -> this.startParty(p, true))
             .end();
 
-        // complete
+        // complete: Omad throws the party again (OSRS wiki, Monk's Friend rewards; not in the 2004 LostCity scripts)
         omad[1] = new QuestDlg()
             .npc("<p,drunk>Dum dee do la la! *hiccup* That was some party!")
+            .act(p -> this.startParty(p, false))
             .end();
     }
 
@@ -244,7 +245,8 @@ public final class MonksFriendQuest extends QuestScript {
     private static final int MONK = 281, DANCE = 866, BALLOON_FIRST = 115, BALLOON_COLOURS = 7, BALLOONS_PER_DROP = 4;
     private static final int PARTY_TICKS = 33;
 
-    private void startParty(Player p) {
+    /** The party; finishQuest awards the quest the first time, later parties are just for fun. */
+    private void startParty(Player p, boolean finishQuest) {
         final Npc omad = nearest(p, OMAD, 10);
         p.setActionLocked(true);
         if (omad != null) omad.getUpdateState().setFaceEntity(p.getEncodedIndex());
@@ -269,7 +271,7 @@ public final class MonksFriendQuest extends QuestScript {
                     case PARTY_TICKS:
                         stop();
                         p.setActionLocked(false);
-                        awardCompletionRewards(p);
+                        if (finishQuest) awardCompletionRewards(p);
                         return;
                 }
                 tick++;

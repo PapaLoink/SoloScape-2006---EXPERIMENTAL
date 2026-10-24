@@ -137,17 +137,13 @@ public final class ClockTowerQuest extends QuestScript {
         if (stage == 0) { msg(p, "You must speak to Brother Kojo to begin this quest."); return true; }
         if (stage == 1) { msg(p, "You have already completed this quest."); return true; }
         if (hasCog(p)) { msg(p, "The cogs are too heavy to carry more than one at a time."); return true; }
+        // LostCity cogs.rs2: the black cog needs ice gloves, or water poured on it first (use the bucket on the cog).
         if (item == BLACK && (bits(p) & B_COOLED) == 0) {
             if (p.getEquipmentManager().getItemIdAtSlot(9) == ICE_GLOVES) {
                 setBit(p, B_COOLED);
-                msg(p, "The ice gloves cool down the cog. You can carry it now.");
-            } else if (has(p, BUCKET_WATER)) {
-                p.getInventoryManager().removeItem(new ItemStack(BUCKET_WATER, 1));
-                p.getInventoryManager().addItem(new ItemStack(BUCKET, 1));
-                setBit(p, B_COOLED);
-                msg(p, "You pour water over the cog. It quickly cools down enough to take.");
+                p.getDialogueManager().showTwoLineStatement("The ice gloves cool down the cog.", "You can carry it now.");
             } else {
-                msg(p, "The cog is red hot from flames. You cannot pick it up.");
+                p.getDialogueManager().showTwoLineStatement("The cog is red hot from flames.", "You cannot pick it up.");
                 return true;
             }
         }
@@ -155,21 +151,18 @@ public final class ClockTowerQuest extends QuestScript {
     }
 
     // --------------------------------------------------- use item on ground item
-    /** Water on the hot black cog (cog spawn at 2613,9639). */
+    /** Bucket of water on the hot black cog (cog spawn at 2613,9639); LostCity accepts only a bucket. */
     public static void useOnGround(Player p, int item) {
-        boolean bucket = item == BUCKET_WATER, jug = item == 1937;
-        if (!bucket && !jug) return;
+        if (item != BUCKET_WATER) return;
         if (p.getPosition().getPlane() != 0 || Math.abs(p.getPosition().getX() - 2613) > 3 || Math.abs(p.getPosition().getY() - 9639) > 3) return;
         int st = p.getQuestState(ID, true);
         if (st == 0) { msg(p, "You must speak to Brother Kojo to begin this quest."); return; }
         if (st == 1) { msg(p, "You have already completed this quest."); return; }
         if (hasCog(p)) { msg(p, "The cogs are too heavy to carry more than one at a time."); return; }
-        if ((bits(p) & B_COOLED) != 0) { msg(p, "The cog has already cooled down."); return; }
-        p.getInventoryManager().removeItem(new ItemStack(item, 1));
-        p.getInventoryManager().addItem(new ItemStack(bucket ? BUCKET : 1935, 1));
+        p.getInventoryManager().removeItem(new ItemStack(BUCKET_WATER, 1));
+        p.getInventoryManager().addItem(new ItemStack(BUCKET, 1));
         setBit(p, B_COOLED);
-        msg(p, "You pour water over the cog.");
-        msg(p, "It quickly cools down enough to take.");
+        p.getDialogueManager().showTwoLineStatement("You pour water over the cog.", "It quickly cools down enough to take.");
     }
 
     // ------------------------------------------------------- use item on object
@@ -182,6 +175,7 @@ public final class ClockTowerQuest extends QuestScript {
             msg(p, "...and devour it hungrily.");
             msg(p, "You see them smashing against the gates in panic.");
             msg(p, "They seem to be dying.");
+            poisonRats(p.getPosition());
             return true;
         }
         boolean cog = item >= WHITE && item <= RED;
@@ -201,12 +195,51 @@ public final class ClockTowerQuest extends QuestScript {
         return true;
     }
 
+    // ----------------------------------------------------------- poisoned rats
+    // LostCity cog_dungeon_rat: each cage rat within 10 tiles runs to the gate, then back into the cage, and dies.
+    private static final int CAGE_RAT = 224;
+    private static final Position RAT_GATE_SPOT = new Position(2586, 9654, 0), RAT_DEATH_SPOT = new Position(2579, 9656, 0);
+
+    private static void poisonRats(Position trough) {
+        for (com.rs2.model.npc.Npc npc : com.rs2.model.World.getNpcs()) {
+            if (npc == null || npc.getNpcId() != CAGE_RAT || npc.isDead() || !npc.isActive()) continue;
+            if (npc.getPosition().getPlane() != trough.getPlane()
+                    || com.rs2.util.GameUtil.getDistance(npc.getPosition(), trough) > 10) continue;
+            dieOfPoison(npc);
+        }
+    }
+
+    private static void dieOfPoison(final com.rs2.model.npc.Npc npc) {
+        final com.rs2.model.npc.NpcMovementMode mode = npc.getMovementMode();
+        npc.setMovementMode(com.rs2.model.npc.NpcMovementMode.STATIONARY);   // npc_setmode(none)
+        com.rs2.model.combat.CombatManager.stopCombat(npc);
+        npc.queuePathTo(RAT_GATE_SPOT, true);
+        final int dieAt = 4 + 6 + com.rs2.util.GameUtil.randomInt(2);        // 4 ticks, then 6-7 more
+        com.rs2.model.World.scheduleTickTask(new com.rs2.model.task.TickTask(1, true) {
+            private int tick;
+            @Override public void execute() {
+                tick++;
+                if (tick == 4) {
+                    npc.queuePathTo(RAT_DEATH_SPOT, true);
+                } else if (tick == dieAt) {
+                    npc.setDead(true);
+                    npc.getUpdateState().setAnimation(npc.getDeathAnimationId());
+                } else if (tick > dieAt) {
+                    stop();
+                    npc.setMovementMode(mode);
+                    // npc_del: gone without a drop, back after its normal respawn time.
+                    com.rs2.model.combat.CombatManager.finishDeath(npc, null, false);
+                }
+            }
+        });
+    }
+
     // ------------------------------------------------------------- object clicks
     /** Option 1 on an object. */
     @Override
     public boolean handleFirstObjectAction(Player p, int id, int x, int y, int stage) {
-        if ((id == 33 || id == 35) && x == 2591 && y == 9661) { lever(x, y, 33, 35, 3, true); return true; }
-        if ((id == 34 || id == 36) && x == 2593 && y == 9661) { lever(x, y, 34, 36, 3, false); return true; }
+        if ((id == 33 || id == 35) && x == 2591 && y == 9661) { pullLever(p); lever(x, y, 33, 35, 3, true); return true; }
+        if ((id == 34 || id == 36) && x == 2593 && y == 9661) { pullLever(p); lever(x, y, 34, 36, 3, false); return true; }
         if (id == 1586 && x == 2575 && y == 9631) {
             msg(p, "You push the wall and it swings open.");
             int px = p.getPosition().getX();
@@ -215,9 +248,15 @@ public final class ClockTowerQuest extends QuestScript {
         }
         if (id == RAT_GATE) {
             if ((bits(p) & B_RATDOOR) == 0) { msg(p, "This door does not seem to be openable."); return true; }
-            msg(p, "The death throes of the rats seem to have shaken the door loose of its hinges. You pick it up and go through.");
-            int px = p.getPosition().getX();
-            p.moveTo(new Position(px >= x ? x - 1 : x, y, p.getPosition().getPlane()));
+            p.getDialogueManager().showTwoLineStatement("The death throes of the rats seem to have shaken the door",
+                    "loose of its hinges. You pick it up and go through.");
+            // LostCity open_and_close_door2: the gate swings open, you walk through, and it closes behind you.
+            int plane = p.getPosition().getPlane();
+            com.rs2.model.objects.WorldObject gate = com.rs2.model.skill.SkillActionHelper.findWorldObjectById(RAT_GATE, x, y, plane);
+            int closed = gate == null ? 0 : gate.getOrientation(), type = gate == null ? 0 : gate.getType();
+            p.packetSender.passThroughDoor(RAT_GATE, x, y, plane, (closed + 1) & 3, closed, type,
+                    p.getPosition().getX() >= x ? -1 : 1, 0);
+            p.packetSender.sendSoundEffect(GRATE_OPEN_SOUND, 1, 0);
             return true;
         }
         return false;
@@ -274,6 +313,14 @@ public final class ClockTowerQuest extends QuestScript {
         }, "mod-gate-close");
         th.setDaemon(true);
         th.start();
+    }
+
+    // LostCity seq human_leverdown and synths lever / grate_open (274 ids; the sender maps them to 443).
+    private static final int LEVER_ANIM = 834, LEVER_SOUND = 319, GRATE_OPEN_SOUND = 332;
+
+    private static void pullLever(Player p) {
+        p.getUpdateState().setAnimation(LEVER_ANIM);
+        p.packetSender.sendSoundEffect(LEVER_SOUND, 1, 0);
     }
 
     /** Rat-cage levers (Lost City quest_cog_gates_and_levers). Lever A also opens the cage gate. */
