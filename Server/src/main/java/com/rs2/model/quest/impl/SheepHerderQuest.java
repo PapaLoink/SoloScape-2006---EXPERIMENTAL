@@ -64,7 +64,7 @@ public final class SheepHerderQuest extends QuestScript {
     public SheepHerderQuest(int n) {
         super(ID);
         INSTANCE = this;
-        super.setQuestPointReward(1);
+        super.setQuestPointReward(4);   // OSRS wiki: 4 quest points
         buildHalgrive();
         buildOrbon();
         buildBrumty();
@@ -123,7 +123,8 @@ public final class SheepHerderQuest extends QuestScript {
             .npc("Please also take this poisoned sheep feed; we believe poisoning the sheep will minimise the risk of airborne contamination, and is of course also more humane to the sheep.")
             .act(p -> give(p, FEED, 1))
             .mes("The councillor gives you some poisoned sheep feed.")
-            .act(p -> { if (p.getQuestState(ID, true) == 0) stage(p, S_ORBON); })
+            // startQuest sets stage 2 (S_ORBON) and turns the quest list entry yellow.
+            .act(p -> { if (p.getQuestState(ID, true) == 0) this.startQuest(p); })
             .player("How will I know which sheep are infected?")
             .npc("The poor creatures have developed strangely discoloured wool and flesh. You should have no trouble spotting them.")
             .end();
@@ -324,7 +325,7 @@ public final class SheepHerderQuest extends QuestScript {
         super.markQuestComplete(p);
         super.showQuestCompleteInterface(p);
         give(p, COINS, 3100);
-        p.packetSender.sendInterfaceText("1 Quest Point", 12150);
+        p.packetSender.sendInterfaceText("4 Quest Points", 12150);
         p.packetSender.sendInterfaceText("3100 Coins", 12151);
         p.packetSender.sendInterfaceText("", 12152);
         p.packetSender.sendInterfaceText("", 12153);
@@ -403,6 +404,8 @@ public final class SheepHerderQuest extends QuestScript {
         if (sheepState(p, t) == 6) return dDisposed;
         p.getUpdateState().setAnimation(ANIM_PROD);
         sheep.getUpdateState().setForcedTextAndMarkUpdated("BAAAAA!");
+        // LostCity npc_setmode(none): a prodded sheep stops wandering until its next "Baa".
+        sheep.setMovementMode(com.rs2.model.npc.NpcMovementMode.STATIONARY);
         Position pp = p.getPosition();
         int dx = Integer.signum(sp.getX() - pp.getX()), dy = Integer.signum(sp.getY() - pp.getY());
         int nx = sp.getX() + dx, ny = sp.getY() + dy;
@@ -411,13 +414,22 @@ public final class SheepHerderQuest extends QuestScript {
             final Npc s = sheep; final int tt = t; final Player pl = p;
             Sheep.later(2, () -> {
                 s.moveTo(new Position(PEN[tt][0], PEN[tt][1], 0));
+                // LostCity re-adds the sheep at its pen spot, so it wanders around there, not back toward home.
+                Sheep.wanderAround(s, PEN[tt][0], PEN[tt][1]);
                 Sheep.expire(s, 150);
                 Sheep.respawnHome(tt, 60);
                 setRange(pl, sheepState(pl, tt) | 1, BIT[tt], BIT[tt] + 2);
             });
             p.packetSender.sendGameMessage("The sheep obligingly jumps over the gate and into the enclosure.");
-        } else if (Sheep.walkable(sp.getX(), sp.getY(), nx, ny)) {
-            sheep.moveTo(new Position(nx, ny, sp.getPlane()));
+        } else {
+            // LostCity npc_walk: the sheep walks one tile away from the player. If a fence or wall blocks that
+            // tile, it tries the nearest other directions, so a sheep stuck in a corner moves to an open tile.
+            int[][] tries = {{dx, dy}, {dx, 0}, {0, dy}, {-dy, dx}, {dy, -dx}};
+            for (int[] d : tries) {
+                if (d[0] == 0 && d[1] == 0) continue;
+                int tx = sp.getX() + d[0], ty = sp.getY() + d[1];
+                if (!inGate(tx, ty) && Sheep.walkable(sp.getX(), sp.getY(), tx, ty) && Sheep.walk(sheep, tx, ty, true)) break;
+            }
         }
         return null;
     }
@@ -433,7 +445,8 @@ public final class SheepHerderQuest extends QuestScript {
         if (sheep == null) return false;
         Position sp = sheep.getPosition();
         QuestDlg d;
-        if (!inPen(sp.getX(), sp.getY())) d = dOutside;
+        if (!suit(p)) d = dNoSuit;                  // feeding it is as close as prodding it
+        else if (!inPen(sp.getX(), sp.getY())) d = dOutside;
         else {
             int st = sheepState(p, t);
             if (st != 6 && !has(p, BONES[t])) { target.put(p, sheep); d = dPoison; }
@@ -475,6 +488,7 @@ public final class SheepHerderQuest extends QuestScript {
         if (Math.abs(pp.getX() - 2606) > 4 || Math.abs(pp.getY() - 3361) > 4) return false;
         final int tt = t; final Player pl = p;
         p.getUpdateState().setAnimation(ANIM_FURNACE);
+        p.packetSender.sendSoundEffect(FURNACE_SOUND, 1, 0);
         p.packetSender.sendGameMessage("You put the remains into the furnace.");
         take(p, item, 1);
         Sheep.later(3, () -> {
@@ -490,15 +504,48 @@ public final class SheepHerderQuest extends QuestScript {
         if ((id != GATE_L && id != GATE_R) || x != 2594) return false;
         Position pp = p.getPosition();
         if (Math.abs(pp.getX() - x) > 2 || Math.abs(pp.getY() - y) > 2) return false;
+        boolean entering = pp.getX() <= x;          // LostCity check_axis: the suit is only checked going in
         QuestDlg d = null;
-        if (stage == 0) d = dRestricted;
-        else if (!suit(p)) d = dNoGateSuit;
+        if (entering && stage == 0) d = dRestricted;
+        else if (entering && !suit(p)) d = dNoGateSuit;
         if (d != null) {
             active.put(p, new Object[]{id, d, Boolean.TRUE});
             return d.run(p, 1, 0);
         }
-        p.moveTo(new Position(pp.getX() <= x ? x + 1 : x, y, pp.getPlane()));
+        openGate(p);
+        // Walk through rather than LostCity's p_teleport; gateApproach has already put the player in front of it.
+        p.packetSender.queueRelativeMovementStep(entering ? 1 : -1, 0, true);
         return true;
+    }
+
+    /**
+     * The pen gate sits on the east edge of x 2594: it is used from the gate tile (outside) or the tile east of it
+     * (inside), in line with the half clicked. Returns that tile, or null for other objects.
+     */
+    public static Position gateApproach(Player p, int id, int x, int y) {
+        if ((id != GATE_L && id != GATE_R) || x != 2594) return null;
+        return new Position(p.getPosition().getX() <= x ? x : x + 1, y, p.getPosition().getPlane());
+    }
+
+    // LostCity loc inviswall and the swung-open gate pieces inacfishinggateclosedl/r; synths door_open and furnace.
+    static final int INVISWALL = 83, OPEN_GATE_L = 49, OPEN_GATE_R = 50, DOOR_OPEN_SOUND = 318, FURNACE_SOUND = 469;
+
+    /**
+     * LostCity open_sheepherder_gate: for 3 ticks both gate halves become invisible walls and the left half shows
+     * the swung-open gate inside the pen. Visual only; the player is moved through, as LostCity teleports them.
+     */
+    private static void openGate(Player p) {
+        for (int[] g : GATES) {
+            com.rs2.model.objects.WorldObject gate = com.rs2.model.skill.SkillActionHelper.findWorldObjectById(g[0], g[1], g[2], 0);
+            if (gate == null || com.rs2.model.objects.ObjectManager.findDynamicObjectAt(g[1], g[2], 0) != null) continue;
+            int angle = gate.getOrientation(), shape = gate.getType();
+            new com.rs2.model.objects.DynamicObject(INVISWALL, g[1], g[2], 0, angle, shape, g[0], 3, false);
+            if (g[0] == GATE_L) {
+                new com.rs2.model.objects.DynamicObject(OPEN_GATE_L, g[1] + 1, g[2], 0, 1, shape, Ensure.bs(), 3, false);
+                new com.rs2.model.objects.DynamicObject(OPEN_GATE_R, g[1] + 2, g[2], 0, 1, shape, Ensure.bs(), 3, false);
+            }
+        }
+        p.packetSender.sendSoundEffect(DOOR_OPEN_SOUND, 1, 0);
     }
 
     /** Sheep-side helpers. */
@@ -520,12 +567,21 @@ public final class SheepHerderQuest extends QuestScript {
 
         static Npc spawn(int id, int x, int y) {
             try {
-                com.rs2.model.GameplayHelper.spawnNpc(id, x, y, 0, 0);
+                com.rs2.model.GameplayHelper.spawnNpc(id, x, y, 0, 1);
                 Npc r = null;
                 Npc[] all = com.rs2.model.World.getNpcs();
                 for (Npc n : all) if (n != null && n.getNpcId() == id && n.getPosition().getX() == x && n.getPosition().getY() == y) r = n;
+                if (r != null) wanderAround(r, x, y);
                 return r;
             } catch (Throwable t) { t.printStackTrace(); return null; }
+        }
+
+        /** LostCity wanderrange=3: the sheep wanders within 3 tiles of (x, y). */
+        static void wanderAround(Npc n, int x, int y) {
+            n.setMovementMode(com.rs2.model.npc.NpcMovementMode.ROAMING);
+            n.setSpawnPosition(new Position(x, y, 0));
+            n.setSpawnMinPosition(new Position(x - 3, y - 3));
+            n.setSpawnMaxPosition(new Position(x + 3, y + 3));
         }
         static void respawnHome(final int t, int ticks) {
             later(ticks, () -> {
@@ -538,14 +594,45 @@ public final class SheepHerderQuest extends QuestScript {
             if (all != null) for (Npc n : all) if (n != null && n.getNpcId() == id && n.getPosition().getX() == x && n.getPosition().getY() == y) return n;
             return null;
         }
+        static boolean solid(int x, int y, int plane) {
+            return (com.rs2.util.path.WalkingCollisionMap.getTileFlags(x, y, plane) & (0x100 | 0x40000 | 0x200000)) != 0;
+        }
+
+        /** Like LostCity, sheep go anywhere collision allows; only the gate lets them into (or out of) the pen. */
         static boolean walkable(int x, int y, int nx, int ny) {
-            // keep sheep inside the farm area; fences are respected by staying out of the pen walls
-            if (nx < 2555 || nx > 2630 || ny < 3335 || ny > 3395) return false;
-            if (inPen(nx, ny) != inPen(x, y)) return false;      // only the gate lets them in
+            return inPen(nx, ny) == inPen(x, y);
+        }
+        static boolean isPlagueSheep(int id) { return sheepIdx(id) >= 0; }
+
+        /**
+         * Walks the sheep straight toward a tile, respecting fences and walls. With wholeWay it only moves if
+         * the tile itself is reachable that way (a prod step); otherwise it goes as far as it can (heading home).
+         */
+        static boolean walk(Npc n, int x, int y, boolean wholeWay) {
+            int plane = n.getPosition().getPlane();
+            com.rs2.model.path.PathResult path = new com.rs2.model.path.DirectPathStrategy().buildPath(n, new Position(x, y, plane), true);
+            // The straight-line check only sees walls, so also refuse a tile filled by scenery such as a bush.
+            int fx = n.getPosition().getX(), fy = n.getPosition().getY();
+            boolean solid = solid(x, y, plane)
+                    || (x != fx && y != fy && (solid(x, fy, plane) || solid(fx, y, plane)));   // no cutting a corner
+            if (wholeWay && (!path.isSuccessful() || solid)) return false;
+            n.getMovementQueue().clear();
+            while (!path.getSteps().isEmpty()) {
+                com.rs2.model.path.PathStep s = (com.rs2.model.path.PathStep) path.getSteps().poll();
+                n.getMovementQueue().addStep(new Position(s.getX(), s.getY(), plane));
+            }
+            n.getMovementQueue().removeFirstStep();
             return true;
         }
-        static int deathAnim(Npc n) { try { return DEATH; } catch (Throwable t) { return 253; } }
-        static final int DEATH = 253;
+        /**
+         * LostCity plays npc_param(death_anim): the NPC's own death animation. That is 253 for the 2004 sheep model,
+         * but the 443 sheep is a newer model (5336), and 253 plays wrongly on it, so use the definition's value.
+         */
+        static int deathAnim(Npc n) {
+            int anim = n.getDeathAnimationId();
+            return anim > 0 ? anim : DEATH;
+        }
+        static final int DEATH = 5336;
 
         static void drop(int item, int x, int y, int z) {
             try {
@@ -555,7 +642,7 @@ public final class SheepHerderQuest extends QuestScript {
         }
     }
 
-    /** World set-up: spawns NPCs, gates, incinerator and the cattleprod once the world is up. */
+    /** World set-up: spawns Farmer Brumty and the diseased sheep, and makes the cattleprod wieldable, once the world is up. */
     static final class Ensure {
         static boolean started, done;
         static synchronized void start() {
@@ -589,8 +676,8 @@ public final class SheepHerderQuest extends QuestScript {
                 f.setInt(com.rs2.model.item.ItemDefinition.forId(PROD), 3);
             } catch (Throwable t) { t.printStackTrace(); }
             com.rs2.model.GameplayHelper.spawnNpc(BRUMTY, 2600, 3358, 0, 0);
-            for (int t = 0; t < 4; t++) for (int[] h : HOME[t]) com.rs2.model.GameplayHelper.spawnNpc(SHEEP[t], h[0], h[1], 0, 0);
-            Sheep.drop(PROD, 2604, 3357, 0);
+            for (int t = 0; t < 4; t++) for (int[] h : HOME[t]) Sheep.spawn(SHEEP[t], h[0], h[1]);
+            // The cattleprod in the barn (2604, 3357) comes from Item spawn.dat, as in LostCity's map; no extra drop here.
             com.rs2.model.World.scheduleTickTask(new TickTask(1) {
                 int n;
                 @Override public void execute() {
@@ -604,6 +691,15 @@ public final class SheepHerderQuest extends QuestScript {
                             }
                         }
                         for (Object[] e : run) try { ((Runnable) e[1]).run(); } catch (Throwable t) { t.printStackTrace(); }
+                        // LostCity ai_timer: each diseased sheep says "Baa" every 10-30 ticks (about 1 in 20 per tick)
+                        // and goes back to its normal wandering (npc_setmode(null)). Wandering stays within 3 tiles
+                        // of where it started, so a sheep left alone drifts back there.
+                        for (Npc s : com.rs2.model.World.getNpcs()) {
+                            if (s != null && Sheep.isPlagueSheep(s.getNpcId()) && com.rs2.util.GameUtil.randomInt(20) == 0) {
+                                s.getUpdateState().setForcedTextAndMarkUpdated("Baa");
+                                s.setMovementMode(com.rs2.model.npc.NpcMovementMode.ROAMING);
+                            }
+                        }
                     } catch (Throwable t) { t.printStackTrace(); }
                 }
             });

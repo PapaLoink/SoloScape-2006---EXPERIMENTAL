@@ -108,7 +108,8 @@ final class ModPanel extends JPanel {
             JLabel t = new JLabel(title); t.setForeground(FG); t.setFont(t.getFont().deriveFont(Font.BOLD, 13f));
             JLabel x = new JLabel("X"); x.setForeground(FG); x.setFont(x.getFont().deriveFont(Font.BOLD, 13f));
             x.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            x.addMouseListener(new MouseAdapter() { public void mouseClicked(MouseEvent e) { closeTools(); ModHook.focusGame(); } });
+            x.addMouseListener(new MouseAdapter() { public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) { closeTools(); ModHook.focusGame(); } } });
             head.add(t, BorderLayout.WEST); head.add(x, BorderLayout.EAST);
             drawer.add(head, BorderLayout.NORTH);
             drawer.add(body, BorderLayout.CENTER);
@@ -134,7 +135,11 @@ final class ModPanel extends JPanel {
             addMouseListener(new MouseAdapter() {
                 public void mouseEntered(MouseEvent e) { hover = true; repaint(); }
                 public void mouseExited(MouseEvent e) { hover = false; repaint(); }
-                public void mouseClicked(MouseEvent e) { action.run(); ModHook.focusGame(); }
+                // On press: Swing drops mouseClicked if the pointer moves at all between press and release.
+                public void mousePressed(MouseEvent e) {
+                    if (!SwingUtilities.isLeftMouseButton(e)) return;
+                    action.run(); ModHook.focusGame();
+                }
             });
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setAlignmentX(0.5f);

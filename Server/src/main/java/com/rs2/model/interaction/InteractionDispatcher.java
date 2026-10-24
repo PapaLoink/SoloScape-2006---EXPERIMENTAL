@@ -217,6 +217,10 @@ public final class InteractionDispatcher {
             fixedApproach = com.rs2.model.quest.impl.ClockTowerQuest.passageApproach(player,
                     worldObject.getObjectId(), worldObject.getPosition().getX(), worldObject.getPosition().getY());
         }
+        if (fixedApproach == null) {
+            fixedApproach = com.rs2.model.quest.impl.SheepHerderQuest.gateApproach(player,
+                    worldObject.getObjectId(), worldObject.getPosition().getX(), worldObject.getPosition().getY());
+        }
         if (fixedApproach != null) {
             return player.getPosition().getPlane() == worldObject.getPosition().getPlane()
                     && player.getPosition().getX() == fixedApproach.getX()

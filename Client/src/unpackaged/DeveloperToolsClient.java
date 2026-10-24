@@ -183,6 +183,8 @@ final class DeveloperToolsClient {
         tool(tools, "get_menu", "Current context menu entries with stable indices for this snapshot.");
         tool(tools, "click_menu_option", "Invoke a matching current menu entry using the client dispatcher.", "option:string!", "target:string");
         tool(tools, "interact_npc", "Use a cache-defined NPC option, default Talk-to.", "npcName:string!", "option:string", "npcIndex:integer");
+        tool(tools, "use_item_on_npc", "Use an inventory item on the nearest matching NPC, as Use then clicking the NPC.", "itemName:string!", "npcName:string!", "npcIndex:integer");
+        tool(tools, "use_item_on_object", "Use an inventory item on the nearest matching scene object, as Use then clicking the object.", "itemName:string!", "nameFilter:string!", "radius:integer");
         tool(tools, "walk_to", "Route the local player to a world tile through the normal client pathfinder.", "x:integer!", "y:integer!");
         tool(tools, "get_var", "Read varp, varbit, varc_int or varc_string.", "type:string!", "id:integer!");
         tool(tools, "get_var_history", "Recent varp changes, recorded once per client tick.", "sinceMs:integer");
@@ -283,6 +285,18 @@ final class DeveloperToolsClient {
                 }
                 throw new IllegalArgumentException("No matching scene object with that option");
             }
+            case "use_item_on_object": {
+                requireLogin();
+                List<Object> objects = objects(args);
+                if (objects.isEmpty()) throw new IllegalArgumentException("No matching scene object");
+                objects.sort((left, right) -> Integer.compare(distance(McpJson.asObject(left)), distance(McpJson.asObject(right))));
+                Map<String, Object> object = McpJson.asObject(objects.get(0));
+                int[] item = selectInventoryItem(string(args, "itemName", ""));
+                invoke(45, ((Number) object.get("x")).intValue() - Class65.anInt1145,
+                        ((Number) object.get("y")).intValue() - JKeyListener.anInt618,
+                        ((Number) object.get("hash")).intValue(), "Use");
+                return McpJson.object("invoked", true, "slot", item[0], "itemId", item[1], "object", object);
+            }
             case "list_ground_items": return groundItems(args);
             case "pickup_item": {
                 requireLogin();
@@ -346,6 +360,7 @@ final class DeveloperToolsClient {
             case "get_script_history": return history(scriptHistory, args);
             case "wait_for": return condition(args);
             case "interact_npc": return interactNpc(args);
+            case "use_item_on_npc": return useItemOnNpc(args);
             default: throw new IllegalArgumentException("Unknown client tool: " + name);
         }
     }
@@ -592,6 +607,38 @@ final class DeveloperToolsClient {
         int[] opcodes = {42, 17, 13, 53, 46};
         invoke(opcodes[action], 0, 0, selected, option);
         return McpJson.object("npcIndex", selected, "option", option, "invoked", true);
+    }
+
+    /** Selects an inventory item with its Use action (menu 23), ready for an item-on-target action. Returns {slot, id}. */
+    private static int[] selectInventoryItem(String itemName) {
+        Widget inventory = findWidget(149 << 16);
+        if (inventory.anIntArray2087 != null) for (int i = 0; i < inventory.anIntArray2087.length; i++) {
+            int id = inventory.anIntArray2087[i] - 1;
+            if (id >= 0 && text(Class26.getItemDefinition(id).aClass3_1661).equalsIgnoreCase(itemName)) {
+                invoke(23, i, inventory.anInt2084, id, "Use");
+                return new int[]{i, id};
+            }
+        }
+        throw new IllegalArgumentException("No matching inventory item");
+    }
+
+    /** Uses an inventory item on the nearest matching NPC (menu 47). */
+    private static Object useItemOnNpc(Map<String, Object> args) {
+        requireLogin();
+        String name = string(args, "npcName", "");
+        int requested = integer(args, "npcIndex", -1), selected = -1, best = Integer.MAX_VALUE;
+        Player local = Cache.aClass39_Sub5_Sub4_Sub4_Sub2_109;
+        for (Object entry : npcs(name)) {
+            int index = ((Number) McpJson.asObject(entry).get("index")).intValue();
+            if (requested >= 0 && index != requested) continue;
+            Npc npc = GroundItem.aClass39_Sub5_Sub4_Sub4_Sub1Array2241[index];
+            int distance = Math.abs(npc.anInt2301 - local.anInt2301) + Math.abs(npc.anInt2275 - local.anInt2275);
+            if (distance < best) { selected = index; best = distance; }
+        }
+        if (selected < 0) throw new IllegalArgumentException("No matching loaded NPC");
+        int[] item = selectInventoryItem(string(args, "itemName", ""));
+        invoke(47, 0, 0, selected, "Use");
+        return McpJson.object("invoked", true, "slot", item[0], "itemId", item[1], "npcIndex", selected);
     }
 
     private static void invoke(int opcode, int param0, int param1, int identifier, String option) {
