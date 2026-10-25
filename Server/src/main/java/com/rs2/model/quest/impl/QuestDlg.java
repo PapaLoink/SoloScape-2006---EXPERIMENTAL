@@ -24,7 +24,7 @@ public final class QuestDlg {
     private static final class Node {
         int kind; String[] lines; Act act; Cond cond; String target;
         String[] optText; String[] optTarget; int[] optExpression;
-        int expression = -1; int item = -1;
+        int expression = -1; int item = -1; boolean quiet;
     }
 
     /** Output sink (real game: the player's dialogue interface). expression is a chat*1 sequence, or -1. */
@@ -135,7 +135,11 @@ public final class QuestDlg {
     public QuestDlg end() { Node n = new Node(); n.kind = END; return add(n); }
     public QuestDlg label(String name) { Node n = new Node(); n.kind = LABEL; n.target = name; return add(n); }
     /** pairs: option text, target label, ... (2-5 options). Option text may carry the echo's expression tag. */
-    public QuestDlg options(String... pairs) {
+    public QuestDlg options(String... pairs) { return options(false, pairs); }
+    /** Like options, but the chosen line is not repeated as player chat (LostCity @multiN / ~p_choiceN). */
+    public QuestDlg optionsQuiet(String... pairs) { return options(true, pairs); }
+
+    private QuestDlg options(boolean quiet, String... pairs) {
         Node n = new Node(); n.kind = OPTS;
         int c = pairs.length / 2;
         n.optText = new String[c]; n.optTarget = new String[c]; n.optExpression = new int[c];
@@ -145,7 +149,7 @@ public final class QuestDlg {
             n.optText[k] = t[0]; n.optTarget[k] = pairs[2 * k + 1];
         }
         nodes.add(n);
-        Node d = new Node(); d.kind = DISP; d.optText = n.optText; d.optTarget = n.optTarget; d.optExpression = n.optExpression;
+        Node d = new Node(); d.kind = DISP; d.optText = n.optText; d.optTarget = n.optTarget; d.optExpression = n.optExpression; d.quiet = quiet;
         nodes.add(d);
         return this;
     }
@@ -210,6 +214,7 @@ public final class QuestDlg {
                 case DISP: {
                     int k = option - 1;
                     if (k < 0 || k >= n.optText.length) { o.finish(); return true; }
+                    if (n.quiet) { step = idx(n.optTarget[k]); continue; }
                     o.player(wrap(n.optText[k], 52), n.optExpression[k]);
                     next(o, idx(n.optTarget[k]));
                     return true;

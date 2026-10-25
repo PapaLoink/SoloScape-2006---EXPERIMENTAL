@@ -49,6 +49,34 @@ Run from `Server` after compiling it with both client and server classes plus
 `Server/lib/*` on the classpath. Restart the server and reload the client to
 replace maps already held in memory.
 
+## May 2006 restoration (2026-10-25)
+
+Every one of the 88 fallback squares was re-keyed after revision 443. Neither OpenRS2
+nor osrs.world has a key from before revision 445 for any of them, so the revision 443
+originals cannot be decrypted. Most fallbacks were the earliest decryptable version
+(revisions 445-457, January-May 2007) with every object the bundled cache cannot draw
+removed. That left holes wherever Jagex remodelled objects in early 2007. One example is
+Ardougne Zoo, whose railings became new objects 21239-21242.
+
+Revision 377 (2 May 2006, `rs2-377_2006-05-02` on osrs.world) stores its maps unencrypted.
+It contains 85 of the 88 squares (all except 29_79, 30_79 and 33_82), and every object in it
+is drawable with the bundled cache. It was used in two ways:
+
+- **Replaced with the May 2006 square (9 squares).** 40_50, 40_51 and 41_51 (East
+  Ardougne and the zoo, reworked in February 2007), plus 42_69, 42_70, 43_69, 43_70, 43_71
+  and 53_150. Those six had kept under 5% of their objects.
+- **Restored from May 2006 (32 squares).** Each keeps all of its previous placements. On
+  tiles where the 2007 data had an undrawable placement, the May 2006 placements in the
+  same slot (wall, wall decoration, scenery or floor) were added, if that slot was empty.
+
+`world-map-repairs.tsv` lists every changed square with before/after counts and hashes
+(`may2006-replacement` and `may2006-restoration`). The other 47 squares lost nothing
+or had nothing in May 2006 to restore.
+
+Some squares differ a lot between May 2006 and the 2007 data, and there is no way to
+tell which changes came before December 2006. These kept their 2007 layout and were
+only restored: 52_153, 40_153, 53_48, 44_55, 39_55 and 42_58.
+
 ## Whole-world audit (2026-10-01)
 
 The audit traversed all 792 terrain/location squares in the bundled reference
