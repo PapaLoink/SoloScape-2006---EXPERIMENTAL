@@ -18,8 +18,22 @@ Compiled 23 October 2026 from release dates on the [OSRS wiki](https://oldschool
 | Skills | 23 | 21 | **Construction** (31 May 2006), **Hunter** (21 Nov 2006) |
 | Minigames | 23 | about 8 | about 15 |
 | Guilds | 11 | 9 (*verify*) | **Warriors' Guild** (13 Jun 2006); Servants' Guild comes with Construction |
-| Overground NPC spawns | — | 2,290 added 22 Oct | 4,074 held back (quest, dungeon and special-area NPCs) in `docs/audit/npc_spawns_held_back.csv` |
+| Overground NPC spawns | — | 2,290 added 22 Oct; 435 surplus spawns removed 25 Oct (see below) | 4,074 held back (quest, dungeon and special-area NPCs) in `docs/audit/npc_spawns_held_back.csv` |
 | Post-cutoff content on the server | — | God Wars Dungeon (June 2007), Grand Exchange (Nov 2007), dragon claws in bot loadouts (2007) | Decide whether to keep these |
+
+### NPC spawn trim (25 Oct)
+
+The upstream `Npc spawn.dat` had piles of extra NPCs, such as 26 Khazard troopers in West
+Ardougne where LostCity's 2004 data has 4. LostCity's May 2006 maps have about the same
+number of NPCs per square as 2004, so these were not 2005-06 additions. The reference is
+LostCity's revision 274 spawns, which is also the file osrs.world shows for every cache
+up to revision 474 (`npc-spawns-2004.json`). For every NPC and map square where we had
+more than that, the spawns nearest to LostCity's positions were kept and the rest removed:
+435 spawns (431 by that rule, plus 4 scorpions removed earlier at the zoo pit). Three
+zoo scorpions were also moved onto LostCity's tiles. Id 206 was skipped because it is a
+Dwarf in 2004 but a Guard in revision 443. Every removed spawn is listed in
+`docs/audit/npc_spawns_removed_2026-10-25.csv`. There are no exact duplicates (same NPC
+on the same tile).
 
 ## Quests (78 missing)
 

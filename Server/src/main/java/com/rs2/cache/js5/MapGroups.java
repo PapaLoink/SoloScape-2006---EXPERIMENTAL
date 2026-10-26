@@ -12,6 +12,12 @@ public final class MapGroups {
 
     public static byte[] readTerrain(Js5CacheStore store, Js5ReferenceTable table,
                                      int x, int y) throws IOException {
+        // A terrain override in map-fallback replaces the cached terrain for that square (the client does the same).
+        File override = new File("cache/map-fallback", "m" + x + "_" + y + ".dat");
+        if (override.isFile()) {
+            System.out.println("Using terrain override: m" + x + "_" + y);
+            return Files.readAllBytes(override.toPath());
+        }
         return read(store, table, "m" + x + "_" + y, null);
     }
 

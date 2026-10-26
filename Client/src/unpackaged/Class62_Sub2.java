@@ -304,6 +304,24 @@ public class Class62_Sub2 extends Class62
 	     i_22_ < Class39_Sub5_Sub16.aByteArrayArray1989.length; i_22_++) {
 	    if (ItemDefinition.anIntArray1682[i_22_] != -1
 		&& Class39_Sub5_Sub16.aByteArrayArray1989[i_22_] == null) {
+		// A terrain override in map-fallback (m<x>_<y>.dat) replaces the cached terrain for that square.
+		int terrainRegion = Class65.anIntArray1132[i_22_];
+		java.io.File terrainOverride = new java.io.File
+		    (new java.io.File(Class39_Sub5_Sub9.signlink.cacheFilePath,
+				      "map-fallback"),
+		     "m" + (terrainRegion >> 8) + "_" + (terrainRegion & 0xff) + ".dat");
+		if (terrainOverride.isFile()) {
+		    try {
+			Class39_Sub5_Sub16.aByteArrayArray1989[i_22_]
+			    = java.nio.file.Files.readAllBytes(terrainOverride.toPath());
+			System.out.println("[MAPDBG] using terrain override region="
+				+ (terrainRegion >> 8) + "_" + (terrainRegion & 0xff));
+		    } catch (java.io.IOException ioexception) {
+			System.err.println("Unable to read terrain override "
+				+ terrainOverride + ": " + ioexception.getMessage());
+		    }
+		}
+		if (Class39_Sub5_Sub16.aByteArrayArray1989[i_22_] == null)
 		Class39_Sub5_Sub16.aByteArrayArray1989[i_22_]
 		    = JSocket.fileLoader5.lookupFile((ItemDefinition
 							  .anIntArray1682

@@ -69,6 +69,32 @@ is drawable with the bundled cache. It was used in two ways:
   tiles where the 2007 data had an undrawable placement, the May 2006 placements in the
   same slot (wall, wall decoration, scenery or floor) were added, if that slot was empty.
 
+Ardougne Zoo needed one more step. Its object stream stayed unencrypted until revision 419
+(9 July 2006), identical to 377. From 421 onward it was encrypted and changed in 421, 423,
+427, 433, 439 and 441, and none of those versions has a known key. The terrain changed
+only once, on 4 September 2006 (427). From then on it matches revision 443. That
+re-shaped the snake enclosure and walkway (2610-2617, 3266-3285; the scorpion pit's
+east fence at 2605-2609 keeps its May 2006 pieces, because its ground did not change), and the February 2007
+terrain is the same there, so in that box 40_51 uses the February 2007 objects on all
+planes. That includes the plane-1 bridge railings (`814`) over the terrain's plane-1 deck at
+2612-2613, 3271-3280, which is already in the revision 443 terrain. Drawable objects are
+kept as they are. Railings `21239`/`21240` become `997` for types 0 and 9; the 37 other
+pieces are dropped, mostly railing corners.
+The rest of the square is the May 2006 stream.
+
+The 40_50 terrain changed once in 2006, in revision 441 (29 November). That revision
+added a pen floor at 2605-2608, 3259-3262, south of the zoo path. Its February 2007 objects
+were swapped in for 2602-2611, 3256-3263: the pen walls `19995` and `19852` inside it are
+both in the revision 443 cache. The railing ring around the pen (`21240`) appears only in
+the February 2007 data, not in May 2006, so it was left out rather than converted to `997`.
+This is the ferret pen. In `extra_spawns.csv` it gets Ferret 5081 inside and Charlie 5138
+on its north side (2607, 3264), at the positions the 2009 spawn data uses. Both NPCs are in
+revision 443. The May 2006 railing `997` along y 3264 between Charlie and the pen
+(x 2604-2609) was removed from 40_51. The railing now runs from the post at 2612 to x 2610
+and ends short of the pen. The quest-start map icon object `2739` (map function 6) was added
+at 2606, 3264, as in the February 2007 data, for Charlie and Eagles' Peak (released
+28 November 2006).
+
 `world-map-repairs.tsv` lists every changed square with before/after counts and hashes
 (`may2006-replacement` and `may2006-restoration`). The other 47 squares lost nothing
 or had nothing in May 2006 to restore.
@@ -76,6 +102,27 @@ or had nothing in May 2006 to restore.
 Some squares differ a lot between May 2006 and the 2007 data, and there is no way to
 tell which changes came before December 2006. These kept their 2007 layout and were
 only restored: 52_153, 40_153, 53_48, 44_55, 39_55 and 42_58.
+
+## Terrain overrides
+
+A file named `m<x>_<y>.dat` in this folder replaces the bundled terrain for that square.
+Both the server (`MapGroups.readTerrain`) and the client (`Class62_Sub2`) load it, so tile
+heights, floors and flags stay in step. Use it only to reconcile objects with terrain they
+were not built for.
+
+`m40_51.dat` is the revision 443 terrain with three tiles taken whole from revision 419
+(July 2006): 2608,3272, 2609,3271 and 2610,3270. Only their heights differ. The September
+2006 bank had raised those corners to 39, which hid part of the May 2006 scorpion-pit
+railing at 2607,3271 to 2609,3269. Restart the server and reload the client after changing
+an override.
+
+The pit keeps its May 2006 fence exactly, including rotations; the terrain override above
+is what keeps the railing visible from the path. Copying the February 2007 rotations
+(turned 180 degrees) was tried and reverted. Those rotations belong to the remodelled
+`21239` railing. On the `997` diagonal model, which is drawn from one side only, they made
+the railing face away from the path. The May 2006 data also had two railings on the same
+edge at the pit's east corner (2609,3268 east edge and 2610,3268 west edge). They drew over
+each other, so the 2610,3268 piece was removed.
 
 ## Whole-world audit (2026-10-01)
 

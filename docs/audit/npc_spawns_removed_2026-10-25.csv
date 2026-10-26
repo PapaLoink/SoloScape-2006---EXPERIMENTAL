@@ -1,0 +1,436 @@
+npc_id,name,x,y,plane,file
+107,Scorpion,2606,3270,0,Npc spawn.dat
+107,Scorpion,2605,3268,0,Npc spawn.dat
+107,Scorpion,2602,3268,0,Npc spawn.dat
+107,Scorpion,2604,3272,0,Npc spawn.dat
+66,Gnome,2400,3351,0,Npc spawn.dat
+66,Gnome,2403,3352,0,Npc spawn.dat
+839,Desert Wolf,3216,3085,0,Npc spawn.dat
+839,Desert Wolf,3214,3106,0,Npc spawn.dat
+839,Desert Wolf,3244,3118,0,Npc spawn.dat
+41,Chicken,2731,3557,0,Npc spawn.dat
+363,Woman,2524,3269,0,Npc spawn.dat
+363,Woman,2504,3322,0,Npc spawn.dat
+702,Fisherman,2768,3276,0,extra_spawns.csv
+16,Man,3271,3192,0,Npc spawn.dat
+16,Man,3282,3194,0,Npc spawn.dat
+16,Man,3294,3194,0,Npc spawn.dat
+16,Man,3278,3155,0,extra_spawns.csv
+112,Moss giant,3160,9903,0,Npc spawn.dat
+168,Gnome woman,2384,3478,0,Npc spawn.dat
+168,Gnome woman,2379,3478,0,Npc spawn.dat
+168,Gnome woman,2404,3502,0,Npc spawn.dat
+168,Gnome woman,2402,3511,0,Npc spawn.dat
+168,Gnome woman,2390,3509,0,Npc spawn.dat
+168,Gnome woman,2384,3516,0,Npc spawn.dat
+168,Gnome woman,2431,3463,0,Npc spawn.dat
+168,Gnome woman,2429,3458,0,Npc spawn.dat
+163,Gnome guard,2456,3402,0,Npc spawn.dat
+163,Gnome guard,2466,3411,0,Npc spawn.dat
+163,Gnome guard,2448,3413,0,Npc spawn.dat
+41,Chicken,2645,3443,0,Npc spawn.dat
+41,Chicken,2645,3438,0,Npc spawn.dat
+1,Man,2690,3489,0,Npc spawn.dat
+1,Man,2699,3489,0,Npc spawn.dat
+161,Gnome child,2457,3497,1,Npc spawn.dat
+78,Giant bat,2835,9561,0,Npc spawn.dat
+78,Giant bat,2830,9564,0,Npc spawn.dat
+494,Banker,2619,3330,0,Npc spawn.dat
+494,Banker,2618,3330,0,Npc spawn.dat
+191,Tribesman,2936,2986,0,Npc spawn.dat
+191,Tribesman,2938,2983,0,Npc spawn.dat
+708,Imp,3240,3222,0,Npc spawn.dat
+1006,Sea slug,2765,3282,1,extra_spawns.csv
+96,White wolf,2834,3515,0,Npc spawn.dat
+96,White wolf,2828,3517,0,Npc spawn.dat
+138,Mounted terrorbird gnome,2531,3233,0,Npc spawn.dat
+138,Mounted terrorbird gnome,2547,3234,0,Npc spawn.dat
+132,Monkey,2783,3169,0,Npc spawn.dat
+613,Digsite workman,3357,3415,0,Npc spawn.dat
+613,Digsite workman,3360,3420,0,Npc spawn.dat
+132,Monkey,2901,3100,0,Npc spawn.dat
+132,Monkey,2888,3082,0,Npc spawn.dat
+87,Giant rat,2973,3681,0,Npc spawn.dat
+87,Giant rat,2974,3690,0,Npc spawn.dat
+87,Giant rat,2963,3695,0,Npc spawn.dat
+87,Giant rat,2963,3703,0,Npc spawn.dat
+87,Giant rat,2972,3699,0,Npc spawn.dat
+388,Seer,2711,3485,0,Npc spawn.dat
+181,Chaos druid,2934,9846,0,Npc spawn.dat
+181,Chaos druid,2931,9844,0,Npc spawn.dat
+181,Chaos druid,2929,9845,0,Npc spawn.dat
+181,Chaos druid,2930,9850,0,Npc spawn.dat
+181,Chaos druid,2930,9845,0,Npc spawn.dat
+132,Monkey,2606,3280,0,Npc spawn.dat
+132,Monkey,2606,3278,0,Npc spawn.dat
+132,Monkey,2601,3282,0,Npc spawn.dat
+494,Banker,2615,3091,0,Npc spawn.dat
+491,Ghost,2453,3222,0,Npc spawn.dat
+491,Ghost,2455,3221,0,Npc spawn.dat
+106,Bear,3147,3519,0,Npc spawn.dat
+106,Bear,3160,3519,0,Npc spawn.dat
+49,Hellhound,2857,9850,0,Npc spawn.dat
+111,Ice giant,2826,3507,0,Npc spawn.dat
+23,Knight of Ardougne,2648,3325,0,Npc spawn.dat
+60,Giant spider,3175,3883,0,Npc spawn.dat
+60,Giant spider,3172,3878,0,Npc spawn.dat
+60,Giant spider,3161,3887,0,Npc spawn.dat
+60,Giant spider,3177,3887,0,Npc spawn.dat
+60,Giant spider,3177,3882,0,Npc spawn.dat
+60,Giant spider,3172,3876,0,Npc spawn.dat
+60,Giant spider,3164,3874,0,Npc spawn.dat
+60,Giant spider,3159,3877,0,Npc spawn.dat
+60,Giant spider,3154,3885,0,Npc spawn.dat
+60,Giant spider,3161,3888,0,Npc spawn.dat
+60,Giant spider,3174,3891,0,Npc spawn.dat
+60,Giant spider,3177,3893,0,Npc spawn.dat
+60,Giant spider,3167,3889,0,Npc spawn.dat
+60,Giant spider,3166,3887,0,Npc spawn.dat
+60,Giant spider,3163,3887,0,Npc spawn.dat
+60,Giant spider,3169,3882,0,Npc spawn.dat
+163,Gnome guard,2462,3382,0,Npc spawn.dat
+163,Gnome guard,2460,3389,0,Npc spawn.dat
+163,Gnome guard,2457,3391,0,Npc spawn.dat
+163,Gnome guard,2464,3391,0,Npc spawn.dat
+751,Zombie,2931,9639,0,Npc spawn.dat
+748,Giant rat,2930,3245,0,Npc spawn.dat
+748,Giant rat,2935,3246,0,Npc spawn.dat
+748,Giant rat,2933,3254,0,Npc spawn.dat
+748,Giant rat,2935,3251,0,Npc spawn.dat
+748,Giant rat,2927,3248,0,Npc spawn.dat
+61,Spider,3180,3209,0,Npc spawn.dat
+114,Ogre,2513,3044,0,Npc spawn.dat
+114,Ogre,2509,3043,0,Npc spawn.dat
+941,Green dragon,3101,3828,0,Npc spawn.dat
+941,Green dragon,3107,3825,0,Npc spawn.dat
+163,Gnome guard,2416,3408,0,Npc spawn.dat
+163,Gnome guard,2428,3412,0,Npc spawn.dat
+813,Gossip,2735,3560,0,extra_spawns.csv
+132,Monkey,2927,3010,0,Npc spawn.dat
+132,Monkey,2929,3013,0,Npc spawn.dat
+132,Monkey,2936,3022,0,Npc spawn.dat
+132,Monkey,2938,3018,0,Npc spawn.dat
+59,Giant spider,2995,3684,0,Npc spawn.dat
+59,Giant spider,2988,3680,0,Npc spawn.dat
+59,Giant spider,2982,3683,0,Npc spawn.dat
+59,Giant spider,2992,3676,0,Npc spawn.dat
+59,Giant spider,2983,3684,0,Npc spawn.dat
+117,Giant,3309,3660,0,Npc spawn.dat
+81,Cow,3260,3272,0,Npc spawn.dat
+81,Cow,3254,3281,0,Npc spawn.dat
+81,Cow,3261,3273,0,Npc spawn.dat
+81,Cow,3254,3276,0,Npc spawn.dat
+842,Rowdy Guard,3292,3020,0,Npc spawn.dat
+842,Rowdy Guard,3291,3024,0,Npc spawn.dat
+352,Woman,2521,3270,0,Npc spawn.dat
+496,Banker,3267,3168,0,Npc spawn.dat
+496,Banker,3267,3166,0,Npc spawn.dat
+113,Jogre,2934,3040,0,Npc spawn.dat
+113,Jogre,2939,3055,0,Npc spawn.dat
+93,Skeleton,2833,9655,0,Npc spawn.dat
+93,Skeleton,2833,9659,0,Npc spawn.dat
+345,Guard,2516,3364,0,Npc spawn.dat
+345,Guard,2517,3373,0,Npc spawn.dat
+345,Guard,2508,3369,0,Npc spawn.dat
+345,Guard,2507,3377,0,Npc spawn.dat
+345,Guard,2511,3383,0,Npc spawn.dat
+345,Guard,2521,3383,0,Npc spawn.dat
+345,Guard,2523,3383,0,Npc spawn.dat
+345,Guard,2528,3381,0,Npc spawn.dat
+90,Skeleton,2896,9849,0,Npc spawn.dat
+90,Skeleton,2907,9849,0,Npc spawn.dat
+749,Ghost,2929,3254,1,Npc spawn.dat
+749,Ghost,2924,3251,1,Npc spawn.dat
+749,Ghost,2924,3255,1,Npc spawn.dat
+142,Wolf,2844,3490,0,Npc spawn.dat
+142,Wolf,2831,3517,0,Npc spawn.dat
+371,Mourner,2525,3280,0,Npc spawn.dat
+574,Silk merchant,2665,3317,0,Npc spawn.dat
+68,Gnome,2492,3503,1,Npc spawn.dat
+43,Sheep,2920,3318,0,Npc spawn.dat
+43,Sheep,2917,3314,0,Npc spawn.dat
+43,Sheep,2915,3317,0,Npc spawn.dat
+43,Sheep,2920,3326,0,Npc spawn.dat
+43,Sheep,2926,3316,0,Npc spawn.dat
+168,Gnome woman,2445,3394,0,Npc spawn.dat
+168,Gnome woman,2447,3398,0,Npc spawn.dat
+168,Gnome woman,2446,3402,0,Npc spawn.dat
+168,Gnome woman,2463,3443,0,Npc spawn.dat
+168,Gnome woman,2471,3451,0,Npc spawn.dat
+168,Gnome woman,2432,3424,0,Npc spawn.dat
+89,Unicorn,3151,3201,0,Npc spawn.dat
+105,Bear,2410,3366,0,Npc spawn.dat
+105,Bear,2420,3382,0,Npc spawn.dat
+159,Gnome child,2449,3490,1,Npc spawn.dat
+159,Gnome child,2474,3488,1,Npc spawn.dat
+172,Dark wizard,2972,3569,0,Npc spawn.dat
+172,Dark wizard,2980,3575,0,Npc spawn.dat
+172,Dark wizard,2977,3565,0,Npc spawn.dat
+172,Dark wizard,2979,3570,0,Npc spawn.dat
+172,Dark wizard,2983,3572,0,Npc spawn.dat
+172,Dark wizard,2973,3568,0,Npc spawn.dat
+172,Dark wizard,2972,3575,0,Npc spawn.dat
+172,Dark wizard,2979,3575,0,Npc spawn.dat
+172,Dark wizard,2984,3575,0,Npc spawn.dat
+476,Khazard trooper,2545,3257,0,Npc spawn.dat
+476,Khazard trooper,2541,3256,0,Npc spawn.dat
+476,Khazard trooper,2537,3258,0,Npc spawn.dat
+476,Khazard trooper,2527,3262,0,Npc spawn.dat
+476,Khazard trooper,2518,3260,0,Npc spawn.dat
+476,Khazard trooper,2515,3256,0,Npc spawn.dat
+476,Khazard trooper,2511,3251,0,Npc spawn.dat
+476,Khazard trooper,2511,3248,0,Npc spawn.dat
+476,Khazard trooper,2501,3243,0,Npc spawn.dat
+476,Khazard trooper,2498,3240,0,Npc spawn.dat
+476,Khazard trooper,2502,3233,0,Npc spawn.dat
+476,Khazard trooper,2509,3234,0,Npc spawn.dat
+476,Khazard trooper,2512,3237,0,Npc spawn.dat
+476,Khazard trooper,2514,3231,0,Npc spawn.dat
+476,Khazard trooper,2511,3241,0,Npc spawn.dat
+476,Khazard trooper,2515,3243,0,Npc spawn.dat
+476,Khazard trooper,2519,3243,0,Npc spawn.dat
+476,Khazard trooper,2518,3245,0,Npc spawn.dat
+476,Khazard trooper,2522,3248,0,Npc spawn.dat
+476,Khazard trooper,2526,3247,0,Npc spawn.dat
+476,Khazard trooper,2528,3251,0,Npc spawn.dat
+476,Khazard trooper,2526,3253,0,Npc spawn.dat
+476,Khazard trooper,2535,3251,0,Npc spawn.dat
+476,Khazard trooper,2541,3243,0,Npc spawn.dat
+476,Khazard trooper,2544,3243,0,Npc spawn.dat
+476,Khazard trooper,2541,3240,0,Npc spawn.dat
+476,Khazard trooper,2525,3241,0,Npc spawn.dat
+476,Khazard trooper,2522,3238,0,Npc spawn.dat
+476,Khazard trooper,2526,3236,0,Npc spawn.dat
+476,Khazard trooper,2526,3234,0,Npc spawn.dat
+66,Gnome,2395,3425,0,Npc spawn.dat
+66,Gnome,2401,3432,0,Npc spawn.dat
+66,Gnome,2395,3433,0,Npc spawn.dat
+66,Gnome,2378,3428,0,Npc spawn.dat
+66,Gnome,2379,3438,0,Npc spawn.dat
+66,Gnome,2374,3433,0,Npc spawn.dat
+66,Gnome,2374,3440,0,Npc spawn.dat
+66,Gnome,2392,3437,0,Npc spawn.dat
+66,Gnome,2386,3444,0,Npc spawn.dat
+66,Gnome,2395,3454,0,Npc spawn.dat
+840,Ugthanki,3325,3093,0,Npc spawn.dat
+840,Ugthanki,3266,3124,0,Npc spawn.dat
+169,Gnome woman,2450,3495,1,Npc spawn.dat
+13,Wizard,3106,3156,0,Npc spawn.dat
+114,Ogre,2506,3113,0,Npc spawn.dat
+355,Child,2473,3315,0,Npc spawn.dat
+355,Child,2485,3307,0,Npc spawn.dat
+355,Child,2481,3300,0,Npc spawn.dat
+355,Child,2489,3301,0,Npc spawn.dat
+355,Child,2482,3295,0,Npc spawn.dat
+355,Child,2489,3295,0,Npc spawn.dat
+355,Child,2482,3285,0,Npc spawn.dat
+355,Child,2472,3287,0,Npc spawn.dat
+355,Child,2469,3292,0,Npc spawn.dat
+833,Bedabin Nomad,3164,3026,0,Npc spawn.dat
+195,Bandit,3024,3692,0,Npc spawn.dat
+618,Examiner,3366,3333,0,Npc spawn.dat
+618,Examiner,3359,3337,0,Npc spawn.dat
+106,Bear,3280,3345,0,Npc spawn.dat
+840,Ugthanki,3262,3098,0,Npc spawn.dat
+840,Ugthanki,3263,3078,0,Npc spawn.dat
+123,Hobgoblin,3124,9875,0,Npc spawn.dat
+123,Hobgoblin,3117,9867,0,Npc spawn.dat
+123,Hobgoblin,3119,9863,0,Npc spawn.dat
+66,Gnome,2483,3470,0,Npc spawn.dat
+66,Gnome,2477,3472,0,Npc spawn.dat
+66,Gnome,2474,3466,0,Npc spawn.dat
+66,Gnome,2432,3478,0,Npc spawn.dat
+66,Gnome,2478,3484,0,Npc spawn.dat
+66,Gnome,2447,3498,0,Npc spawn.dat
+86,Giant rat,2522,3187,0,Npc spawn.dat
+86,Giant rat,2545,3186,0,Npc spawn.dat
+825,Male slave,3301,3024,0,Npc spawn.dat
+84,Black Demon,2875,9776,0,Npc spawn.dat
+84,Black Demon,2869,9782,0,Npc spawn.dat
+84,Black Demon,2858,9775,0,Npc spawn.dat
+107,Scorpion,2846,3163,0,Npc spawn.dat
+107,Scorpion,2844,3150,0,Npc spawn.dat
+132,Monkey,2820,3019,0,Npc spawn.dat
+132,Monkey,2821,3022,0,Npc spawn.dat
+132,Monkey,2817,3025,0,Npc spawn.dat
+132,Monkey,2825,3031,0,Npc spawn.dat
+132,Monkey,2826,3035,0,Npc spawn.dat
+132,Monkey,2825,3039,0,Npc spawn.dat
+132,Monkey,2819,3039,0,Npc spawn.dat
+132,Monkey,2817,3043,0,Npc spawn.dat
+132,Monkey,2816,3040,0,Npc spawn.dat
+132,Monkey,2844,3038,0,Npc spawn.dat
+132,Monkey,2860,3024,0,Npc spawn.dat
+190,Monk of Zamorak,2837,9815,0,Npc spawn.dat
+190,Monk of Zamorak,2825,9806,0,Npc spawn.dat
+132,Monkey,2751,3184,0,Npc spawn.dat
+132,Monkey,2739,3172,0,Npc spawn.dat
+132,Monkey,2748,3158,0,Npc spawn.dat
+132,Monkey,2743,3147,0,Npc spawn.dat
+479,Gnome troop,2464,3505,2,Npc spawn.dat
+113,Jogre,2923,2974,0,Npc spawn.dat
+128,Snake,2835,3009,0,Npc spawn.dat
+128,Snake,2832,3011,0,Npc spawn.dat
+494,Banker,2584,3421,0,Npc spawn.dat
+925,Border Guard,3268,3226,0,Npc spawn.dat
+925,Border Guard,3268,3229,0,Npc spawn.dat
+840,Ugthanki,3218,3056,0,Npc spawn.dat
+107,Scorpion,3042,9761,0,Npc spawn.dat
+107,Scorpion,3049,9765,0,Npc spawn.dat
+494,Banker,2727,3495,0,Npc spawn.dat
+494,Banker,2721,3495,0,Npc spawn.dat
+708,Imp,3168,3406,0,Npc spawn.dat
+1,Man,2813,3447,0,Npc spawn.dat
+7,Farmer,3165,3324,0,extra_spawns.csv
+73,Zombie,3236,9907,0,Npc spawn.dat
+73,Zombie,3231,9905,0,Npc spawn.dat
+73,Zombie,3226,9907,0,Npc spawn.dat
+73,Zombie,3223,9908,0,Npc spawn.dat
+73,Zombie,3223,9905,0,Npc spawn.dat
+107,Scorpion,3296,3277,0,Npc spawn.dat
+54,Black dragon,2821,9826,0,Npc spawn.dat
+163,Gnome guard,2445,3511,0,Npc spawn.dat
+163,Gnome guard,2472,3507,0,Npc spawn.dat
+163,Gnome guard,2483,3507,0,Npc spawn.dat
+163,Gnome guard,2460,3491,0,Npc spawn.dat
+163,Gnome guard,2463,3489,0,Npc spawn.dat
+163,Gnome guard,2466,3486,0,Npc spawn.dat
+163,Gnome guard,2464,3459,0,Npc spawn.dat
+101,Goblin,2509,3153,0,Npc spawn.dat
+192,Dark warrior,3023,3632,1,extra_spawns.csv
+361,Woman,2515,3325,0,Npc spawn.dat
+361,Woman,2510,3322,0,Npc spawn.dat
+253,Khazard Guard,2614,3195,0,Npc spawn.dat
+253,Khazard Guard,2598,3193,0,Npc spawn.dat
+253,Khazard Guard,2596,3191,0,Npc spawn.dat
+253,Khazard Guard,2587,3193,0,Npc spawn.dat
+253,Khazard Guard,2602,3187,0,Npc spawn.dat
+253,Khazard Guard,2606,3182,0,Npc spawn.dat
+253,Khazard Guard,2611,3182,0,Npc spawn.dat
+253,Khazard Guard,2595,3177,0,Npc spawn.dat
+253,Khazard Guard,2592,3182,0,Npc spawn.dat
+253,Khazard Guard,2593,3185,0,Npc spawn.dat
+253,Khazard Guard,2596,3185,0,Npc spawn.dat
+253,Khazard Guard,2599,3184,0,Npc spawn.dat
+253,Khazard Guard,2617,3141,0,Npc spawn.dat
+253,Khazard Guard,2608,3150,0,Npc spawn.dat
+253,Khazard Guard,2609,3147,0,Npc spawn.dat
+253,Khazard Guard,2579,3152,0,Npc spawn.dat
+253,Khazard Guard,2579,3161,0,Npc spawn.dat
+253,Khazard Guard,2567,3151,0,Npc spawn.dat
+253,Khazard Guard,2569,3145,0,Npc spawn.dat
+253,Khazard Guard,2563,3144,0,Npc spawn.dat
+253,Khazard Guard,2567,3142,0,Npc spawn.dat
+253,Khazard Guard,2571,3140,0,Npc spawn.dat
+253,Khazard Guard,2579,3170,0,Npc spawn.dat
+253,Khazard Guard,2577,3174,0,Npc spawn.dat
+253,Khazard Guard,2591,3157,0,Npc spawn.dat
+253,Khazard Guard,2596,3157,0,Npc spawn.dat
+253,Khazard Guard,2601,3162,0,Npc spawn.dat
+253,Khazard Guard,2593,3167,0,Npc spawn.dat
+253,Khazard Guard,2589,3168,0,Npc spawn.dat
+253,Khazard Guard,2585,3164,0,Npc spawn.dat
+253,Khazard Guard,2586,3160,0,Npc spawn.dat
+73,Zombie,2506,3294,0,Npc spawn.dat
+73,Zombie,2501,3291,0,Npc spawn.dat
+128,Snake,2879,3168,0,Npc spawn.dat
+128,Snake,2876,3159,0,Npc spawn.dat
+128,Snake,2879,3148,0,Npc spawn.dat
+87,Giant rat,3059,3682,0,Npc spawn.dat
+87,Giant rat,3052,3689,0,Npc spawn.dat
+59,Giant spider,2381,3362,0,Npc spawn.dat
+59,Giant spider,2407,3375,0,Npc spawn.dat
+59,Giant spider,2418,3387,0,Npc spawn.dat
+122,Hobgoblin,2450,3369,0,Npc spawn.dat
+122,Hobgoblin,2459,3364,0,Npc spawn.dat
+9,Guard,2967,3398,0,Npc spawn.dat
+183,Pirate,2780,3186,0,Npc spawn.dat
+67,Gnome,2383,3509,1,extra_spawns.csv
+114,Ogre,2575,3026,0,Npc spawn.dat
+114,Ogre,2571,3029,0,Npc spawn.dat
+114,Ogre,2577,3032,0,Npc spawn.dat
+41,Chicken,2964,3345,0,Npc spawn.dat
+128,Snake,2937,2966,0,Npc spawn.dat
+128,Snake,2933,2966,0,Npc spawn.dat
+128,Snake,2933,2969,0,Npc spawn.dat
+128,Snake,2929,2967,0,Npc spawn.dat
+128,Snake,2921,2984,0,Npc spawn.dat
+86,Giant rat,3059,3690,0,Npc spawn.dat
+119,Chaos dwarf,3019,3746,0,Npc spawn.dat
+119,Chaos dwarf,3050,3759,0,Npc spawn.dat
+119,Chaos dwarf,3070,3739,0,Npc spawn.dat
+119,Chaos dwarf,3010,3753,0,Npc spawn.dat
+119,Chaos dwarf,3012,3757,0,Npc spawn.dat
+38,Shipyard worker,3002,3048,0,Npc spawn.dat
+38,Shipyard worker,2967,3038,0,Npc spawn.dat
+38,Shipyard worker,2950,3033,0,Npc spawn.dat
+38,Shipyard worker,2982,3061,0,Npc spawn.dat
+38,Shipyard worker,2996,3060,0,Npc spawn.dat
+97,White wolf,2848,3490,0,Npc spawn.dat
+128,Snake,2762,3173,0,Npc spawn.dat
+128,Snake,2760,3162,0,Npc spawn.dat
+812,Guard,2739,3577,0,extra_spawns.csv
+166,Gnome banker,2449,3480,1,Npc spawn.dat
+355,Child,2520,3276,0,Npc spawn.dat
+355,Child,2512,3270,0,Npc spawn.dat
+355,Child,2521,3285,0,Npc spawn.dat
+132,Monkey,2873,3168,0,Npc spawn.dat
+189,Monk of Zamorak,2454,3234,0,Npc spawn.dat
+189,Monk of Zamorak,2479,3227,0,Npc spawn.dat
+132,Monkey,2959,2976,0,Npc spawn.dat
+134,Poison spider,3086,9938,0,Npc spawn.dat
+717,Mourner,2539,3273,0,Npc spawn.dat
+717,Mourner,2527,3278,0,Npc spawn.dat
+63,Deadly red spider,3063,3878,0,Npc spawn.dat
+63,Deadly red spider,3054,3892,0,Npc spawn.dat
+63,Deadly red spider,3041,3886,0,Npc spawn.dat
+63,Deadly red spider,3040,3881,0,Npc spawn.dat
+63,Deadly red spider,3044,3876,0,Npc spawn.dat
+63,Deadly red spider,3043,3872,0,Npc spawn.dat
+81,Cow,2589,3117,0,Npc spawn.dat
+168,Gnome woman,2475,3397,1,Npc spawn.dat
+168,Gnome woman,2484,3400,1,Npc spawn.dat
+168,Gnome woman,2487,3410,1,Npc spawn.dat
+353,Woman,2493,3315,0,Npc spawn.dat
+353,Woman,2477,3311,0,Npc spawn.dat
+353,Woman,2452,3312,0,Npc spawn.dat
+95,Wolf,2535,3187,0,Npc spawn.dat
+494,Banker,2810,3443,0,Npc spawn.dat
+494,Banker,2811,3443,0,Npc spawn.dat
+839,Desert Wolf,3271,3106,0,Npc spawn.dat
+839,Desert Wolf,3264,3072,0,Npc spawn.dat
+839,Desert Wolf,3268,3085,0,Npc spawn.dat
+839,Desert Wolf,3264,3088,0,Npc spawn.dat
+168,Gnome woman,2483,3494,1,Npc spawn.dat
+750,Skeleton,2929,3254,2,Npc spawn.dat
+750,Skeleton,2926,3252,2,Npc spawn.dat
+750,Skeleton,2924,3252,2,Npc spawn.dat
+750,Skeleton,2925,3255,2,Npc spawn.dat
+750,Skeleton,2927,3258,2,Npc spawn.dat
+352,Woman,2483,3319,0,Npc spawn.dat
+75,Zombie,3147,3673,0,Npc spawn.dat
+75,Zombie,3158,3682,0,Npc spawn.dat
+75,Zombie,3170,3682,0,Npc spawn.dat
+75,Zombie,3173,3660,0,Npc spawn.dat
+75,Zombie,3153,3659,0,Npc spawn.dat
+75,Zombie,3162,3674,0,Npc spawn.dat
+75,Zombie,3174,3666,0,Npc spawn.dat
+75,Zombie,3177,3672,0,Npc spawn.dat
+75,Zombie,3176,3685,0,Npc spawn.dat
+168,Gnome woman,2484,3466,0,Npc spawn.dat
+168,Gnome woman,2435,3456,0,Npc spawn.dat
+168,Gnome woman,2436,3474,0,Npc spawn.dat
+168,Gnome woman,2475,3496,0,Npc spawn.dat
+168,Gnome woman,2473,3486,0,Npc spawn.dat
+168,Gnome woman,2452,3496,0,Npc spawn.dat
+168,Gnome woman,2454,3491,0,Npc spawn.dat
+168,Gnome woman,2459,3486,0,Npc spawn.dat
+168,Gnome woman,2463,3477,0,Npc spawn.dat
+347,Mourner,2553,3322,0,Npc spawn.dat
+347,Mourner,2549,3323,0,Npc spawn.dat
+839,Desert Wolf,3207,3039,0,Npc spawn.dat
+839,Desert Wolf,3209,3035,0,Npc spawn.dat
+839,Desert Wolf,3222,3066,0,Npc spawn.dat
+839,Desert Wolf,3202,3061,0,Npc spawn.dat
+839,Desert Wolf,3256,3068,0,Npc spawn.dat
+132,Monkey,2780,2999,0,Npc spawn.dat

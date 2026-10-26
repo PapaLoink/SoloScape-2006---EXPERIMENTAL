@@ -251,8 +251,8 @@ region	source	placements	walls	status
 40_47	native-443	1076	50	PASS
 40_48	native-443	4418	1085	PASS
 40_49	native-443	4028	727	PASS
-40_50	fallback	2744	431	PASS
-40_51	fallback	5370	1688	PASS
+40_50	fallback	2766	451	PASS
+40_51	fallback	5383	1669	PASS
 40_52	fallback	3305	684	PASS
 40_53	native-443	2642	369	PASS
 40_54	native-443	1938	126	PASS
