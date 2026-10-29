@@ -13,6 +13,18 @@ public final class DedicatedReactor
 extends Thread {
     private static DedicatedReactor instance;
     private final Selector selector;
+    private static final long DIAGNOSTIC_POLL_INTERVAL_MS = 20L;
+    private static final long RECENT_FPS_PING_NANOS = 10_000_000_000L;
+    // Do not scan every connected player on each diagnostic poll.
+    private final java.util.concurrent.ConcurrentHashMap<Player, Long> recentlyPinging =
+            new java.util.concurrent.ConcurrentHashMap<Player, Long>();
+
+    // Track selector progress independently of individual packet processing.
+    private final java.util.concurrent.atomic.AtomicLong longestReactorGapNanos =
+            new java.util.concurrent.atomic.AtomicLong();
+    // A slow handler blocks the entire selector, delaying unrelated pings.
+    private final java.util.concurrent.atomic.AtomicLong longestReadDispatchNanos =
+            new java.util.concurrent.atomic.AtomicLong();
 
     public DedicatedReactor(Selector selector) {
         this.selector = selector;
@@ -28,9 +40,16 @@ extends Thread {
     @Override
     public final void run() {
         Thread.currentThread().setName("DedicatedReactor");
+        long previousSelectReturnNanos = 0L;
         while (!Thread.currentThread().isInterrupted() && this.selector.isOpen()) {
             try {
-                this.selector.select();
+                this.selector.select(DIAGNOSTIC_POLL_INTERVAL_MS);
+                long now = System.nanoTime();
+                if (previousSelectReturnNanos != 0L) {
+                    long gap = Math.max(0L, now - previousSelectReturnNanos);
+                    longestReactorGapNanos.accumulateAndGet(gap, Math::max);
+                }
+                previousSelectReturnNanos = now;
                 if (Thread.currentThread().isInterrupted() || !this.selector.isOpen()) {
                     break;
                 }
@@ -49,12 +68,23 @@ extends Thread {
 
                     Player player = (Player)selectionKey.attachment();
                     if (selectionKey.isReadable()) {
-                        PacketDispatcher.processIncoming(player);
+                        long dispatchStart = System.nanoTime();
+                        try {
+                            PacketDispatcher.processIncoming(player);
+                        } finally {
+                            long spent = Math.max(0L, System.nanoTime() - dispatchStart);
+                            longestReadDispatchNanos.accumulateAndGet(spent, Math::max);
+                        }
                     }
                     if (selectionKey.isValid() && selectionKey.isWritable()) {
                         PacketDispatcher.flushOutgoing(player);
                     }
                 }
+                // Diagnostic fallback: on some platforms the registered OP_READ
+                // event appears to be delayed even though the client wrote the
+                // packet promptly. Poll recently pinging connections only, on
+                // this same reactor thread, to avoid concurrent buffer reads.
+                pollRecentFpsConnections(now);
             }
             catch (ClosedSelectorException closedSelectorException) {
                 break;
@@ -66,6 +96,42 @@ extends Thread {
                 break;
             }
         }
+    }
+
+    /** Only actively using ::fps connections are eligible for read polling. */
+    public void noteFpsPing(Player player) {
+        recentlyPinging.put(player, System.nanoTime());
+    }
+
+    private void pollRecentFpsConnections(long now) {
+        for (java.util.Map.Entry<Player, Long> entry : recentlyPinging.entrySet()) {
+            Player player = entry.getKey();
+            long lastPing = entry.getValue();
+            if (now - lastPing < 0L || now - lastPing > RECENT_FPS_PING_NANOS
+                    || !player.getSocketChannel().isOpen()
+                    || !player.getSelectionKey().isValid()) {
+                recentlyPinging.remove(player, lastPing);
+                continue;
+            }
+            // SocketChannels are non-blocking. processIncoming returns
+            // immediately when no bytes are currently available.
+            PacketDispatcher.processIncoming(player);
+        }
+    }
+
+    /**
+     * Snapshot the slowest recent socket-read/packet-dispatch operation.
+     * Called by the ping handler on the same selector thread.
+     */
+    /** Longest observed interval between selector returns since the last ping. */
+    public int takeLongestReactorGapMillis() {
+        long nanos = longestReactorGapNanos.getAndSet(0L);
+        return (int) Math.min(Integer.MAX_VALUE, (nanos + 500_000L) / 1_000_000L);
+    }
+
+    public int takeLongestReadDispatchMillis() {
+        long nanos = longestReadDispatchNanos.getAndSet(0L);
+        return (int) Math.min(Integer.MAX_VALUE, (nanos + 500_000L) / 1_000_000L);
     }
 
     public final Selector getSelector() {

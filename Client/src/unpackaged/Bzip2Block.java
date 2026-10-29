@@ -199,6 +199,7 @@ public class Bzip2Block {
     public static boolean readFrame() {
         // HotSwap does not rerun Client's static packet-size initialization.
         Client.incomingSizes[18] = 3;
+        Client.incomingSizes[254] = 44; // pong: IDs, queue/lock/gap, epochs, read/dispatch/reactor delays
         if (Class37.gameSocket == null) {
             return false;
         }
@@ -241,6 +242,24 @@ public class Bzip2Block {
             FileLoader.anInt1283 = Class63.anInt1117;
             Class39_Sub5_Sub11.anInt1827 = 0;
             Class63.anInt1117 = Class4.frameId;
+            if (Class4.frameId == 254) {
+                int pingId = Class39_Sub5_Sub11.gameBuffer.getDword();
+                int serverQueueBytes = Class39_Sub5_Sub11.gameBuffer.getDword();
+                int serverLockWaitMs = Class39_Sub5_Sub11.gameBuffer.getDword();
+                int serverReceiveGapMs = Class39_Sub5_Sub11.gameBuffer.getDword();
+                long serverReceivedMillis = Class39_Sub5_Sub11.gameBuffer.getQword();
+                long serverRepliedMillis = Class39_Sub5_Sub11.gameBuffer.getQword();
+                int serverReadToHandlerMs = Class39_Sub5_Sub11.gameBuffer.getDword();
+                int serverLongestDispatchMs = Class39_Sub5_Sub11.gameBuffer.getDword();
+                int serverLongestReactorGapMs = Class39_Sub5_Sub11.gameBuffer.getDword();
+                FpsDebugOverlay.onPingReply(pingId, serverQueueBytes,
+                        serverLockWaitMs, serverReceiveGapMs,
+                        serverReceivedMillis, serverRepliedMillis,
+                        serverReadToHandlerMs, serverLongestDispatchMs,
+                        serverLongestReactorGapMs);
+                Class4.frameId = -1;
+                return true;
+            }
             if (Class4.frameId == 178 || Class4.frameId == 160 || Class4.frameId == 146
                     || Class4.frameId == 32 || Class4.frameId == 51) {
                 GrandExchangeWidgets.cancelSearch();

@@ -73,6 +73,7 @@ public final class ClientPackets {
     public static final int FOCUS = 207;
     public static final int IDLE = 192;
     public static final int KEEPALIVE = 86;
+    public static final int PING = 254; // Client FPS diagnostics request (int ID)
     public static final int WIDGET_ITEM_DRAG = 190;
     public static final int WIDGET_DRAG_DROP = 46;
     public static final int REGION_LOADED = 21;
@@ -123,6 +124,7 @@ public final class ClientPackets {
                 || opcode == ADD_IGNORE || opcode == REMOVE_IGNORE) return 8;
         if (opcode == MOUSE_CLICK || opcode == CAMERA) return 4;
         if (opcode == FOCUS) return 1;
+        if (opcode == PING) return 12; // ping ID and client send wall-clock millis
         if (opcode == IDLE || opcode == KEEPALIVE || opcode == REGION_LOADED
                 || opcode == CLOSE_INTERFACE) return 0;
         if (opcode == WIDGET_ITEM_DRAG) return 9;

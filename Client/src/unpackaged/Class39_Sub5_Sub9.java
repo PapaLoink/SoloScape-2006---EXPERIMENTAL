@@ -202,18 +202,17 @@ public class Class39_Sub5_Sub9 extends SubNode
 	}
 	i_20_ += 8;
 	int i_23_ = Class39_Sub5_Sub11.anInt1841 * 15 + 21;
-	if (Class39_Sub4.anInt1329 > 4 && Bzip2Block.anInt1054 > 4
-	    && Class39_Sub4.anInt1329 < 516 && Bzip2Block.anInt1054 < 338) {
+	if (Resizable.inView(Class39_Sub4.anInt1329, Bzip2Block.anInt1054)) {
 	    Class37.anInt653 = 0;
 	    Huffmans.anInt757 = Class39_Sub5_Sub11.anInt1841 * 15 + 22;
 	    Class39_Sub12.aBoolean1493 = true;
 	    Class14.anInt227 = i_20_;
-	    int i_24_ = -(i_20_ / 2) + Class39_Sub4.anInt1329 - 4;
-	    if (i_24_ + i_20_ > 512)
-		i_24_ = -i_20_ + 512;
-	    int i_25_ = Bzip2Block.anInt1054 - 4;
-	    if (i_25_ + i_23_ > 334)
-		i_25_ = -i_23_ + 334;
+	    int i_24_ = -(i_20_ / 2) + Resizable.vx(Class39_Sub4.anInt1329);
+	    if (i_24_ + i_20_ > Resizable.menuW())
+		i_24_ = -i_20_ + Resizable.menuW();
+	    int i_25_ = Resizable.vy(Bzip2Block.anInt1054);
+	    if (i_25_ + i_23_ > Resizable.menuH())
+		i_25_ = -i_23_ + Resizable.menuH();
 	    if (i_25_ < 0)
 		i_25_ = 0;
 	    if (i_24_ < 0)

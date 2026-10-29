@@ -841,12 +841,11 @@ public class JString implements Interface1 {
                 BufferedFile.method235((byte) 126);
                 Projectile.anInt2197 = -1;
                 Class48.anInt904 = -1;
-                if (IsaacPrng.anInt1091 > 4 && Class33.anInt599 > 4
-                        && IsaacPrng.anInt1091 < 516 && Class33.anInt599 < 338) {
+                if (unpackaged.Resizable.inView(IsaacPrng.anInt1091, Class33.anInt599)) {
                     if (Class39_Sub11.anInt1478 != -1) {
-                        Class25.method283(4, IsaacPrng.anInt1091,
-                                Class33.anInt599, (byte) 126, 4, 0,
-                                Class39_Sub11.anInt1478, 516, 338);
+                        Class25.method283(unpackaged.Resizable.mx(), IsaacPrng.anInt1091,
+                                Class33.anInt599, (byte) 126, unpackaged.Resizable.my(), 0,
+                                Class39_Sub11.anInt1478, unpackaged.Resizable.mx() + 512, unpackaged.Resizable.my() + 334);
                     } else {
                         Class39_Sub13.method875(-65);
                     }

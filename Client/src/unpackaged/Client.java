@@ -486,8 +486,10 @@ public class Client extends ClientApplet {
             ScriptState.method275(-33);
         }
         if (Class31.state == 30) {
+            FpsDebugOverlay.tick();
             Class34.method336(-72);
         } else if (Class31.state == 35) {
+            FpsDebugOverlay.tick();
             Class34.method336(-91);
         } else if (Class31.state == 40) {
             Class25.method285(-10);

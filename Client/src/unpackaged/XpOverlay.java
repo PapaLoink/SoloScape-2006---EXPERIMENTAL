@@ -48,7 +48,7 @@ public final class XpOverlay {
     /** Draws into the game's own pixel buffer just before it is shown, so the overlay never flickers. */
     public static void paintBuffer(int[] buf, int w, int h, int bx, int by) {
         try {
-            if (bx != 4 || by != 4 || w != 512 || h != 334 || buf == null || buf.length < w * h) return;
+            if (bx != 4 || by != 4 || w != Resizable.vw || h != Resizable.vh || buf == null || buf.length < w * h) return;
             if (shareImg == null || shareBuf != buf) {
                 java.awt.image.DataBufferInt db = new java.awt.image.DataBufferInt(buf, w * h);
                 java.awt.image.WritableRaster r = java.awt.image.Raster.createPackedRaster(db, w, h, w, new int[]{0xff0000, 0xff00, 0xff}, null);
@@ -66,7 +66,7 @@ public final class XpOverlay {
     static void paint(Graphics2D g0, int bx, int by, int bw, int bh) {
         try {
             // only the main 3D viewport blit
-            Rectangle vp = new Rectangle(4, 4, 512, 334);
+            Rectangle vp = new Rectangle(4, 4, Resizable.vw, Resizable.vh);
             Rectangle blit = new Rectangle(bx, by, bw, bh);
             if (!blit.contains(vp) && !blit.intersects(new Rectangle(380, 4, 136, 120))) return;
             poll();
@@ -77,7 +77,7 @@ public final class XpOverlay {
             g.setClip(vp.intersection(blit));
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            int right = 510;
+            int right = Resizable.active() ? 4 + Resizable.vw - Resizable.sw(Resizable.MAP_W) - 6 : 510;
 
             // level progress card
             int[][] my = ModHook.mySkills();

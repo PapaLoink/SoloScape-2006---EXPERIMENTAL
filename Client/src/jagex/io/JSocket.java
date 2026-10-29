@@ -28,6 +28,9 @@ import unpackaged.Widget;
 public class JSocket implements Runnable {
 
     public int writePosition = 0;
+    private int fpsProbeWriteEnd = -1;
+    private int fpsProbeId;
+    private long lastSuccessfulWriteNanos;
     public InputStream inputstream;
     public Socket socket;
     public Signlink signlink;
@@ -94,12 +97,32 @@ public class JSocket implements Runnable {
                     }
                 }
                 if (amountWrite > 0) {
+                    boolean writeSucceeded = false;
                     try {
                         ouputstream.write(buffer, offset, amountWrite);
+                        writeSucceeded = true;
                     } catch (IOException ioexception) {
                         aBoolean307 = true;
                     }
-                    writePosition = (writePosition + amountWrite) % 5000;
+                    int deliveredProbeId = 0;
+                    long writtenNanos = System.nanoTime();
+                    synchronized (this) {
+                        int oldPosition = writePosition;
+                        writePosition = (writePosition + amountWrite) % 5000;
+                        if (writeSucceeded) {
+                            lastSuccessfulWriteNanos = writtenNanos;
+                        }
+                        if (writeSucceeded && fpsProbeWriteEnd >= 0) {
+                            int distance = (fpsProbeWriteEnd - oldPosition + 5000) % 5000;
+                            if (distance > 0 && distance <= amountWrite) {
+                                deliveredProbeId = fpsProbeId;
+                                fpsProbeWriteEnd = -1;
+                            }
+                        }
+                    }
+                    if (deliveredProbeId != 0) {
+                        unpackaged.FpsDebugOverlay.onSocketTransmitted(deliveredProbeId, writtenNanos);
+                    }
                     try {
                         if (bufferPosition == writePosition) {
                             ouputstream.flush();
@@ -773,6 +796,19 @@ public class JSocket implements Runnable {
             return 0;
         }
         return inputstream.available();
+    }
+
+    /** Mark the end of an FPS probe in the asynchronous TCP write ring. */
+    public synchronized void markFpsProbe(int pingId) {
+        fpsProbeId = pingId;
+        fpsProbeWriteEnd = bufferPosition;
+        if (writePosition == bufferPosition) {
+            // The writer already drained this packet before we marked it.
+            fpsProbeWriteEnd = -1;
+            unpackaged.FpsDebugOverlay.onSocketTransmitted(
+                    pingId, lastSuccessfulWriteNanos == 0L
+                            ? System.nanoTime() : lastSuccessfulWriteNanos);
+        }
     }
 
     public void write(byte[] src, int off, int len) throws IOException {

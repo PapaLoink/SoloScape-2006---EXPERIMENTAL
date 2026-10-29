@@ -95,6 +95,12 @@ and ends short of the pen. The quest-start map icon object `2739` (map function 
 at 2606, 3264, as in the February 2007 data, for Charlie and Eagles' Peak (released
 28 November 2006).
 
+41_51 needed the same treatment along its north edge. In the revision 443 terrain, 2654-2677,
+3325-3327 is raised to a building floor (height 50). The building's north part is in the native
+revision 443 square 41_52 (walls `1602`, roofs `1792`/`5778`/`5779` from y 3328). Its south wall,
+doors, fence and roof edge are only in the 2007 data. In that strip, on all planes, 41_51 uses the
+2007 objects (78 placements, all drawable) in place of the 13 May 2006 ones.
+
 `world-map-repairs.tsv` lists every changed square with before/after counts and hashes
 (`may2006-replacement` and `may2006-restoration`). The other 47 squares lost nothing
 or had nothing in May 2006 to restore.

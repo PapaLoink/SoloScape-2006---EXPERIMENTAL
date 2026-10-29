@@ -770,6 +770,7 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    }
 	}
 	method32(true);
+	Resizable.present();
 	WebClientBridge.publishFrame();
     }
     

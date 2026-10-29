@@ -664,6 +664,11 @@ final class ModPanel extends JPanel {
             stretch.setFocusable(false);
             stretch.addActionListener(e -> { ModHook.setStretch(stretch.isSelected()); ModHook.focusGame(); });
             add(stretch, c); c.gridy++;
+            JCheckBox resizable = new JCheckBox("Resizable layout (game fills the window, panels in the corners)", Resizable.enabled);
+            resizable.setFocusable(false);
+            resizable.setToolTipText("OSRS-style classic resizable view. Not in 2006; off keeps the original 765x503 layout");
+            resizable.addActionListener(e -> { Resizable.setEnabled(resizable.isSelected()); ModHook.focusGame(); });
+            add(resizable, c); c.gridy++;
             JCheckBox xpd = new JCheckBox("XP drops and level progress (top right)", XpOverlay.enabled);
             xpd.setFocusable(false);
             xpd.addActionListener(e -> { XpOverlay.enabled = xpd.isSelected(); ModHook.saveSettings(); ModHook.focusGame(); });

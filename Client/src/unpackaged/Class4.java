@@ -171,8 +171,8 @@ public class Class4
 	    i_8_ = i_11_ * i_12_ + i_13_ * i_8_ >> 16;
 	    i_11_ = i_16_;
 	    if (i_8_ >= 50) {
-		Class14.anInt224 = 256 + (i_10_ << 9) / i_8_;
-		Class53.anInt962 = (i_11_ << 9) / i_8_ + 167;
+		Class14.anInt224 = Class39_Sub5_Sub10_Sub2.anInt2462 + (i_10_ * Resizable.zoom) / i_8_;
+		Class53.anInt962 = (i_11_ * Resizable.zoom) / i_8_ + Class39_Sub5_Sub10_Sub2.anInt2467;
 	    } else {
 		Class14.anInt224 = -1;
 		Class53.anInt962 = -1;

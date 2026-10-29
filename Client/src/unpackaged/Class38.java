@@ -56,6 +56,8 @@ public class Class38
     public static int anInt710;
     public static int anInt711;
     public static final int DR = 52;
+    /** Ground tiles are drawn while every corner is at least this far in front of the camera (2006: 50); lower so close zoom has no holes. */
+    static final int GROUND_NEAR = 16;
     public static boolean[][][][] aBooleanArrayArrayArrayArray712;
     public static int[] anIntArray713;
     public static int anInt714;
@@ -444,10 +446,10 @@ public class Class38
 	int i_94_ = i_92_ * anInt693 - i * anInt671 >> 16;
 	int i_95_ = i_91_ * anInt685 + i_94_ * anInt687 >> 16;
 	int i_96_ = i_91_ * anInt687 - i_94_ * anInt685 >> 16;
-	if (i_95_ < 50 || i_95_ > 9000)
+	if (i_95_ < GROUND_NEAR || i_95_ > 9000)
 	    return false;
-	int i_97_ = anInt726 + (i_93_ << 9) / i_95_;
-	int i_98_ = anInt722 + (i_96_ << 9) / i_95_;
+	int i_97_ = anInt726 + (i_93_ * Resizable.zoom) / i_95_;
+	int i_98_ = anInt722 + (i_96_ * Resizable.zoom) / i_95_;
 	if (i_97_ < anInt714 || i_97_ > anInt719 || i_98_ < anInt711
 	    || i_98_ > anInt710)
 	    return false;
@@ -935,7 +937,7 @@ public class Class38
 		    Class39_Sub14 class39_sub14
 			= class39_sub14s[i_193_][i_194_];
 		    if (class39_sub14 != null) {
-			if (class39_sub14.anInt1545 > i_191_
+			if ((class39_sub14.anInt1545 > i_191_ && !ModHook.keepAbove(i_193_, i_194_))
 			    || (!(aBooleanArrayArray725[i_193_ - anInt704 + DR]
 				  [i_194_ - anInt674 + DR])
 				&& (anIntArrayArrayArray699[i_192_][i_193_]
@@ -1914,7 +1916,7 @@ public class Class38
 	    i_352_ = i_350_ * i_342_ - i_351_ * i >> 16;
 	    i_351_ = i_350_ * i + i_351_ * i_342_ >> 16;
 	    i_350_ = i_352_;
-	    if (i_351_ < 50)
+	    if (i_351_ < GROUND_NEAR)
 		return;
 	    if (class17.anIntArray327 != null) {
 		Class17.anIntArray321[i_348_] = i_349_;
@@ -1922,9 +1924,9 @@ public class Class38
 		Class17.anIntArray322[i_348_] = i_351_;
 	    }
 	    Class17.anIntArray326[i_348_]
-		= Class39_Sub5_Sub10_Sub2.anInt2462 + (i_349_ << 9) / i_351_;
+		= Class39_Sub5_Sub10_Sub2.anInt2462 + (i_349_ * Resizable.zoom) / i_351_;
 	    Class17.anIntArray333[i_348_]
-		= Class39_Sub5_Sub10_Sub2.anInt2467 + (i_350_ << 9) / i_351_;
+		= Class39_Sub5_Sub10_Sub2.anInt2467 + (i_350_ * Resizable.zoom) / i_351_;
 	}
 	Class39_Sub5_Sub10_Sub2.anInt2468 = 0;
 	i_347_ = class17.anIntArray314.length;
@@ -2038,44 +2040,44 @@ public class Class38
 	i_382_ = i_378_ * i_365_ - i_372_ * i_364_ >> 16;
 	i_372_ = i_378_ * i_364_ + i_372_ * i_365_ >> 16;
 	i_378_ = i_382_;
-	if (i_372_ >= 50) {
+	if (i_372_ >= GROUND_NEAR) {
 	    i_382_ = i_373_ * i_366_ + i_374_ * i_367_ >> 16;
 	    i_373_ = i_373_ * i_367_ - i_374_ * i_366_ >> 16;
 	    i_374_ = i_382_;
 	    i_382_ = i_379_ * i_365_ - i_373_ * i_364_ >> 16;
 	    i_373_ = i_379_ * i_364_ + i_373_ * i_365_ >> 16;
 	    i_379_ = i_382_;
-	    if (i_373_ >= 50) {
+	    if (i_373_ >= GROUND_NEAR) {
 		i_382_ = i_376_ * i_366_ + i_375_ * i_367_ >> 16;
 		i_376_ = i_376_ * i_367_ - i_375_ * i_366_ >> 16;
 		i_375_ = i_382_;
 		i_382_ = i_380_ * i_365_ - i_376_ * i_364_ >> 16;
 		i_376_ = i_380_ * i_364_ + i_376_ * i_365_ >> 16;
 		i_380_ = i_382_;
-		if (i_376_ >= 50) {
+		if (i_376_ >= GROUND_NEAR) {
 		    i_382_ = i_377_ * i_366_ + i_371_ * i_367_ >> 16;
 		    i_377_ = i_377_ * i_367_ - i_371_ * i_366_ >> 16;
 		    i_371_ = i_382_;
 		    i_382_ = i_381_ * i_365_ - i_377_ * i_364_ >> 16;
 		    i_377_ = i_381_ * i_364_ + i_377_ * i_365_ >> 16;
 		    i_381_ = i_382_;
-		    if (i_377_ >= 50) {
+		    if (i_377_ >= GROUND_NEAR) {
 			int i_383_ = (Class39_Sub5_Sub10_Sub2.anInt2462
-				      + (i_370_ << 9) / i_372_);
+				      + (i_370_ * Resizable.zoom) / i_372_);
 			int i_384_ = (Class39_Sub5_Sub10_Sub2.anInt2467
-				      + (i_378_ << 9) / i_372_);
+				      + (i_378_ * Resizable.zoom) / i_372_);
 			int i_385_ = (Class39_Sub5_Sub10_Sub2.anInt2462
-				      + (i_374_ << 9) / i_373_);
+				      + (i_374_ * Resizable.zoom) / i_373_);
 			int i_386_ = (Class39_Sub5_Sub10_Sub2.anInt2467
-				      + (i_379_ << 9) / i_373_);
+				      + (i_379_ * Resizable.zoom) / i_373_);
 			int i_387_ = (Class39_Sub5_Sub10_Sub2.anInt2462
-				      + (i_375_ << 9) / i_376_);
+				      + (i_375_ * Resizable.zoom) / i_376_);
 			int i_388_ = (Class39_Sub5_Sub10_Sub2.anInt2467
-				      + (i_380_ << 9) / i_376_);
+				      + (i_380_ * Resizable.zoom) / i_376_);
 			int i_389_ = (Class39_Sub5_Sub10_Sub2.anInt2462
-				      + (i_371_ << 9) / i_377_);
+				      + (i_371_ * Resizable.zoom) / i_377_);
 			int i_390_ = (Class39_Sub5_Sub10_Sub2.anInt2467
-				      + (i_381_ << 9) / i_377_);
+				      + (i_381_ * Resizable.zoom) / i_377_);
 			Class39_Sub5_Sub10_Sub2.anInt2468 = 0;
 			if (((i_387_ - i_389_) * (i_386_ - i_390_)
 			     - (i_388_ - i_390_) * (i_385_ - i_389_))
@@ -2560,8 +2562,8 @@ public class Class38
 			int i_451_ = i_449_ * 128;
 			int i_452_ = i_450_ * 128;
 			boolean bool = false;
-			for (int zs = 0; zs < 4 && !bool; zs++) {
-			    int camH = is[i_447_] * (new int[] { 65, 100, 140, 175 })[zs] / 100;
+			for (int zs = 0; zs < 6 && !bool; zs++) {
+			    int camH = is[i_447_] * (new int[] { 35, 50, 65, 100, 140, 175 })[zs] / 100;
 			    for (int i_453_ = -i; i_453_ <= i_442_;
 				 i_453_ += 128) {
 				if (method369(i_451_, camH + i_453_,

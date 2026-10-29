@@ -775,6 +775,7 @@ public class ClientScript extends SubNode
     }
     
     public static void method481(int i) {
+	Resizable.ensureView();
 	Class23.aClass57_435.method1006(10);
 	Class39_Sub5_Sub7.anIntArray1789
 	    = Class39_Sub5_Sub10_Sub2

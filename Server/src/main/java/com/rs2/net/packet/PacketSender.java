@@ -562,8 +562,22 @@ public final class PacketSender {
         this.player.getMovementQueue().clear();
         this.player.getMovementQueue().addStep(new Position(this.player.getPosition().getX() + value3, this.player.getPosition().getY() + value22));
         this.player.getMovementQueue().removeFirstStep();
+        if (enabled2) {
+            this.faceAlongForcedStep(value3, value22);
+        }
         CycleEventHandler.getInstance().schedule(this.player, new RelativePositionUnlockEvent(this, enabled2), 1);
         return this;
+    }
+
+    /**
+     * Passing through a door, gate or gap: the client holds a face order (such as the one from clicking the door)
+     * until the step ends and then turns back to it. Face a tile beyond the destination instead, so the player
+     * keeps looking the way they walked. A face set after this call (e.g. firemaking) still wins.
+     */
+    private void faceAlongForcedStep(int deltaX, int deltaY) {
+        Position p = this.player.getPosition();
+        this.player.getUpdateState().setFacePosition(new Position(p.getX() + deltaX + Integer.signum(deltaX),
+                p.getY() + deltaY + Integer.signum(deltaY), p.getPlane()));
     }
 
     public final PacketSender queueYAxisMovementStep(int value4, int value22, int value32, boolean enabled2) {
@@ -575,6 +589,7 @@ public final class PacketSender {
         this.player.getMovementQueue().clear();
         this.player.getMovementQueue().addStep(new Position(this.player.getPosition().getX(), this.player.getPosition().getY() + value22));
         this.player.getMovementQueue().removeFirstStep();
+        this.faceAlongForcedStep(0, value22);
         CycleEventHandler.getInstance().schedule(this.player, new YAxisPositionUnlockEvent(this, true), 2);
         return this;
     }

@@ -28,13 +28,19 @@ public final class ModHook {
     private static boolean chatFocus;
     private static final Properties SET = new Properties();
     static final int BASE_W = 765, BASE_H = 503;
+    /** Window size when not maximised: RuneLite's default window, measured on the user's screen. */
+    static final int RESTORED_W = 1003, RESTORED_H = 665;
     static final String PH = "Press Enter to begin talking";
 
     // ------------------------------------------------------------------ start
     // ---- camera zoom: distance percent, 70 = 30% closer, 160 = 60% farther
     public static int zoomPct = 100;
+    /** Farthest wheel zoom-out: 175% in the fixed layout, 120% in the resizable one (tuned against OSRS). */
+    /** Closest wheel zoom-in (camera distance percent): 65% in the fixed layout, 35% in the resizable one. */
+    static int minZoomPct() { return Resizable.active() ? 35 : 65; }
+    static int maxZoomPct() { return Resizable.active() ? 120 : 175; }
     public static int zoomDist(int d) {
-        return (int) ((long) d * zoomPct / 100);
+        return (int) ((long) d * Math.max(minZoomPct(), Math.min(zoomPct, maxZoomPct())) / 100);
     }
     public static void hookWheel(Component c) {
         c.addMouseWheelListener(e -> {
@@ -43,10 +49,11 @@ public final class ModHook {
             // only zoom when the pointer is over the 3D view and no interface (bank, shop, scroll...) covers it
             try {
                 int mx = jagex.utils.IsaacPrng.anInt1091, my = Class33.anInt599;
-                boolean overView = Class31.state == 30 && mx > 4 && mx < 516 && my > 4 && my < 338;
+                boolean overView = Class31.state == 30 && Resizable.inView(mx, my);
                 if (!overView || Class39_Sub11.anInt1478 != -1 || SubNode.anInt1348 != -1) return;
             } catch (Throwable t) { return; }
-            zoomPct = Math.max(65, Math.min(175, zoomPct + step));
+            zoomPct = Math.max(minZoomPct(), Math.min(maxZoomPct(), zoomPct + step));
+            saveSettings();                                  // remembered across restarts
         });
     }
 
@@ -60,6 +67,9 @@ public final class ModHook {
                 ModPanel.install(f);
                 Insets in = f.getInsets();
                 f.setMinimumSize(new Dimension(in.left + in.right + BASE_W + 53, in.top + in.bottom + BASE_H));
+                // Restoring from maximised gives RuneLite's default window size, centred.
+                f.setSize(Math.max(f.getMinimumSize().width, RESTORED_W), Math.max(f.getMinimumSize().height, RESTORED_H));
+                f.setLocationRelativeTo(null);
                 f.setExtendedState(Frame.MAXIMIZED_BOTH);
                 relayout();
             } catch (Throwable t) { t.printStackTrace(); }
@@ -184,6 +194,8 @@ public final class ModHook {
         shiftDrop = "1".equals(SET.getProperty("shiftdrop"));
         spaceContinue = "1".equals(SET.getProperty("spacecontinue"));
         showFps = "1".equals(SET.getProperty("showfps"));
+        try { zoomPct = Math.max(35, Math.min(175, Integer.parseInt(SET.getProperty("zoom", "100")))); } catch (Exception e) { zoomPct = 100; }
+        Resizable.enabled = "1".equals(SET.getProperty("resizable"));
         SET.remove("fpslimit");                             // from the removed frame rate limit
     }
 
@@ -202,11 +214,22 @@ public final class ModHook {
         SET.setProperty("shiftdrop", shiftDrop ? "1" : "0");
         SET.setProperty("spacecontinue", spaceContinue ? "1" : "0");
         SET.setProperty("showfps", showFps ? "1" : "0");
+        SET.setProperty("zoom", Integer.toString(zoomPct));
+        SET.setProperty("resizable", Resizable.enabled ? "1" : "0");
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 
     /** When set, the scene only draws up to the player's own floor, so roofs and upper floors are never drawn. */
     public static volatile boolean noRoofs;
+    /**
+     * Tiles kept above the player's floor when roofs are hidden: the two Varrock palace garden trees, whose trunk,
+     * branches and canopy are built on four floors (3206-3208 and 3217-3219, 3448-3450).
+     */
+    public static boolean keepAbove(int sceneX, int sceneY) {
+        if (!noRoofs) return false;
+        int x = sceneX + Class65.anInt1145, y = sceneY + JKeyListener.anInt618;
+        return y >= 3448 && y <= 3450 && (x >= 3206 && x <= 3208 || x >= 3217 && x <= 3219);
+    }
 
     /** Shift-drop (not in 2006): holding Shift makes an inventory item's Drop option the left-click action. */
     static volatile boolean shiftDrop;
@@ -514,7 +537,8 @@ public final class ModHook {
     public static boolean command(String line) {
         String lt = line.trim().toLowerCase();
         if (lt.startsWith("::zoom")) {
-            try { zoomPct = Math.max(65, Math.min(175, Integer.parseInt(lt.substring(6).trim()))); } catch (Exception e) { zoomPct = 100; }
+            try { zoomPct = Math.max(minZoomPct(), Math.min(maxZoomPct(), Integer.parseInt(lt.substring(6).trim()))); } catch (Exception e) { zoomPct = 100; }
+            saveSettings();
             clearTyped();
             note("Zoom set to " + zoomPct + "%. The mouse wheel also zooms.");
             return true;
@@ -663,7 +687,7 @@ public final class ModHook {
     /** In game (not stretched) the game never paints outside its own area, so stale login-screen art there is wiped. */
     private static void wipeMargins() {
         try {
-            if (stretch || Class31.state < 25 || !(app instanceof Canvas_Sub1)) return;
+            if (Resizable.active() || stretch || (!Resizable.enabled && Class31.state < 25) || !(app instanceof Canvas_Sub1)) return;
             Canvas_Sub1 c = (Canvas_Sub1) app;
             int w = c.getWidth(), h = c.getHeight();
             if (w <= 0 || h <= 0) return;

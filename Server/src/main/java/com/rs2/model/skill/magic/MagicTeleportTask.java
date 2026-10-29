@@ -52,6 +52,7 @@ extends CycleEvent {
                     GameplayTrace.log("magic teleport move player=" + GameplayTrace.describe(TeleportManager.getPlayer(this.teleportManager)) + " destination=" + this.destinationX + "," + this.destinationY + "," + this.destinationPlane + " ancient=" + this.ancientSpellbookTeleport);
                 }
                 TeleportManager.getPlayer(this.teleportManager).moveTo(new Position(this.destinationX, this.destinationY, this.destinationPlane));
+                com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(TeleportManager.getPlayer(this.teleportManager));
                 if (GameplayTrace.enabled()) {
                     GameplayTrace.log("magic teleport moved player=" + GameplayTrace.describe(TeleportManager.getPlayer(this.teleportManager)));
                 }

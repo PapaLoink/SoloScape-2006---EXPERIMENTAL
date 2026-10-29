@@ -81,7 +81,8 @@ extends TickTask {
             if (GameplayTrace.enabled()) {
                 GameplayTrace.log("combat start blocked invalid-target attacker=" + GameplayTrace.describe(entity) + " target=" + GameplayTrace.describe(entity2));
             }
-            if (entity.isPlayer()) {
+            // The swarm has no Attack option in revision 443, so the only way here is auto retaliate: stay silent.
+            if (entity.isPlayer() && !(entity2.isNpc() && ((Npc)entity2).getNpcId() == 411)) {
                 Player player = (Player)entity;
                 player.packetSender.sendGameMessage("You cannot attack this npc.");
             }

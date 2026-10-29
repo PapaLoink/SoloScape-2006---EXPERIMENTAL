@@ -48,7 +48,7 @@ public final class BiohazardQuest extends QuestScript {
         TRAIN_GATE_R = 2041, CAULDRON = 2043, CITY_DOOR_L = 2048, CITY_DOOR_R = 2049, VARROCK_GATE_L = 2050,
         VARROCK_GATE_R = 2051, JERICO_CUP = 2056, JERICO_CUP_OPEN = 2057, HQ_GATE_L = 2058, HQ_GATE_R = 2060,
         NURSE_CUP = 2062, NURSE_CUP_OPEN = 2063, CRATE = 2064, LADDER = 2065, LADDER_WALL = 2066, WATCHTOWER = 2067,
-        FENCE = 2068;
+        FENCE = 2068, ELENA_DOOR = 2054;
     // synths and spotanims
     static final int DOOR_OPEN = 318, GRATE_OPEN = 332, COFFIN_OPEN = 329, PIGEON_LAUNCH = 72;
 
@@ -82,6 +82,17 @@ public final class BiohazardQuest extends QuestScript {
     private static int freeSlots(Player p) { return p.getInventoryManager().getContainer().getFreeSlots(); }
     private static void msg(Player p, String s) { p.packetSender.sendGameMessage(s); }
     private static void close(Player p) { p.packetSender.closeInterfaces(); }
+
+    /**
+     * LostCity player_teleport_normal and spirit_tree: every plague sample carried in the inventory is destroyed on
+     * arrival. Banked samples, and Elena's three vials, are unaffected.
+     */
+    public static void teleportCrossing(Player p) {
+        int n = p.getInventoryManager().getItemAmount(SAMPLE);
+        if (n <= 0) return;
+        p.getInventoryManager().removeItem(new ItemStack(SAMPLE, n));
+        msg(p, "The plague sample is too delicate...it disintegrates in the crossing.");
+    }
 
     /** Opens a scripted dialogue (door, item, object...) with the given npc's chathead through the dialogue engine. */
     private void say(Player p, int npc, QuestDlg d) {
@@ -889,6 +900,11 @@ public final class BiohazardQuest extends QuestScript {
                 p.packetSender.sendSoundEffect(COFFIN_OPEN, 1, 0);
                 int px = p.getPosition().getX();
                 p.packetSender.queueRelativeMovementStep(px < 2557 ? 2559 - px : 2556 - px, 0, true);
+                return true;
+            }
+            case ELENA_DOOR: {   // LostCity area_ardougne_east elenadoor2: locked from both sides until Plague City is done
+                if (p.getQuestState(PLAGUE_CITY, true) != 1) { msg(p, "The door is locked."); return true; }
+                throughDoor(p, id, x, y, 3);
                 return true;
             }
             case GUIDOR_DOOR: {

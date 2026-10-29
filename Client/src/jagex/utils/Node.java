@@ -109,8 +109,8 @@ public class Node
 	    int i_4_ = Class33.anInt599;
 	    int i_5_ = IsaacPrng.anInt1091;
 	    if (Class37.anInt653 == 0) {
-		i_5_ -= 4;
-		i_4_ -= 4;
+		i_5_ = unpackaged.Resizable.vx(i_5_);
+		i_4_ = unpackaged.Resizable.vy(i_4_);
 	    }
 	    if (Class37.anInt653 == 1) {
 		i_4_ -= 205;
@@ -316,8 +316,8 @@ public class Node
 		    int i_18_ = Class33.anInt599;
 		    int i_19_ = IsaacPrng.anInt1091;
 		    if (Class37.anInt653 == 0) {
-			i_18_ -= 4;
-			i_19_ -= 4;
+			i_18_ = unpackaged.Resizable.vy(i_18_);
+			i_19_ = unpackaged.Resizable.vx(i_19_);
 		    }
 		    if (Class37.anInt653 == 1) {
 			i_18_ -= 205;
@@ -348,8 +348,8 @@ public class Node
 		    int i_24_ = Bzip2Block.anInt1054;
 		    int i_25_ = -1;
 		    if (Class37.anInt653 == 0) {
-			i_24_ -= 4;
-			i_23_ -= 4;
+			i_24_ = unpackaged.Resizable.vy(i_24_);
+			i_23_ = unpackaged.Resizable.vx(i_23_);
 		    }
 		    if (Class37.anInt653 == 1) {
 			i_23_ -= 553;

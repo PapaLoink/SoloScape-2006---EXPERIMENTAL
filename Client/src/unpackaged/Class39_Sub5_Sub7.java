@@ -228,8 +228,9 @@ public class Class39_Sub5_Sub7 extends SubNode
 	    }
 	}
 	ClientScript.method481(-6414);
-	Model.anInt2397 = IsaacPrng.anInt1091 - 4;
-	Model.anInt2407 = Class33.anInt599 - 4;
+	Resizable.zoom = Resizable.sceneZoom;              // the world (and its overhead text) uses the window-scaled projection
+	Model.anInt2397 = Resizable.vx(IsaacPrng.anInt1091);
+	Model.anInt2407 = Resizable.vy(Class33.anInt599);
 	Model.anInt2413 = 0;
 	Model.aBoolean2398 = true;
 	DrawingArea.reset();
@@ -244,6 +245,7 @@ public class Class39_Sub5_Sub7 extends SubNode
 	((Class55) Class39_Sub5_Sub10_Sub2.anInterface2_2458)
 	    .method1004(Class45.anInt856, false);
 	ChristmasEventSnow.drawSnowfall();
+	Resizable.zoom = 512;                                // interfaces, item and chathead models keep the 2006 scale
 	Canvas_Sub1.method39(-32024);
 	if (AbstractImage.aBoolean1000 && method586(false, true, 0) == 0)
 	    AbstractImage.aBoolean1000 = false;

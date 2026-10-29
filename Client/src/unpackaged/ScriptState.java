@@ -621,11 +621,10 @@ public class ScriptState
 		}
 		if (i_6_ == 33) {
 		    if (!Class39_Sub12.aBoolean1493)
-			Class44.aClass38_836.method355((Class39_Sub4.anInt1329
-							- 4),
-						       Bzip2Block.anInt1054 - 4);
+			Class44.aClass38_836.method355(Resizable.vx(Class39_Sub4.anInt1329),
+						       Resizable.vy(Bzip2Block.anInt1054));
 		    else
-			Class44.aClass38_836.method355(i_4_ - 4, i_5_ - 4);
+			Class44.aClass38_836.method355(Resizable.vx(i_4_), Resizable.vy(i_5_));
 		}
 		if (i_6_ == 24) {
 		    Class62_Sub2.method1084((byte) -35, IsaacPrng.anInt1095);

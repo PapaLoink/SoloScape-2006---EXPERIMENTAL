@@ -49,6 +49,7 @@ extends CycleEvent {
                     Player player = TeleportManager.getPlayer(this.teleportManager);
                     player.packetSender.sendGameMessage(this.arrivalMessage);
                 }
+                com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(TeleportManager.getPlayer(this.teleportManager));
             }
         } else {
             this.ticksRemaining = 0;

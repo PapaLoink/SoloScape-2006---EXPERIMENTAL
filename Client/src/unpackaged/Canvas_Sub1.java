@@ -65,6 +65,12 @@ public class Canvas_Sub1 extends Canvas
     }
 
     private MouseEvent gameMouseEvent(MouseEvent event) {
+	if (Resizable.active()) {
+	    int[] p = Resizable.map(event.getX(), event.getY(), getWidth(), getHeight());
+	    return new MouseEvent(this, event.getID(), event.getWhen(),
+		event.getModifiersEx(), p[0], p[1], event.getXOnScreen(), event.getYOnScreen(),
+		event.getClickCount(), event.isPopupTrigger(), event.getButton());
+	}
 	double[] m = ModHook.geom(getWidth(), getHeight());
 	int x = (int) Math.floor((event.getX() - m[2]) / m[0]);
 	int y = (int) Math.floor((event.getY() - m[3]) / m[1]);
@@ -107,21 +113,21 @@ public class Canvas_Sub1 extends Canvas
 	if (Class4.anInt80 == 1)
 	    Class47.aClass39_Sub5_Sub10_Sub3Array893
 		[Class26.anInt503 / 100].method670
-		(Class62_Sub1.anInt1590 - 8 - 4,
-		 Class62_Sub2.anInt1596 - 8 - 4);
+		(Resizable.vx(Class62_Sub1.anInt1590) - 8,
+		 Resizable.vy(Class62_Sub2.anInt1596) - 8);
 	if (Class4.anInt80 == 2)
 	    Class47.aClass39_Sub5_Sub10_Sub3Array893
 		[Class26.anInt503 / 100 + 4].method670
-		(Class62_Sub1.anInt1590 - 8 - 4,
-		 Class62_Sub2.anInt1596 - 8 - 4);
+		(Resizable.vx(Class62_Sub1.anInt1590) - 8,
+		 Resizable.vy(Class62_Sub2.anInt1596) - 8);
 	if (i == -32024) {
 	    if (Class26.anInt485 != -1) {
 		Class39_Sub4.method459(Class26.anInt485, (byte) 127);
-		Deque.method955(334, 512, 0, Class26.anInt485, 0, -1, 4);
+		Deque.method955(Resizable.iy() + 334, Resizable.ix() + 512, Resizable.ix(), Class26.anInt485, Resizable.iy(), -1, 4);
 	    }
 	    if (Class39_Sub11.anInt1478 != -1) {
 		Class39_Sub4.method459(Class39_Sub11.anInt1478, (byte) 112);
-		Deque.method955(334, 512, 0, Class39_Sub11.anInt1478, 0, -1,
+		Deque.method955(Resizable.iy() + 334, Resizable.ix() + 512, Resizable.ix(), Class39_Sub11.anInt1478, Resizable.iy(), -1,
 				  0);
 	    }
 	    Class39_Sub5_Sub4.method487(false);
@@ -133,40 +139,13 @@ public class Canvas_Sub1 extends Canvas
 	    if (Huffmans.anInt756 == 1)
 		Widget.aClass39_Sub5_Sub10_Sub3_2113
 		    .method670(472, 296);
-	    if (OndemandRequest.aBoolean1718) {
-		int i_0_ = 507;
-		int i_1_ = 16776960;
-		int i_2_ = 20;
-		Class39_Sub5_Sub14.p12fullFont.method630
-		    ((Class39_Sub5_Sub11.method708
-		      ((new JString[]
-			{ Class39_Sub5_Sub6.aClass3_1774,
-			  AbstractImage.method1007((byte) 71,
-					     Class39_Sub5_Sub18.anInt2119) }))),
-		     i_0_, i_2_, 16776960);
-		i_2_ += 15;
-		Runtime runtime = Runtime.getRuntime();
-		int i_3_
-		    = (int) ((runtime.totalMemory() + -runtime.freeMemory())
-			     / 1024L);
-		if (i_3_ > 32768 && Class45.aBoolean867)
-		    i_1_ = 16711680;
-		if (i_3_ > 65536 && !Class45.aBoolean867)
-		    i_1_ = 16711680;
-		Class39_Sub5_Sub14.p12fullFont.method630
-		    ((Class39_Sub5_Sub11.method708
-		      (new JString[] { StillGraphic.aClass3_2328,
-				      AbstractImage.method1007((byte) 71, i_3_),
-				      Class63.aClass3_1125 })),
-		     i_0_, i_2_, i_1_);
-		i_2_ += 15;
-		// Keep the FPS/memory diagnostics, but suppress the transient
-		// "Side panel redrawn", "Chat panel redrawn" and "Icons redrawn"
-		// development notices that otherwise flicker during normal play.
-		Class44.aBoolean833 = false;
-		Class39_Sub5_Sub14.aBoolean1908 = false;
-		NameTable.aBoolean183 = false;
-	    }
+            if (OndemandRequest.aBoolean1718) {
+                FpsDebugOverlay.draw();
+                // Avoid the old redrawn-panel notices obscuring the diagnostics.
+                Class44.aBoolean833 = false;
+                Class39_Sub5_Sub14.aBoolean1908 = false;
+                NameTable.aBoolean183 = false;
+            }
 	    // Client setting: small yellow FPS counter at the top left of the game view. It is drawn into the
 	    // game picture itself, so it scales with it when stretched or fullscreen.
 	    jagex.graphics.BitmapFont small = jagex.world.actors.Npc.aClass39_Sub5_Sub10_Sub1_2495;   // p11_full

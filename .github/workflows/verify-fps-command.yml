@@ -1,0 +1,41 @@
+name: Verify FPS Command
+on:
+  push:
+    branches:
+      - feature/fps-command
+  pull_request:
+    paths:
+      - 'Client/src/unpackaged/FpsDebugOverlay.java'
+      - 'Client/src/unpackaged/Canvas_Sub1.java'
+      - 'Client/src/jagex/io/Buffer.java'
+      - 'Client/src/jagex/io/JSocket.java'
+      - 'Client/src/unpackaged/Bzip2Block.java'
+      - 'Client/src/unpackaged/Client.java'
+      - 'Client/tests/FpsDebugOverlayChecks.java'
+      - 'Server/src/main/java/com/rs2/Server.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/main/java/com/rs2/net/DedicatedReactor.java'
+      - 'Server/src/main/java/com/rs2/net/packet/ClientPackets.java'
+      - 'Server/src/main/java/com/rs2/net/packet/PacketDispatcher.java'
+      - 'Server/src/main/java/com/rs2/net/packet/handler/PingPacketHandler.java'
+      - '.github/workflows/verify-fps-command.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fps-command:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile client and server and test FPS command
+        working-directory: Server
+        run: |
+          mkdir -p /tmp/fps-command-classes
+          find src/main/java ../Client/src -name '*.java' > /tmp/fps-command-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/fps-command-classes @/tmp/fps-command-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/fps-command-classes:lib/*' -d /tmp/fps-command-classes ../Client/tests/FpsDebugOverlayChecks.java
+          java -Djava.awt.headless=true -cp '/tmp/fps-command-classes:lib/*:../Client/src' unpackaged.FpsDebugOverlayChecks

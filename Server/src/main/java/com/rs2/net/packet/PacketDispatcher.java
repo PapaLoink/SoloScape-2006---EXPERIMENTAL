@@ -177,6 +177,7 @@ public final class PacketDispatcher {
         packetHandlers[119] = new ReportAbusePacketHandler();
         packetHandlers[66] = new CameraPacketHandler();
         packetHandlers[192] = new IdlePacketHandler();
+        packetHandlers[ClientPackets.PING] = new com.rs2.net.packet.handler.PingPacketHandler();
         // The client sends this one-byte acknowledgement when the flashing
         // sidebar tab is selected. Quest status refresh advances the tutorial
         // and installs the next step's hint.
@@ -284,9 +285,18 @@ public final class PacketDispatcher {
                 player.getSelectionKey().attach(null);
                 return;
             }
-            if (player.getConnectionState().compareTo(PlayerConnectionState.DISCONNECTING) < 0 && player.getSocketChannel().read(player.getInboundBuffer()) == -1) {
-                player.disconnect();
-                return;
+            if (player.getConnectionState().compareTo(PlayerConnectionState.DISCONNECTING) < 0) {
+                int readBytes = player.getSocketChannel().read(player.getInboundBuffer());
+                if (readBytes == -1) {
+                    player.disconnect();
+                    return;
+                }
+                if (readBytes == 0) {
+                    // Polling a non-blocking socket must not refresh idle timers.
+                    // Any incomplete packet remains in the compacted buffer.
+                    return;
+                }
+                player.lastGameSocketReadNanos = System.nanoTime();
             }
             player.getPacketReadTimer().reset();
             player.getInboundBuffer().flip();
@@ -312,6 +322,9 @@ public final class PacketDispatcher {
                 if (player.getCurrentPacketOpcode() == -1) {
                     player.setCurrentPacketOpcode(player.getInboundBuffer().get() & 0xFF);
                     player.setCurrentPacketOpcode(player.getCurrentPacketOpcode() - player.getInboundCipher().nextInt() & 0xFF);
+                    if (player.getCurrentPacketOpcode() == ClientPackets.PING) {
+                        player.fpsPingFirstByteNanos = System.nanoTime();
+                    }
                 }
                 if (player.getCurrentPacketLength() == -1) {
                     player.setCurrentPacketLength(PacketDispatcher.getIncomingPacketLength(player.getCurrentPacketOpcode()));

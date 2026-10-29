@@ -483,8 +483,8 @@ public class Class1
 	int i_30_ = Class33.anInt599;
 	int i_31_ = IsaacPrng.anInt1091;
 	if (Class37.anInt653 == 0) {
-	    i_30_ -= 4;
-	    i_31_ -= 4;
+	    i_30_ = Resizable.vy(i_30_);
+	    i_31_ = Resizable.vx(i_31_);
 	}
 	if (Class37.anInt653 == 1) {
 	    i_31_ -= 553;

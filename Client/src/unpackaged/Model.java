@@ -193,8 +193,8 @@ public class Model extends Class39_Sub5_Sub4
 	    i_41_ = i_40_ * i_35_ + i_41_ * i_36_ >> 16;
 	    i_40_ = i_45_;
 	    anIntArray2405[i_38_] = i_41_ - i_37_;
-	    anIntArray2395[i_38_] = i_27_ + (i_39_ << 9) / i_26_;
-	    anIntArray2403[i_38_] = i_28_ + (i_40_ << 9) / i_26_;
+	    anIntArray2395[i_38_] = i_27_ + (i_39_ * Resizable.zoom) / i_26_;
+	    anIntArray2403[i_38_] = i_28_ + (i_40_ * Resizable.zoom) / i_26_;
 	    if (anInt2355 > 0) {
 		anIntArray2392[i_38_] = i_39_;
 		anIntArray2421[i_38_] = i_40_;
@@ -781,8 +781,8 @@ public class Model extends Class39_Sub5_Sub4
 	    i_183_ = i_182_ * i_177_ + i_183_ * i_178_ >> 16;
 	    i_182_ = i_187_;
 	    anIntArray2405[i_180_] = i_183_ - i_179_;
-	    anIntArray2395[i_180_] = i_169_ + (i_181_ << 9) / i_183_;
-	    anIntArray2403[i_180_] = i_170_ + (i_182_ << 9) / i_183_;
+	    anIntArray2395[i_180_] = i_169_ + (i_181_ * Resizable.zoom) / i_183_;
+	    anIntArray2403[i_180_] = i_170_ + (i_182_ * Resizable.zoom) / i_183_;
 	    if (anInt2355 > 0) {
 		anIntArray2392[i_180_] = i_181_;
 		anIntArray2421[i_180_] = i_182_;
@@ -1006,16 +1006,16 @@ public class Model extends Class39_Sub5_Sub4
 	int i_232_ = i_230_ + i_231_;
 	if (i_232_ > 50 && i_230_ < 14000) {
 	    int i_233_ = i_227_ * i_223_ + i_225_ * i_224_ >> 16;
-	    int i_234_ = i_233_ - anInt2386 << 9;
+	    int i_234_ = (i_233_ - anInt2386) * Resizable.zoom;
 	    if (i_234_ / i_232_ < Class39_Sub5_Sub10_Sub2.anInt2457) {
-		int i_235_ = i_233_ + anInt2386 << 9;
+		int i_235_ = (i_233_ + anInt2386) * Resizable.zoom;
 		if (i_235_ / i_232_ > Class39_Sub5_Sub10_Sub2.anInt2453) {
 		    int i_236_ = i_226_ * i_222_ - i_229_ * i_221_ >> 16;
 		    int i_237_ = anInt2386 * i_221_ >> 16;
-		    int i_238_ = i_236_ + i_237_ << 9;
+		    int i_238_ = (i_236_ + i_237_) * Resizable.zoom;
 		    if (i_238_ / i_232_ > Class39_Sub5_Sub10_Sub2.anInt2464) {
 			int i_239_ = i_237_ + (anInt1726 * i_222_ >> 16);
-			int i_240_ = i_236_ - i_239_ << 9;
+			int i_240_ = (i_236_ - i_239_) * Resizable.zoom;
 			if (i_240_ / i_232_
 			    < Class39_Sub5_Sub10_Sub2.anInt2454) {
 			    int i_241_ = i_231_ + (anInt1726 * i_221_ >> 16);
@@ -1094,9 +1094,9 @@ public class Model extends Class39_Sub5_Sub4
 				anIntArray2405[i_252_] = i_255_ - i_230_;
 				if (i_255_ >= 50) {
 				    anIntArray2395[i_252_]
-					= i_248_ + (i_253_ << 9) / i_255_;
+					= i_248_ + (i_253_ * Resizable.zoom) / i_255_;
 				    anIntArray2403[i_252_]
-					= i_249_ + (i_254_ << 9) / i_255_;
+					= i_249_ + (i_254_ * Resizable.zoom) / i_255_;
 				} else {
 				    anIntArray2395[i_252_] = -5000;
 				    bool = true;
@@ -1165,14 +1165,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_272_ = (50 - i_266_) * anIntArray2400[i_268_ - i_266_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_269_ + ((anIntArray2392[i_265_] - i_269_) * i_272_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_269_ + ((anIntArray2392[i_265_] - i_269_) * i_272_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_270_ + ((anIntArray2421[i_265_] - i_270_) * i_272_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_270_ + ((anIntArray2421[i_265_] - i_270_) * i_272_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_271_ + ((anIntArray2364[i] - i_271_) * i_272_ >> 16);
 	    }
@@ -1180,14 +1180,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_273_ = (50 - i_266_) * anIntArray2400[i_267_ - i_266_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_269_ + ((anIntArray2392[i_264_] - i_269_) * i_273_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_269_ + ((anIntArray2392[i_264_] - i_269_) * i_273_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_270_ + ((anIntArray2421[i_264_] - i_270_) * i_273_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_270_ + ((anIntArray2421[i_264_] - i_270_) * i_273_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_271_ + ((anIntArray2369[i] - i_271_) * i_273_ >> 16);
 	    }
@@ -1204,14 +1204,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_277_ = (50 - i_267_) * anIntArray2400[i_266_ - i_267_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_274_ + ((anIntArray2392[i_263_] - i_274_) * i_277_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_274_ + ((anIntArray2392[i_263_] - i_274_) * i_277_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_275_ + ((anIntArray2421[i_263_] - i_275_) * i_277_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_275_ + ((anIntArray2421[i_263_] - i_275_) * i_277_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_276_ + ((anIntArray2354[i] - i_276_) * i_277_ >> 16);
 	    }
@@ -1219,14 +1219,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_278_ = (50 - i_267_) * anIntArray2400[i_268_ - i_267_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_274_ + ((anIntArray2392[i_265_] - i_274_) * i_278_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_274_ + ((anIntArray2392[i_265_] - i_274_) * i_278_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_275_ + ((anIntArray2421[i_265_] - i_275_) * i_278_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_275_ + ((anIntArray2421[i_265_] - i_275_) * i_278_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_276_ + ((anIntArray2364[i] - i_276_) * i_278_ >> 16);
 	    }
@@ -1243,14 +1243,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_282_ = (50 - i_268_) * anIntArray2400[i_267_ - i_268_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_279_ + ((anIntArray2392[i_264_] - i_279_) * i_282_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_279_ + ((anIntArray2392[i_264_] - i_279_) * i_282_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_280_ + ((anIntArray2421[i_264_] - i_280_) * i_282_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_280_ + ((anIntArray2421[i_264_] - i_280_) * i_282_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_281_ + ((anIntArray2369[i] - i_281_) * i_282_ >> 16);
 	    }
@@ -1258,14 +1258,14 @@ public class Model extends Class39_Sub5_Sub4
 		int i_283_ = (50 - i_268_) * anIntArray2400[i_266_ - i_268_];
 		anIntArray2419[i_262_]
 		    = (i_260_
-		       + (i_279_ + ((anIntArray2392[i_263_] - i_279_) * i_283_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_279_ + ((anIntArray2392[i_263_] - i_279_) * i_283_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2393[i_262_]
 		    = (i_261_
-		       + (i_280_ + ((anIntArray2421[i_263_] - i_280_) * i_283_
-				    >> 16)
-			  << 9) / 50);
+		       + ((i_280_ + ((anIntArray2421[i_263_] - i_280_) * i_283_
+				    >> 16))
+			  * Resizable.zoom) / 50);
 		anIntArray2411[i_262_++]
 		    = i_281_ + ((anIntArray2354[i] - i_281_) * i_283_ >> 16);
 	    }

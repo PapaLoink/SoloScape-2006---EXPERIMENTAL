@@ -5963,19 +5963,19 @@ public class DialogueManager {
                         break;
                     }
                     case 4: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2542, 3169, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2542, 3169, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 5: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2462, 3444, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2462, 3444, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 6: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2556, 3259, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2556, 3259, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 7: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(3179, 3506, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(3179, 3506, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                     }
                 }
                 break;
@@ -6015,19 +6015,19 @@ public class DialogueManager {
                         break;
                     }
                     case 4: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2542, 3169, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2542, 3169, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 5: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2462, 3444, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2462, 3444, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 6: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2556, 3259, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(2556, 3259, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                         break;
                     }
                     case 7: {
-                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(3179, 3506, 0));
+                        AttackStyleDefinition.startDelayedObjectMove(player, new Position(3179, 3506, 0), () -> com.rs2.model.quest.impl.BiohazardQuest.teleportCrossing(player));
                     }
                 }
                 break;

@@ -497,13 +497,13 @@ public abstract class Class34 {
                         } else {
                             if (Class39_Sub11.anInt1478 == -1) {
                                 if (Class26.anInt485 != -1) {
-                                    Class62.method1050(338, Class26.anInt485,
-                                            4, 4, -109, i_29_, 516);
+                                    Class62.method1050(Resizable.my() + 334, Class26.anInt485,
+                                            Resizable.mx(), Resizable.my(), -109, i_29_, Resizable.mx() + 512);
                                 }
                             } else {
-                                Class62.method1050(338,
-                                        Class39_Sub11.anInt1478, 4,
-                                        4, -108, i_29_, 516);
+                                Class62.method1050(Resizable.my() + 334,
+                                        Class39_Sub11.anInt1478, Resizable.mx(),
+                                        Resizable.my(), -108, i_29_, Resizable.mx() + 512);
                             }
                             if (StillGraphic.anInt2338 != -1) {
                                 Class62.method1050(466,
@@ -529,14 +529,14 @@ public abstract class Class34 {
                         }
                         if (SubNode.anInt1348 == -1) {
                             if (Class39_Sub11.anInt1478 != -1) {
-                                Class62.method1050(338,
-                                        Class39_Sub11.anInt1478, 4,
-                                        4, 68, i_29_ ^ 0xffffffff,
-                                        516);
+                                Class62.method1050(Resizable.my() + 334,
+                                        Class39_Sub11.anInt1478, Resizable.mx(),
+                                        Resizable.my(), 68, i_29_ ^ 0xffffffff,
+                                        Resizable.mx() + 512);
                             } else if (Class26.anInt485 != -1) {
-                                Class62.method1050(338, Class26.anInt485, 4, 4,
+                                Class62.method1050(Resizable.my() + 334, Class26.anInt485, Resizable.mx(), Resizable.my(),
                                         122, i_29_ ^ 0xffffffff,
-                                        516);
+                                        Resizable.mx() + 512);
                             }
                             if (StillGraphic.anInt2338 != -1) {
                                 Class62.method1050(466,
@@ -707,6 +707,7 @@ public abstract class Class34 {
                                 }
                                 Class37.gameSocket.write((FrameBuffer.outgoingGameBuffer.payload),
                                         0, (FrameBuffer.outgoingGameBuffer.offset));
+                                FpsDebugOverlay.onOutboundBuffered();
                                 Class41.anInt780 = 0;
                                 FrameBuffer.outgoingGameBuffer.offset = 0;
                             } catch (java.io.IOException ioexception) {

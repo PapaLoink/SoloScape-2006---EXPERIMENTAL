@@ -244,6 +244,7 @@ public class JImage extends AbstractImage
     
     public void draw(Graphics graphics, int i_23_, int i_24_) {
 	unpackaged.XpOverlay.paintBuffer(buffer, width, height, i_23_, i_24_);
+	if (unpackaged.Resizable.capture(this, buffer, width, height, i_23_, i_24_)) return;
 	method1016((byte) -66);
 	WebClientBridge.blit(buffer, width, height, i_23_, i_24_);
 	java.awt.Shape clip0 = unpackaged.ModHook.beforeBlit(graphics);

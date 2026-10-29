@@ -70,6 +70,7 @@ extends Entity {
     private Entity forcedCombatTarget = null;
     private int removalDelayTicks = -1;
     private int undeadTreeAttackTicks;
+    private int swarmTicks;
     public Player questOwnerPlayer = null;
     public boolean teleportUpdateRequired = false;
     public boolean chronozonHitByWindBlast = false;
@@ -341,6 +342,7 @@ extends Entity {
                 Npc npc4 = npc = this;
                 if (npc.ownerPlayerIndex <= 0 || npc.isDead()) break processControlExit1;
                 if (npc.getOwnerPlayer() == null) break processControlExit2;
+                if (npc.npcId == 411 && npc.swarmLostTarget()) break processControlExit2;
                 if (GameUtil.isWithinDistance(npc.getPosition(), npc.getOwnerPlayer().getPosition(), 15)) break processControlExit1;
                 value = npc;
                 if (((Npc)value).npcId == 3098) break processControlExit1;
@@ -761,6 +763,16 @@ extends Entity {
 
     public final boolean isActive() {
         return this.active;
+    }
+
+    /**
+     * LostCity macro_swarm ai_timer (every 20 ticks): the swarm leaves once its player is more than 3 tiles away
+     * or on another level.
+     */
+    private boolean swarmLostTarget() {
+        if (++this.swarmTicks % 20 != 0) return false;
+        Position p = this.getOwnerPlayer().getPosition(), q = this.getPosition();
+        return p.getPlane() != q.getPlane() || Math.max(Math.abs(p.getX() - q.getX()), Math.abs(p.getY() - q.getY())) > 3;
     }
 
     public final Player getOwnerPlayer() {
