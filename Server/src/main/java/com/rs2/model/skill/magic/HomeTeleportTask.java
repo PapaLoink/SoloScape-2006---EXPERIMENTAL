@@ -13,8 +13,12 @@ public final class HomeTeleportTask extends CycleEvent {
     // Legacy sound IDs, translated to the bundled cache by PacketSender.
     // The incantation sound includes the final disappearance.
     private static final int[] SOUNDS = {2500, 2501, 2502, 2503, -1};
-    // Revision 443 frame lengths, rounded up from 20 ms frames to 600 ms ticks.
-    private static final int[] DURATIONS = {12, 9, 6, 7, 9};
+    // How long each stage's player animation and graphic actually move in revision 443 (2.98/3.24, 0.86/0.20,
+    // 1.16/1.16, 3.00/3.00, 1.20/1.20 s), rounded up to 600 ms ticks. Every one of them then ends on a long
+    // hold-until-replaced frame (2-4 s), so waiting out the full lengths left the player frozen between stages.
+    // By request: one extra tick each seated before the book comes out, reading before the incantation,
+    // and before the player is moved home.
+    private static final int[] DURATIONS = {6, 3, 3, 5, 3};
     private final Player player;
     private final Position origin;
     private final int initialHitpoints;

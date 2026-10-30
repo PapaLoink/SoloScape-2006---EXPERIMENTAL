@@ -168,6 +168,7 @@ final class DeveloperToolsClient {
         tool(tools, "get_client_state", "Game state, tick, region, local player and open interface roots.");
         tool(tools, "get_skills", "All revision-443 skill levels and XP.");
         tool(tools, "list_npcs", "Loaded NPCs, optionally filtered by name.", "nameFilter:string");
+        tool(tools, "seq_info", "An animation's frame delays (20 ms client cycles) and total length; gfx looks up a graphic's animation.", "id:number", "gfx:number");
         tool(tools, "list_players", "Loaded players and local player.");
         tool(tools, "list_objects", "Scene objects on the current plane, within radius (default 16).", "nameFilter:string", "radius:integer");
         tool(tools, "interact_object", "Use a cache-defined option on the nearest matching scene object.", "nameFilter:string!", "option:string!", "radius:integer");
@@ -257,6 +258,17 @@ final class DeveloperToolsClient {
                 return skills;
             }
             case "list_npcs": return npcs(string(args, "nameFilter", ""));
+            case "seq_info": {
+                int seqId = integer(args, "gfx", -1) >= 0 ? jagex.utils.Huffmans.method881(0, integer(args, "gfx", -1)).anInt2126 : integer(args, "id", -1);
+                Class39_Sub5_Sub11 seq = seqId < 0 ? null : Class62_Sub1.method1064(seqId, (byte) 54);
+                Map<String, Object> info = new java.util.LinkedHashMap<String, Object>();
+                int total = 0;
+                List<Object> delays = new ArrayList<Object>();
+                if (seq != null && seq.anIntArray1831 != null) for (int d : seq.anIntArray1831) { delays.add(d); total += d; }
+                info.put("seq", seqId); info.put("frames", delays.size()); info.put("delays", delays); info.put("cycles", total); info.put("ms", total * 20);
+                info.put("loopOffset", seq == null ? null : seq.anInt1825);
+                return info;
+            }
             case "list_players": {
                 List<Object> players = new ArrayList<Object>();
                 if (Class31.state == 30 && Class14.aClass39_Sub5_Sub4_Sub4_Sub2Array211 != null)
@@ -582,6 +594,7 @@ final class DeveloperToolsClient {
             if (!name.toLowerCase(Locale.ROOT).contains(filter.toLowerCase(Locale.ROOT))) continue;
             Map<String, Object> info = actor(npc, i);
             info.put("id", definition.id); info.put("name", name);
+            info.put("standAnim", definition.anInt1887); info.put("walkAnim", definition.anInt1861); info.put("size", definition.anInt1870);
             info.put("actions", strings(definition.aClass3Array1866)); result.add(info);
         }
         return result;

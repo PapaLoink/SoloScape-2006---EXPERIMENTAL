@@ -2329,7 +2329,7 @@ npc_id,name,x,y,plane,walk
 374,Ogre,2532,3373,0,1
 340,Hops,2931,3219,0,1
 336,Da Vinci,2933,3219,0,1
-338,Chancy,2935,3219,0,1
+338,Chancy,2929,3222,0,0
 367,Chemist,2934,3210,0,1
 # Ardougne Zoo ferret pen, added with Eagles' Peak (28 Nov 2006; map build 441). Positions from the 2009 spawn data; no source records movement
 5081,Ferret,2607,3260,0,1

@@ -183,6 +183,13 @@ extends QuestScript {
 
     @Override
     public final boolean handleMovementStep(Player player, int value2) {
+        // Everything below happens on Ape Atoll (guards at 2743-2802, 2767-2802; dungeon 2688-2818, 9087-9150).
+        // This runs on every step of every player and bot, and findByDefinitionId searches all NPCs, so leave
+        // straight away anywhere else.
+        int x = player.getPosition().getX(), y = player.getPosition().getY();
+        if (x < 2688 || x > 2818 || !(y >= 2688 && y <= 2815 || y >= 9087 && y <= 9150)) {
+            return false;
+        }
         value2 = Npc.scriptedStageCursor;
         if (value2 < 0) {
             return false;

@@ -306,7 +306,7 @@ final class ModPanel extends JPanel {
             {"", "::food / ::nfood", "stacks of food"}, {"", "::nbones", "bones"}, {"", "::runes", "10,000 of each rune"},
             {"", "::arrows", "10,000 of each arrow"}, {"", "::bank", "open your bank"},
             {"Stats", "", ""},
-            {"", "::master", "all stats to maximum"}, {"", "::setlevel S L", "set skill S to level L"}, {"", "::setxp S X", "set skill S to exactly X experience"}, {"", "::god", "toggle god mode"},
+            {"", "::master", "all stats to maximum"}, {"", "::setlevel S L", "set skill S to level L"}, {"", "::setxp S X", "set skill S to exactly X experience"}, {"", "::resethome", "home teleport ready again (skips the 30 min cooldown)"}, {"", "::god", "toggle god mode"},
             {"", "::run", "refill run energy"}, {"", "::irun", "toggle infinite run"}, {"", "::statsme", "show your account stats"},
             {"Teleport & magic", "", ""},
             {"", "::pos", "show your coordinates (x, y, height)"},
@@ -562,7 +562,14 @@ final class ModPanel extends JPanel {
             };
             view.setPreferredSize(new Dimension(400, 400));
             MouseAdapter ma = new MouseAdapter() {
-                public void mousePressed(MouseEvent e) { drag = e.getPoint(); dcx = cx; dcz = cz; }
+                public void mousePressed(MouseEvent e) {
+                    if (e.isShiftDown() && SwingUtilities.isLeftMouseButton(e)) {    // shift-click: teleport to that tile
+                        int[] t = tileAt(e);
+                        ModHook.teleport(t[0], t[1]);
+                        return;
+                    }
+                    drag = e.getPoint(); dcx = cx; dcz = cz;
+                }
                 public void mouseReleased(MouseEvent e) { drag = null; }
                 public void mouseDragged(MouseEvent e) {
                     if (drag == null) return;
@@ -629,9 +636,15 @@ final class ModPanel extends JPanel {
             cx = Math.max(0, Math.min(MW, cx)); cz = Math.max(0, Math.min(MH, cz));
         }
 
-        private void hover(MouseEvent e) {
+        /** The world tile under the mouse (surface map). */
+        private int[] tileAt(MouseEvent e) {
             double mx = cx + (e.getX() - view.getWidth() / 2.0) / scale, mz = cz + (e.getY() - view.getHeight() / 2.0) / scale;
-            info.setText((int) Math.floor(mx / PX) + X0 + ", " + (ZTOP - 1 - (int) Math.floor(mz / PX)));
+            return new int[]{(int) Math.floor(mx / PX) + X0, ZTOP - 1 - (int) Math.floor(mz / PX)};
+        }
+
+        private void hover(MouseEvent e) {
+            int[] t = tileAt(e);
+            info.setText(t[0] + ", " + t[1] + "  (shift-click: teleport)");
         }
 
         private void update() {

@@ -171,6 +171,13 @@ public final class ModHook {
         }
     }
 
+    /** The world map's shift-click: ::tele to that surface tile (a cheat command; the server checks rights). */
+    static void teleport(int x, int y) {
+        if (!inGame()) return;
+        sendCommand("tele " + x + " " + y + " 0");
+        focusGame();
+    }
+
     private static void sendCommand(String text) {
         FrameBuffer.outgoingGameBuffer.putFrame(174);
         JString cmd = Class39_Sub5_Sub9.createJstring(text);

@@ -1212,12 +1212,15 @@ extends Entity {
         return this.canStepToOffset(value3, value22);
     }
 
+    private static final java.util.ArrayList<Npc> NEARBY = new java.util.ArrayList<Npc>();
+
     public final boolean wouldCollideWithNpc(int npcId, int value4) {
-        Npc[] npcArray = World.getNpcs();
-        int length = npcArray.length;
+        // only the NPCs around this one (NpcGrid), not every NPC in the world
+        NpcGrid.near(this.getPosition().getPlane(), this.getPosition().getX(), this.getPosition().getY(), NEARBY);
+        int length = NEARBY.size();
         int index = 0;
         while (index < length) {
-            Npc npc = npcArray[index];
+            Npc npc = NEARBY.get(index);
             if (npc != null && npc != this && !this.isDead() && !npc.isDead() && npc.getPosition().getPlane() == this.getPosition().getPlane() && GameUtil.isWithinDistance(this.getPosition().getX(), this.getPosition().getY(), npc.getPosition().getX(), npc.getPosition().getY(), npc.getSize() + this.getSize())) {
                 boolean enabled;
                 wouldCollideWithNpcControlExit1: {

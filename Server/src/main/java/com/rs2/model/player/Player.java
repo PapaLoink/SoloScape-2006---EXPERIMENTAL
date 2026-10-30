@@ -2191,6 +2191,9 @@ extends Entity {
             player2.skillManager.getExperience()[value2] = SkillManager.getExperienceForLevel(value3 - 1);
             player = this;
             player.skillManager.refreshSkill(value2);
+        } else if (text4.equals("resethome")) {            // ::resethome - home teleport ready again (it has a 30 minute cooldown)
+            this.homeTeleportAvailableAtMillis = 0L;
+            this.packetSender.sendGameMessage("Home teleport cooldown reset.");
         } else if (text4.equals("setxp")) {                // ::setxp skill xp - exact experience, level follows from it
             int skill = Integer.parseInt(stringValues2[0]);
             double xp = Math.max(0, Math.min(200_000_000, Double.parseDouble(stringValues2[1])));
@@ -2457,7 +2460,7 @@ extends Entity {
             this.executeCheatCommand(password, stringValues2);
         } else if (password.equals("master")) {
             this.executeCheatCommand(password, stringValues2);
-        } else if (password.equals("setlevel") || password.equals("setxp")) {
+        } else if (password.equals("setlevel") || password.equals("setxp") || password.equals("resethome")) {
             this.executeCheatCommand(password, stringValues2);
         } else if (password.equals("modern")) {
             this.executeCheatCommand(password, stringValues2);
