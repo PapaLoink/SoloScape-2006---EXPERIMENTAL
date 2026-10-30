@@ -687,9 +687,7 @@ extends TickTask {
                 if (ServerSettings.freeToPlayWorld) {
                     this.player.packetSender.sendGameMessage("You need to be in members world to access members content.");
                 } else {
-                    this.player.getPacketSender().queueRelativeMovementStep(this.player.getPosition().getX() < 3264 ? 1 : -1, 0, true);
-                    this.player.getPacketSender().openDoubleDoorPair(2050, 3264, 3405, 2051, 3264, 3406);
-                    this.player.getPacketSender().sendSoundEffect(318, 1, 0);
+                    com.rs2.model.quest.impl.BiohazardQuest.passVarrockGate(this.player);
                 }
             } else {
                 this.player.packetSender.sendGameMessage("You need a members account to access members content.");

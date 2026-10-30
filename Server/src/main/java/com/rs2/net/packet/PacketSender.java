@@ -2254,6 +2254,11 @@ public final class PacketSender {
     }
 
     public final void openDoubleDoorPair(int value7, int value22, int value32, int value42, int value52, int value62) {
+        openDoubleDoorPairFor(1, value7, value22, value32, value42, value52, value62);
+    }
+
+    /** As above, with the leaves staying open for {@code ticks} game ticks before the closed gate returns. */
+    public final void openDoubleDoorPairFor(int ticks, int value7, int value22, int value32, int value42, int value52, int value62) {
         int position = this.player.getPosition().getPlane();
         LoadedWorldObject loadedWorldObject = WorldObjectLookup.findObjectByIdAt(value7, value22, value32, position);
         LoadedWorldObject loadedWorldObject2 = WorldObjectLookup.findObjectByIdAt(value42, value52, value62, position);
@@ -2268,8 +2273,8 @@ public final class PacketSender {
                 loadedWorldObject4 = loadedWorldObject2;
                 loadedWorldObject3 = loadedWorldObject;
             }
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject4, true, enabled);
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject3, false, enabled);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject4, true, enabled, ticks);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject3, false, enabled, ticks);
             return;
         }
         if (loadedWorldObject.getOrientation() == 1) {
@@ -2282,8 +2287,8 @@ public final class PacketSender {
                 loadedWorldObject6 = loadedWorldObject2;
                 loadedWorldObject5 = loadedWorldObject;
             }
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject6, true, enabled);
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject5, false, enabled);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject6, true, enabled, ticks);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject5, false, enabled, ticks);
             return;
         }
         if (loadedWorldObject.getOrientation() == 2) {
@@ -2296,8 +2301,8 @@ public final class PacketSender {
                 loadedWorldObject8 = loadedWorldObject;
                 loadedWorldObject7 = loadedWorldObject2;
             }
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject8, true, enabled);
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject7, false, enabled);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject8, true, enabled, ticks);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject7, false, enabled, ticks);
             return;
         }
         if (loadedWorldObject.getOrientation() == 3) {
@@ -2310,17 +2315,23 @@ public final class PacketSender {
                 loadedWorldObject10 = loadedWorldObject2;
                 loadedWorldObject9 = loadedWorldObject;
             }
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject10, true, enabled);
-            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject9, false, enabled);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject10, true, enabled, ticks);
+            PacketSender.repositionDoubleDoorLeaf(loadedWorldObject9, false, enabled, ticks);
         }
     }
 
-    private static void repositionDoubleDoorLeaf(LoadedWorldObject loadedWorldObject, boolean firstDoor, boolean wideOffset) {
+    private static void repositionDoubleDoorLeaf(LoadedWorldObject loadedWorldObject, boolean firstDoor, boolean wideOffset, int ticks) {
         int xOffset = 0;
         int yOffset = 0;
         int orientation = loadedWorldObject.getOrientation();
         if (orientation == 0) {
-            xOffset = !firstDoor && wideOffset ? -2 : -1;
+            if (!firstDoor && wideOffset) {
+                // Fold back beside the first leaf (LostCity open_varrockgate: both halves on the left gate's row).
+                xOffset = -2;
+                yOffset = -1;
+            } else {
+                xOffset = -1;
+            }
         } else if (orientation == 1) {
             if (!firstDoor && wideOffset) {
                 xOffset = -1;
@@ -2343,7 +2354,7 @@ public final class PacketSender {
                 yOffset = -1;
             }
         }
-        new DynamicObject(ServerSettings.placeholderObjectId, loadedWorldObject.getPosition().getX(), loadedWorldObject.getPosition().getY(), loadedWorldObject.getPosition().getPlane(), orientation, loadedWorldObject.getType(), loadedWorldObject.getWorldObject().getObjectId(), 1, false);
+        new DynamicObject(ServerSettings.placeholderObjectId, loadedWorldObject.getPosition().getX(), loadedWorldObject.getPosition().getY(), loadedWorldObject.getPosition().getPlane(), orientation, loadedWorldObject.getType(), loadedWorldObject.getWorldObject().getObjectId(), ticks, false);
         int openedOrientation = 0;
         if (firstDoor) {
             if (orientation == 0) {
@@ -2360,7 +2371,7 @@ public final class PacketSender {
         } else if (orientation == 3) {
             openedOrientation = wideOffset ? 0 : 2;
         }
-        new DynamicObject(loadedWorldObject.getWorldObject().getObjectId(), loadedWorldObject.getPosition().getX() + xOffset, loadedWorldObject.getPosition().getY() + yOffset, loadedWorldObject.getPosition().getPlane(), openedOrientation, loadedWorldObject.getType(), ServerSettings.placeholderObjectId, 1, false);
+        new DynamicObject(loadedWorldObject.getWorldObject().getObjectId(), loadedWorldObject.getPosition().getX() + xOffset, loadedWorldObject.getPosition().getY() + yOffset, loadedWorldObject.getPosition().getPlane(), openedOrientation, loadedWorldObject.getType(), ServerSettings.placeholderObjectId, ticks, false);
     }
 
     public final void openWestShiftedDoubleDoorPair(int value8, int value22, int value32, int value42, int value52, int value62, int value72) {

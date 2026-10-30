@@ -1234,6 +1234,14 @@ public class Bzip2Block {
                 int i_111_ = Class39_Sub5_Sub11.gameBuffer.method821();
                 int i_112_ = Class39_Sub5_Sub11.gameBuffer.method820(-1);
                 Widget class39_sub5_sub17 = Class37.getWidget(i_111_);
+                if (class39_sub5_sub17 == null) {
+                    // An animation for a component this client doesn't have: skip it instead of the 2006
+                    // behaviour (the read throws and the connection drops, logging the player out).
+                    System.out.println("[client] packet 95 (component animation " + i_112_ + ") for missing component "
+                            + (i_111_ >> 16) + ":" + (i_111_ & 0xffff) + " ignored");
+                    Class4.frameId = -1;
+                    return true;
+                }
                 if (i_112_ != class39_sub5_sub17.anInt2103 || i_112_ == -1) {
                     class39_sub5_sub17.anInt2079 = 0;
                     class39_sub5_sub17.anInt2103 = i_112_;

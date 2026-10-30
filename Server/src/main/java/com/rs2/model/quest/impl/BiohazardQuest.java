@@ -169,14 +169,20 @@ public final class BiohazardQuest extends QuestScript {
      */
     private static void throughGate(final Player p, final int idA, final int ax, final int ay, final int idB, final int bx, final int by,
                                     final int angle, final int sound) {
+        throughGate(p, idA, ax, ay, idB, bx, by, angle, sound, 1);
+    }
+
+    /** As above, with the gate staying open for {@code ticks} game ticks. */
+    private static void throughGate(final Player p, final int idA, final int ax, final int ay, final int idB, final int bx, final int by,
+                                    final int angle, final int sound, final int ticks) {
         int[] o = OPEN[angle];
         int px = p.getPosition().getX(), py = p.getPosition().getY();
         boolean side = onLocSide(p, ax, ay, angle);
         int lx = o[0] != 0 ? ax : Math.max(Math.min(ax, bx), Math.min(Math.max(ax, bx), px));
         int ly = o[1] != 0 ? ay : Math.max(Math.min(ay, by), Math.min(Math.max(ay, by), py));
         int sx = side ? lx : lx + o[0], sy = side ? ly : ly + o[1];
-        if (px != sx || py != sy) { walkThen(p, sx, sy, () -> throughGate(p, idA, ax, ay, idB, bx, by, angle, sound)); return; }
-        p.packetSender.openDoubleDoorPair(idA, ax, ay, idB, bx, by);
+        if (px != sx || py != sy) { walkThen(p, sx, sy, () -> throughGate(p, idA, ax, ay, idB, bx, by, angle, sound, ticks)); return; }
+        p.packetSender.openDoubleDoorPairFor(ticks, idA, ax, ay, idB, bx, by);
         p.packetSender.sendSoundEffect(sound, 1, 0);
         p.packetSender.queueRelativeMovementStep(side ? o[0] : -o[0], side ? o[1] : -o[1], true);
     }
@@ -973,13 +979,20 @@ public final class BiohazardQuest extends QuestScript {
         return true;
     }
 
+    /**
+     * LostCity open_varrockgate: both halves swing back west along the fence for 3 ticks while the player crosses.
+     * The player first walks onto the gate's own two-tile span on their side, so the step never goes through
+     * the fence either side of it.
+     */
+    public static void passVarrockGate(Player p) {
+        throughGate(p, VARROCK_GATE_L, 3264, 3405, VARROCK_GATE_R, 3264, 3406, 0, DOOR_OPEN, 3);
+    }
+
     private void confiscate(final Player p, final int[] items, final int k) {
         if (k >= items.length) {
             say(p, BIOGUARD, D().npc("<p,neutral>You may now pass.").act(q -> {
                 close(q);
-                q.packetSender.queueRelativeMovementStep(1, 0, true);
-                q.packetSender.openDoubleDoorPair(VARROCK_GATE_L, 3264, 3405, VARROCK_GATE_R, 3264, 3406);
-                q.packetSender.sendSoundEffect(DOOR_OPEN, 1, 0);
+                passVarrockGate(q);
             }).end());
             return;
         }
