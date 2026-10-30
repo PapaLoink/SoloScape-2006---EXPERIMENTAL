@@ -14,6 +14,7 @@
   var lastPoint = { x: 0, y: 0 };
   var objectURL = window.URL || window.webkitURL;
 
+  document.getElementById('sound').style.display = 'none';
   document.getElementById('keyboard').style.display = 'none';
   document.getElementById('softInput').style.display = 'none';
   screen.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;background:#000;overflow:auto;';

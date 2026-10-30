@@ -192,7 +192,7 @@ out=args.output
 out.parent.mkdir(parents=True,exist_ok=True)
 with out.open('w',encoding='utf8',newline='\n') as f:
  f.write('# LostCityRS/Content 377-wip (May 2, 2006), commit '+commit+'\n')
- f.write('# Preservation reconstruction, not a recovered Jagex server transcript. See npcDialogues2006.SOURCES.md.\n')
+ f.write('# Preservation reconstruction, not a recovered Jagex server transcript. See docs/Server/data/content/npcDialogues2006.SOURCES.md.\n')
  f.write('# NPC ID\tNode ID\tKind\tNext nodes\tText (pipe is a line break)\n')
  for id,(start,nodes,source) in sorted(programs.items()):
   f.write(f'# {id} source={source}\n{id}\t-1\tSTART\t{start}\t\n')

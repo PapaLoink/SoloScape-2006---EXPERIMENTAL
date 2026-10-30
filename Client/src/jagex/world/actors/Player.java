@@ -49,6 +49,8 @@ public class Player extends Class39_Sub5_Sub4_Sub4
     public int anInt2524;
     public static AbstractImage aClass57_2525;
     public int anInt2526;
+    /** Castle Wars team from the temporary team cloak: 0 none, 1 Saradomin, 2 Zamorak. */
+    public int castleWarsTeam;
     public static JString aClass3_2527;
     public static JString aClass3_2528;
     public static Resource aClass56_2529;
@@ -59,6 +61,17 @@ public class Player extends Class39_Sub5_Sub4_Sub4
     public static JString aClass3_2534;
     public static JString aClass3_2535;
     
+    public static int castleWarsTeamForCloak(int packedCloak) {
+        if (packedCloak == 512 + 4514) return 1;
+        if (packedCloak == 512 + 4516) return 2;
+        return 0;
+    }
+
+    public boolean isCastleWarsTeammate(Player other) {
+        return other != null && castleWarsTeam != 0
+                && castleWarsTeam == other.castleWarsTeam;
+    }
+
     public void parseAppearance(Buffer buffer) {
 	buffer.offset = 0;
 	int i_0_ = buffer.getUbyte();
@@ -86,6 +99,9 @@ public class Player extends Class39_Sub5_Sub4_Sub4
 		}
 	    }
 	}
+	// Equipment slot one is the cape. The 443 item definitions do not
+	// populate the ordinary team-cape ID for Castle Wars' temporary cloaks.
+	castleWarsTeam = castleWarsTeamForCloak(is[1]);
 	int[] is_6_ = new int[5];
 	for (int i_7_ = 0; i_7_ < 5; i_7_++) {
 	    int i_8_ = buffer.getUbyte();

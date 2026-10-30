@@ -1,0 +1,28 @@
+name: Verify Mobile Tap Queue
+on:
+  push:
+    branches:
+      - experiment/browser-local-rendering-lan
+    paths:
+      - 'Client/WebClient/web/mobile.html'
+      - 'Client/WebClient/tests/mobile-tap-queue.test.cjs'
+      - '.github/workflows/verify-mobile-taps.yml'
+  pull_request:
+    paths:
+      - 'Client/WebClient/web/mobile.html'
+      - 'Client/WebClient/tests/mobile-tap-queue.test.cjs'
+      - '.github/workflows/verify-mobile-taps.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-taps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check mobile tap cancellation, expiry and bridge recovery
+        run: node Client/WebClient/tests/mobile-tap-queue.test.cjs

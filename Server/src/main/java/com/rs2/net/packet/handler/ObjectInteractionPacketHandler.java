@@ -399,6 +399,10 @@ implements PacketHandler {
                 CastleWarsEngineeringManager.getMainDoorInteractionApproach(
                         player, objectId, objectX, objectY);
         if (castleWarsMainDoorApproach != null) {
+            if (CastleWarsEngineeringManager.isAtMainDoorInteractionApproach(
+                    player, objectId, objectX, objectY)) {
+                return true;
+            }
             return PathFinder.findPath(player,
                     castleWarsMainDoorApproach.getX(),
                     castleWarsMainDoorApproach.getY(),

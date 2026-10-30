@@ -3,6 +3,7 @@ package com.rs2.net.packet.handler;
 import com.rs2.model.player.EmoteUnlockManager;
 import com.rs2.model.player.Player;
 import com.rs2.model.dialogue.DialogueManager;
+import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.player.BankManager;
 import com.rs2.net.packet.ByteOrder;
 import com.rs2.net.packet.ByteTransform;
@@ -195,6 +196,12 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
         // (including gnome gliders) before dialogue options, which can block or
         // even crash a Tutorial Island Yes/No choice before it reaches the
         // RuneScape Guide dialogue.
+        // Castle Wars replacement offers use the standard two-option dialogue
+        // visually, but are owned by the minigame rather than the dialogue FSM.
+        // Handle an active offer before the generic option continuation.
+        if (CastleWarsManager.handleReplacementOfferButton(player, legacyButtonId)) {
+            return true;
+        }
         player.getDialogueManager().handleOptionButton(legacyButtonId);
         return true;
     }
@@ -276,6 +283,12 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
                     }
                     return;
                 }
+            }
+            // Native fletching selection widgets are action-type-6 controls.
+            // Each of the 1/2/3-item chatbox groups has four actions per item.
+            if (com.rs2.model.skill.fletching.logs.LogFletchingMenu.handleNativeWidget(
+                    player, packedWidgetId)) {
+                return;
             }
             // Native 443 dialogue controls use WIDGET_SELECT rather than the
             // ordinary interface-action packet. Continue buttons and option

@@ -467,8 +467,14 @@ public class ItemDefinition {
         }
     }
 
+    /** Retired broken weapons and their noted/crafting forms remain readable in old saves. */
+    public static boolean isRemovedContent(int itemId) {
+        return itemId == 11235 || itemId == 11236
+                || (itemId >= 11686 && itemId <= 11715);
+    }
+
     public static boolean isDefined(int value2) {
-        return value2 >= 0 && value2 < definitionsById.length
+        return !isRemovedContent(value2) && value2 >= 0 && value2 < definitionsById.length
                 && (value2 < definitionCount || value2 < customDefinitionCount
                     || value2 == DRAGON_CLAWS_ID);
     }

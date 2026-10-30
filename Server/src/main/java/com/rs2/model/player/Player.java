@@ -43,7 +43,6 @@ import com.rs2.model.gameplay.duel.DuelController;
 import com.rs2.model.gameplay.duel.DuelInterfaceManager;
 import com.rs2.model.gameplay.duel.DuelSession;
 import com.rs2.model.gameplay.fightcave.FightCaveController;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.magetrainingarena.AlchemistPlaygroundController;
 import com.rs2.model.gameplay.magetrainingarena.CreatureGraveyardController;
 import com.rs2.model.gameplay.magetrainingarena.EnchantmentChamberController;
@@ -1361,7 +1360,6 @@ extends Entity {
                     }
                     if (!aggressive || !GameUtil.hasClearPath(this.getPosition(), npc.getPosition(), false)) continue;
                     int aggressionRange = npc.getDefinition().getAggressionRange();
-                    if (ServerSettings.content2007Enabled && (npc.getNpcId() != 6203 && npc.getNpcId() != 6204 && npc.getNpcId() != 6206 && npc.getNpcId() != 6208 && GodWarsDungeonManager.zamorakNpcIds.contains(npc.getNpcId()) && (this.hasEquippedItemNamePrefix("zamorak") || this.hasEquippedItemNamePrefix("unholy")) || npc.getNpcId() != 6247 && npc.getNpcId() != 6248 && npc.getNpcId() != 6250 && npc.getNpcId() != 6252 && GodWarsDungeonManager.saradominNpcIds.contains(npc.getNpcId()) && (this.hasEquippedItemNamePrefix("saradomin") || this.hasEquippedItemNamePrefix("holy")) || npc.getNpcId() != 6222 && npc.getNpcId() != 6223 && npc.getNpcId() != 6225 && npc.getNpcId() != 6227 && GodWarsDungeonManager.armadylNpcIds.contains(npc.getNpcId()) && this.hasEquippedItemNamePrefix("armadyl") || npc.getNpcId() != 6260 && npc.getNpcId() != 6261 && npc.getNpcId() != 6263 && npc.getNpcId() != 6265 && GodWarsDungeonManager.bandosNpcIds.contains(npc.getNpcId()) && this.hasEquippedItemNamePrefix("bandos"))) continue;
                     if (npc.getNpcId() == 912 && this.equipmentManager.getItemIdAtSlot(1) == 2414) {
                         if (GameUtil.isWithinDistance(npc.getSpawnPosition(), this.getPosition(), aggressionRange) && GameUtil.randomInt(4) == 0) {
                             npc.getUpdateState().setForcedText("Hail Zamorak!");
@@ -1430,10 +1428,16 @@ extends Entity {
         long now = System.currentTimeMillis();
         // A dead connection must leave the world even if combat keeps refreshing its timer.
         if (this.lastPacketReceivedMillis != 0L && now - this.lastPacketReceivedMillis >= 60000L) {
+            System.out.println("[connection-timeout] player=" + this.getUsername()
+                    + " reason=no game packets for "
+                    + (now - this.lastPacketReceivedMillis) + "ms (60s threshold)");
             this.disconnect();
         } else if (false && ServerSettings.idleLogoutEnabled && this.getPlayerRights() < 2
                 && this.lastPlayerInputMillis != 0L && now - this.lastPlayerInputMillis >= 300000L
                 && this.getSingleCombatTimer().hasElapsed()) {
+            System.out.println("[idle-logout] player=" + this.getUsername()
+                    + " idleFor=" + (now - this.lastPlayerInputMillis)
+                    + "ms IDLE_LOGOUT=" + (ServerSettings.idleLogoutEnabled ? "1" : "0"));
             this.packetSender.sendLogout();
             this.disconnect();
         }
@@ -1951,9 +1955,8 @@ extends Entity {
                                 value2 = this;
                                 ((Player)value2).fightCaveController.cleanupIfInFightCave();
                                 value2 = this;
-                                if (((Player)value2).loginResponseCode == 2) {
-                                    CharacterFileManager.savePlayer(this);
-                                }
+                                // Save on the game-loop thread after disconnect cleanup.
+                                // The disconnect queue owns the final character snapshot.
                             }
                         }
                     }
@@ -2188,6 +2191,12 @@ extends Entity {
             player2.skillManager.getExperience()[value2] = SkillManager.getExperienceForLevel(value3 - 1);
             player = this;
             player.skillManager.refreshSkill(value2);
+        } else if (text4.equals("setxp")) {                // ::setxp skill xp - exact experience, level follows from it
+            int skill = Integer.parseInt(stringValues2[0]);
+            double xp = Math.max(0, Math.min(200_000_000, Double.parseDouble(stringValues2[1])));
+            this.skillManager.getExperience()[skill] = xp;
+            this.skillManager.getCurrentLevels()[skill] = SkillManager.getLevelForExperience(xp);
+            this.skillManager.refreshSkill(skill);
         } else if (text4.equals("run")) {
             this.setRunEnergyPercent(100);
         } else if (text4.equals("irun")) {
@@ -2440,10 +2449,7 @@ extends Entity {
             boolean enabled = stringValues2.length > 0 && stringValues2[0].equalsIgnoreCase("on");
             if (enabled != ServerSettings.content2007Enabled) {
                 ServerSettings.content2007Enabled = enabled;
-                if (enabled) {
-                    GodWarsDungeonManager.spawnGodWarsNpcs();
-                }
-                this.packetSender.sendGameMessage("Post-2006 content (God Wars Dungeon, Grand Exchange) "
+                this.packetSender.sendGameMessage("Post-2006 content (Grand Exchange) "
                         + (enabled ? "enabled." : "disabled."));
             }
             return;
@@ -2451,7 +2457,7 @@ extends Entity {
             this.executeCheatCommand(password, stringValues2);
         } else if (password.equals("master")) {
             this.executeCheatCommand(password, stringValues2);
-        } else if (password.equals("setlevel")) {
+        } else if (password.equals("setlevel") || password.equals("setxp")) {
             this.executeCheatCommand(password, stringValues2);
         } else if (password.equals("modern")) {
             this.executeCheatCommand(password, stringValues2);
@@ -3726,7 +3732,8 @@ extends Entity {
 
     private boolean validateLocalLogin() {
         boolean enabled = false;
-        if (FileUtil.exists("./data/characters/" + this.username + ".dat")) {
+        if (FileUtil.exists("./data/characters/" + this.username + ".json")
+                || FileUtil.exists("./data/characters/" + this.username + ".dat")) {
             enabled = true;
         } else {
             if (this.username.toLowerCase().startsWith("mod ") || this.username.toLowerCase().startsWith("admin ") || this.username.toLowerCase().startsWith("owner ") || this.username.contains("  ") || !Player.hasValidUsernameCharacters(this.username) || Player.isReservedBotUsername(this.username) && !this.isBot) {

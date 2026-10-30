@@ -1,5 +1,5 @@
 # LostCityRS/Content 377-wip (May 2, 2006), commit 4949e619a53f40c0fe83395df89bd35ff1f044f4
-# Preservation reconstruction, not a recovered Jagex server transcript. See npcDialogues2006.SOURCES.md.
+# Preservation reconstruction, not a recovered Jagex server transcript. See docs/Server/data/content/npcDialogues2006.SOURCES.md.
 # NPC ID	Node ID	Kind	Next nodes	Text (pipe is a line break)
 # 37 source=scripts/areas/area_yanille/scripts/sigbert_the_adventurer.rs2
 37	-1	START	1	

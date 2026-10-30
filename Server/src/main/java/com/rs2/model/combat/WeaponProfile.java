@@ -202,7 +202,7 @@ public final class WeaponProfile {
     }
 
     public static WeaponProfile forItem(ItemStack itemStack) {
-        if (itemStack == null) {
+        if (itemStack == null || ItemDefinition.isRemovedContent(itemStack.getId())) {
             return FISTS;
         }
         if (itemStack.getId() == 4037 || itemStack.getId() == 4039) {

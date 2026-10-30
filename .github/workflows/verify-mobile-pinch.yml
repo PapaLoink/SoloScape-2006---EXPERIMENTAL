@@ -1,0 +1,45 @@
+name: Verify WebClient Mobile Pinch Zoom
+on:
+  push:
+    branches:
+      - fix/webclient-mobile-cleanup
+    paths:
+      - 'Client/WebClient/web/app.js'
+      - 'Client/WebClient/tests/browser-input.test.cjs'
+      - 'Client/WebClient/tests/browser-audio.test.cjs'
+      - 'Client/src/unpackaged/WebClientBridge.java'
+      - 'Client/src/unpackaged/Class39_Sub5_Sub7.java'
+      - 'Client/tests/BrowserCameraZoomChecks.java'
+      - '.github/workflows/verify-mobile-pinch.yml'
+  pull_request:
+    paths:
+      - 'Client/WebClient/web/app.js'
+      - 'Client/src/unpackaged/WebClientBridge.java'
+      - 'Client/src/unpackaged/Class39_Sub5_Sub7.java'
+      - 'Client/tests/BrowserCameraZoomChecks.java'
+      - '.github/workflows/verify-mobile-pinch.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-pinch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile Java 8 game client and camera zoom regression tests
+        working-directory: Client
+        run: |
+          mkdir -p build/pinch-classes
+          find src -name '*.java' > /tmp/soloscape-pinch-sources.txt
+          javac -encoding UTF-8 -d build/pinch-classes @/tmp/soloscape-pinch-sources.txt
+          javac -encoding UTF-8 -cp 'build/pinch-classes' -d build/pinch-classes tests/BrowserCameraZoomChecks.java
+          java -Djava.awt.headless=true -cp build/pinch-classes unpackaged.BrowserCameraZoomChecks
+      - name: Test browser mouse, touch, pinch and audio
+        run: |
+          node Client/WebClient/tests/browser-input.test.cjs
+          node Client/WebClient/tests/browser-audio.test.cjs

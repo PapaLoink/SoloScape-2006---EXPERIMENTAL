@@ -1,0 +1,48 @@
+name: Verify Log Fletching
+on:
+  push:
+    branches:
+      - feature/fix-issue-5-log-fletching
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/skill/fletching/**'
+      - 'Server/src/test/java/LogFletchingChecks.java'
+      - 'Server/src/test/java/LevelUpIconServerChecks.java'
+      - 'Server/src/main/java/com/rs2/model/skill/SkillManager.java'
+      - 'Server/src/main/java/com/rs2/net/packet/InterfaceBridge.java'
+      - 'Client/src/jagex/io/JSocket.java'
+      - 'Client/src/unpackaged/Bzip2Block.java'
+      - 'Client/tests/LevelUpIconChecks.java'
+      - 'Client/tests/FletchingMakeXInputChecks.java'
+      - 'Client/src/unpackaged/Bzip2Block.java'
+      - '.github/workflows/verify-log-fletching.yml'
+  workflow_dispatch:
+jobs:
+  fletching:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and check fletching and spinning
+        working-directory: Server
+        run: |
+          mkdir -p fletching-test-classes
+          find src/main/java -name '*.java' > /tmp/fletching-server-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d fletching-test-classes @/tmp/fletching-server-sources.txt
+          javac -encoding UTF-8 -cp 'fletching-test-classes:lib/*' -d fletching-test-classes src/test/java/LogFletchingChecks.java src/test/java/SpinningInterfaceChecks.java src/test/java/LevelUpIconServerChecks.java
+          java -cp 'fletching-test-classes:lib/*' LogFletchingChecks
+          java -cp 'fletching-test-classes:lib/*' SpinningInterfaceChecks
+          java -cp 'fletching-test-classes:lib/*' LevelUpIconServerChecks
+      - name: Compile client and verify fletching chatbox captions
+        working-directory: Client
+        run: |
+          mkdir -p fletching-client-classes
+          find src -name '*.java' > /tmp/fletching-client-sources.txt
+          javac -encoding UTF-8 -d fletching-client-classes @/tmp/fletching-client-sources.txt
+          javac -encoding UTF-8 -cp fletching-client-classes -d fletching-client-classes tests/FletchingChatboxWidgetChecks.java tests/LevelUpIconChecks.java tests/FletchingMakeXInputChecks.java
+          java -cp fletching-client-classes unpackaged.FletchingChatboxWidgetChecks
+          java -cp fletching-client-classes unpackaged.LevelUpIconChecks
+          java -cp fletching-client-classes unpackaged.FletchingMakeXInputChecks

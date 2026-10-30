@@ -1,0 +1,62 @@
+name: Verify Browser Audio Startup
+
+on:
+  push:
+    branches:
+      - experiment/browser-local-rendering-lan
+    paths:
+      - 'Client/src/**'
+      - 'Client/tests/BrowserAudioStartupChecks.java'
+      - 'Client/tests/LocalRenderTouchChecks.js'
+      - 'Client/tests/DesktopInputChecks.js'
+      - 'Client/WebClient/web/local-render.html'
+      - 'Client/WebClient/web/mobile.html'
+      - 'Client/WebClient/web/desktop.html'
+      - 'Client/WebClient/Try-Local-Render.sh'
+      - 'Server/cache/map-fallback/**'
+      - '.github/workflows/verify-browser-audio.yml'
+  pull_request:
+    paths:
+      - 'Client/src/**'
+      - 'Client/tests/BrowserAudioStartupChecks.java'
+      - 'Client/tests/LocalRenderTouchChecks.js'
+      - 'Client/tests/DesktopInputChecks.js'
+      - 'Client/WebClient/web/local-render.html'
+      - 'Client/WebClient/web/mobile.html'
+      - 'Client/WebClient/web/desktop.html'
+      - 'Client/WebClient/Try-Local-Render.sh'
+      - 'Server/cache/map-fallback/**'
+      - '.github/workflows/verify-browser-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Build client and check silent browser startup
+        run: |
+          bash -n Client/WebClient/Try-Local-Render.sh
+          bash Client/WebClient/Try-Local-Render.sh --prepare-only
+          for page in local-render.html mobile.html desktop.html; do
+            cmp "Client/WebClient/web/$page" "Client/WebClient/build/local-render/$page"
+          done
+          test -s Client/WebClient/build/local-render/cache/map-fallback/l50_50.dat
+          while IFS= read -r name; do
+            cmp "Server/cache/map-fallback/$name" "Client/WebClient/build/local-render/cache/map-fallback/$name"
+          done < Client/WebClient/build/local-render/cache/map-fallback/manifest.txt
+          mkdir -p Client/build/test-classes
+          javac -encoding UTF-8 -cp Client/build/classes -d Client/build/test-classes Client/tests/BrowserAudioStartupChecks.java
+          timeout 30s java -Djava.awt.headless=true -cp Client/build/classes:Client/build/test-classes unpackaged.BrowserAudioStartupChecks
+      - name: Check local-renderer touch gestures
+        run: node Client/tests/LocalRenderTouchChecks.js
+      - name: Check desktop controls
+        run: node Client/tests/DesktopInputChecks.js

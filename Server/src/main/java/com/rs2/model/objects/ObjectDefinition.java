@@ -42,6 +42,30 @@ public class ObjectDefinition {
             definition.blocksProjectiles = true;
             definition.interactive = false;
             decodeRevision443(definition, entry.getValue());
+            switch (id) {
+                case 19030:
+                case 19031:
+                case 19033:
+                case 19034:
+                case 19035:
+                    definition.description = "A large pile of snow.";
+                    break;
+                case 19036:
+                    definition.description = "A strong metal cage.";
+                    break;
+                case 19037:
+                    definition.description = "A strong cage; it has a gublinch in it.";
+                    break;
+                case 19038:
+                    definition.description = "A pretty wintumber tree.";
+                    break;
+                case 19040:
+                    definition.description = "It leads back up to the surface.";
+                    break;
+                case 20100:
+                    definition.description = "These childerkins have been childernapped by the gublinch.";
+                    break;
+            }
             definition.projectileCollisionIgnored = definition.isProjectileCollisionIgnored();
         }
         return definitionsById.length;

@@ -1,0 +1,37 @@
+name: Verify Browser Connections
+
+on:
+  push:
+    branches:
+      - experiment/browser-local-rendering-lan
+    paths:
+      - 'Server/src/main/java/com/rs2/ConnectionThrottle*.java'
+      - 'Server/src/test/java/com/rs2/ConnectionThrottleChecks.java'
+      - '.github/workflows/verify-browser-connections.yml'
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/ConnectionThrottle*.java'
+      - 'Server/src/test/java/com/rs2/ConnectionThrottleChecks.java'
+      - '.github/workflows/verify-browser-connections.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-connections:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Build server
+        run: bash Server/Build-Server.sh
+      - name: Check gateway capacity and concurrent accounting
+        run: |
+          mkdir -p Server/build/connection-checks
+          javac -encoding UTF-8 -cp Server/dist/server.jar -d Server/build/connection-checks Server/src/test/java/com/rs2/ConnectionThrottleChecks.java
+          timeout 30s java -cp Server/dist/server.jar:Server/build/connection-checks com.rs2.ConnectionThrottleChecks

@@ -306,7 +306,7 @@ final class ModPanel extends JPanel {
             {"", "::food / ::nfood", "stacks of food"}, {"", "::nbones", "bones"}, {"", "::runes", "10,000 of each rune"},
             {"", "::arrows", "10,000 of each arrow"}, {"", "::bank", "open your bank"},
             {"Stats", "", ""},
-            {"", "::master", "all stats to maximum"}, {"", "::setlevel S L", "set skill S to level L"}, {"", "::god", "toggle god mode"},
+            {"", "::master", "all stats to maximum"}, {"", "::setlevel S L", "set skill S to level L"}, {"", "::setxp S X", "set skill S to exactly X experience"}, {"", "::god", "toggle god mode"},
             {"", "::run", "refill run energy"}, {"", "::irun", "toggle infinite run"}, {"", "::statsme", "show your account stats"},
             {"Teleport & magic", "", ""},
             {"", "::pos", "show your coordinates (x, y, height)"},
@@ -399,7 +399,7 @@ final class ModPanel extends JPanel {
                 h.append("<tr><td valign=top><b>" + r[1] + "</b></td><td>" + r[2] + "</td></tr>"); shown++;
             }
             h.append("</table>");
-            if (q.isEmpty()) h.append("<br><b>Skill numbers (::setlevel)</b><br>0 Attack, 1 Defence, 2 Strength, 3 Hitpoints, 4 Ranged, 5 Prayer, 6 Magic, 7 Cooking, 8 Woodcutting, 9 Fletching, 10 Fishing, 11 Firemaking, 12 Crafting, 13 Smithing, 14 Mining, 15 Herblore, 16 Agility, 17 Thieving, 18 Slayer, 19 Farming, 20 Runecrafting<br><br>Screenshots are saved in the screenshots folder next to the client.");
+            if (q.isEmpty()) h.append("<br><b>Skill numbers (::setlevel, ::setxp)</b><br>0 Attack, 1 Defence, 2 Strength, 3 Hitpoints, 4 Ranged, 5 Prayer, 6 Magic, 7 Cooking, 8 Woodcutting, 9 Fletching, 10 Fishing, 11 Firemaking, 12 Crafting, 13 Smithing, 14 Mining, 15 Herblore, 16 Agility, 17 Thieving, 18 Slayer, 19 Farming, 20 Runecrafting<br><br>Screenshots are saved in the screenshots folder next to the client.");
             else if (shown == 0) h.append("<br>No commands match.");
             return h.append("</body></html>").toString();
         }
@@ -647,63 +647,84 @@ final class ModPanel extends JPanel {
 
     // --------------------------------------------------------------- options
     static final class OptionsView extends JPanel {
+        /** Long labels wrap onto a second line instead of being cut off at the drawer's edge. */
+        private static String wrap(String label) {
+            return "<html><div style='width:" + (DRAWER - 130) + "px'>" + label + "</div></html>";
+        }
+
         OptionsView() {
             super(new GridBagLayout());
             GridBagConstraints c = new GridBagConstraints();
             c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.NORTHWEST; c.insets = new Insets(6, 8, 2, 8); c.weightx = 1; c.fill = GridBagConstraints.HORIZONTAL;
-            JCheckBox wasd = new JCheckBox("WASD camera (Enter to chat, Esc to cancel)", ModHook.isWasd());
+            JCheckBox wasd = new JCheckBox(wrap("WASD camera (Enter to chat, Esc to cancel)"), ModHook.isWasd());
             wasd.setFocusable(false);
             wasd.addActionListener(e -> { ModHook.setWasd(wasd.isSelected()); ModHook.focusGame(); });
             add(wasd, c); c.gridy++;
-            JCheckBox chatLock = new JCheckBox("Lock chat after sending (back to WASD camera)", ModHook.lockChatAfterSend);
+            JCheckBox chatLock = new JCheckBox(wrap("Lock chat after sending (back to WASD camera)"), ModHook.lockChatAfterSend);
             chatLock.setFocusable(false);
             chatLock.setToolTipText("With WASD camera on: Enter sends your line, then the chatbox locks again");
             chatLock.addActionListener(e -> { ModHook.setLockChatAfterSend(chatLock.isSelected()); ModHook.focusGame(); });
             add(chatLock, c); c.gridy++;
-            JCheckBox stretch = new JCheckBox("Stretch game to fill window", ModHook.stretch);
+            JCheckBox stretch = new JCheckBox(wrap("Stretch game to fill window"), ModHook.stretch);
             stretch.setFocusable(false);
             stretch.addActionListener(e -> { ModHook.setStretch(stretch.isSelected()); ModHook.focusGame(); });
             add(stretch, c); c.gridy++;
-            JCheckBox resizable = new JCheckBox("Resizable layout (game fills the window, panels in the corners)", Resizable.enabled);
+            JCheckBox resizable = new JCheckBox(wrap("Resizable layout (game fills the window, panels in the corners)"), Resizable.enabled);
             resizable.setFocusable(false);
             resizable.setToolTipText("OSRS-style classic resizable view. Not in 2006; off keeps the original 765x503 layout");
             resizable.addActionListener(e -> { Resizable.setEnabled(resizable.isSelected()); ModHook.focusGame(); });
             add(resizable, c); c.gridy++;
-            JCheckBox xpd = new JCheckBox("XP drops and level progress (top right)", XpOverlay.enabled);
+            JCheckBox gpu = new JCheckBox(wrap("GPU rendering (OpenGL draws the 3D world)"), Gpu.enabled);
+            gpu.setFocusable(false);
+            gpu.setToolTipText("Same 2006 picture, drawn by the graphics card. Turns itself off if OpenGL 3.3 is not available");
+            gpu.addActionListener(e -> { Gpu.setEnabled(gpu.isSelected()); ModHook.focusGame(); });
+            add(gpu, c); c.gridy++;
+            JCheckBox gpuModels = new JCheckBox(wrap("GPU model sorting (experimental: the graphics card sorts models)"), GpuModels.wanted);
+            gpuModels.setFocusable(false);
+            gpuModels.setToolTipText("Faster on dedicated graphics cards, slower on most built-in ones. Needs GPU rendering and OpenGL 4.3");
+            gpuModels.addActionListener(e -> { GpuModels.wanted = gpuModels.isSelected(); ModHook.saveSettings(); ModHook.focusGame(); });
+            add(gpuModels, c); c.gridy++;
+            JCheckBox xpd = new JCheckBox(wrap("XP drops and level progress (top right)"), XpOverlay.enabled);
             xpd.setFocusable(false);
             xpd.addActionListener(e -> { XpOverlay.enabled = xpd.isSelected(); ModHook.saveSettings(); ModHook.focusGame(); });
             add(xpd, c); c.gridy++;
-            JCheckBox roofs = new JCheckBox("Hide roofs", ModHook.noRoofs);
+            JCheckBox roofs = new JCheckBox(wrap("Hide roofs"), ModHook.noRoofs);
             roofs.setFocusable(false);
             roofs.addActionListener(e -> { ModHook.noRoofs = roofs.isSelected(); ModHook.saveSettings(); ClientScript.aBoolean1690 = true; ModHook.focusGame(); });
             add(roofs, c); c.gridy++;
-            JCheckBox shiftDrop = new JCheckBox("Shift-click drops inventory items", ModHook.shiftDrop);
+            JCheckBox shiftDrop = new JCheckBox(wrap("Shift-click drops inventory items"), ModHook.shiftDrop);
             shiftDrop.setFocusable(false);
             shiftDrop.setToolTipText("Hold Shift and left-click an item to drop it (not in the 2006 game)");
             shiftDrop.addActionListener(e -> { ModHook.setShiftDrop(shiftDrop.isSelected()); ModHook.focusGame(); });
             add(shiftDrop, c); c.gridy++;
-            JCheckBox space = new JCheckBox("Space continues dialogue", ModHook.spaceContinue);
+            JCheckBox space = new JCheckBox(wrap("Space continues dialogue"), ModHook.spaceContinue);
             space.setFocusable(false);
             space.setToolTipText("Press Space for \"Click here to continue\" (not in the 2006 game)");
             space.addActionListener(e -> { ModHook.setSpaceContinue(space.isSelected()); ModHook.focusGame(); });
             add(space, c); c.gridy++;
-            JCheckBox fps = new JCheckBox("Show FPS (top left of the game view)", ModHook.showFps);
+            JCheckBox fps = new JCheckBox(wrap("Show FPS (top left of the game view)"), ModHook.showFps);
             fps.setFocusable(false);
             fps.addActionListener(e -> { ModHook.setShowFps(fps.isSelected()); ModHook.focusGame(); });
             add(fps, c); c.gridy++;
-            JCheckBox rem = new JCheckBox("Remember username and password", ModHook.rememberLogin);
+            JCheckBox rem = new JCheckBox(wrap("Remember username and password"), ModHook.rememberLogin);
             rem.setFocusable(false);
             rem.addActionListener(e -> { ModHook.setRememberLogin(rem.isSelected()); ModHook.focusGame(); });
             add(rem, c); c.gridy++;
-            JCheckBox classic = new JCheckBox("Classic interface (2004 tab icons, options and controls)", ClassicInterface.enabled);
+            JCheckBox classic = new JCheckBox(wrap("Classic interface (2004 tab icons, options and controls)"), ClassicInterface.enabled);
             classic.setFocusable(false);
             classic.setToolTipText("The 2004 tab icons, Game Options tab and Player controls tab");
             classic.addActionListener(e -> { ModHook.setClassicUi(classic.isSelected()); ModHook.focusGame(); });
             add(classic, c); c.gridy++;
-            JCheckBox post = new JCheckBox("Post-2006 content (God Wars, Grand Exchange)", ModHook.postCutoff);
+            JCheckBox post = new JCheckBox(wrap("Post-2006 content (Grand Exchange)"), ModHook.postCutoff);
             post.setToolTipText("Content added after revision 443 (18 December 2006)");
             post.addActionListener(e -> { ModHook.setPostCutoff(post.isSelected()); ModHook.focusGame(); });
             add(post, c); c.gridy++;
+            add(new JLabel("Frame rate (game logic stays at 50 ticks a second):"), c); c.gridy++;
+            JComboBox<String> rate = new JComboBox<>(FramePacer.NAMES);
+            rate.setSelectedIndex(FramePacer.rateIndex());
+            rate.setFocusable(false);
+            rate.addActionListener(e -> { FramePacer.setRate(rate.getSelectedIndex()); ModHook.focusGame(); });
+            add(rate, c); c.gridy++;
             add(new JLabel("Log out when idle for:"), c); c.gridy++;
             JComboBox<String> idle = new JComboBox<>(ModHook.IDLE_NAMES);
             idle.setSelectedIndex(ModHook.idleChoice);

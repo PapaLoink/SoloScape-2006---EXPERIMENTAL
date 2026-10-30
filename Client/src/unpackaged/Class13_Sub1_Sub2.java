@@ -31,7 +31,24 @@ public class Class13_Sub1_Sub2 extends Class13_Sub1
 		    i << (StillGraphic.aBoolean2342 ? 2 : 1)));
 	    aSourceDataLine1613 = (SourceDataLine) AudioSystem.getLine(info);
 	    aSourceDataLine1613.open();
-	    aSourceDataLine1613.start();
+            if (Boolean.getBoolean("web.audio.remote")) {
+                try {
+                    if (aSourceDataLine1613.isControlSupported(
+                            javax.sound.sampled.BooleanControl.Type.MUTE)) {
+                        ((javax.sound.sampled.BooleanControl) aSourceDataLine1613.getControl(
+                                javax.sound.sampled.BooleanControl.Type.MUTE)).setValue(true);
+                    } else if (aSourceDataLine1613.isControlSupported(
+                            javax.sound.sampled.FloatControl.Type.MASTER_GAIN)) {
+                        javax.sound.sampled.FloatControl gain =
+                                (javax.sound.sampled.FloatControl) aSourceDataLine1613.getControl(
+                                        javax.sound.sampled.FloatControl.Type.MASTER_GAIN);
+                        gain.setValue(gain.getMinimum());
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // Some mixers cannot mute individual SourceDataLines.
+                }
+            }
+            aSourceDataLine1613.start();
 	} catch (LineUnavailableException lineunavailableexception) {
 	    aSourceDataLine1613 = null;
 	    throw lineunavailableexception;
@@ -49,7 +66,14 @@ public class Class13_Sub1_Sub2 extends Class13_Sub1
 	    aByteArray1612[i_0_ * 2] = (byte) (i_1_ >> 8);
 	    aByteArray1612[i_0_ * 2 + 1] = (byte) (i_1_ >> 16);
 	}
-	aSourceDataLine1613.write(aByteArray1612, 0, i << 1);
+        // Capture the already-mixed RuneScape sound effects for remote browsers.
+        // Keep feeding the Java SourceDataLine so its timing/available() logic
+        // continues to work even when the host mixer supports muting.
+        if (Boolean.getBoolean("web.audio.remote")) {
+            WebClientBridge.publishAudio(1, Class15.anInt274,
+                    StillGraphic.aBoolean2342 ? 2 : 1, aByteArray1612, i << 1);
+        }
+        aSourceDataLine1613.write(aByteArray1612, 0, i << 1);
     }
     
     public void method202(Component component, int i, boolean bool) {

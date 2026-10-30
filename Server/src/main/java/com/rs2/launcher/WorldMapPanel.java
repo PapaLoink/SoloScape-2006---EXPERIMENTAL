@@ -48,7 +48,7 @@ extends JPanel {
     private static final int HD_MAP_HEIGHT = (WORLD_MAX_Y_EXCLUSIVE - WORLD_MIN_Y) * HD_PIXELS_PER_TILE;
 
     private static final String HD_MAP_CACHE_PATH = "./data/launcher/world_map_2006.jpg";
-    private static final String CACHE_RENDERED_TILE_DIRECTORY = "../2006sp-Client/runtime/cache/world_map_control_panel_tiles";
+    private static final String CACHE_RENDERED_TILE_DIRECTORY = "../Client/runtime/cache/world_map_control_panel_tiles";
     private static final int CACHE_WORLD_MIN_X = 2112;
     private static final int CACHE_WORLD_MIN_Y = 2624;
     private static final int CACHE_WORLD_MAX_X_EXCLUSIVE = 3776;

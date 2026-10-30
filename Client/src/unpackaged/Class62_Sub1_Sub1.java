@@ -19,6 +19,7 @@ public class Class62_Sub1_Sub1 extends Class62_Sub1 implements Receiver
     public static Sequencer sequencer;
     public static volatile boolean aBoolean2161;
     public static Receiver reciever = null;
+    private static BrowserMidiOutput browserMidi;
     
     public synchronized void method1055(int i, int i_0_, int i_1_) {
 	if (sequencer != null) {
@@ -58,7 +59,11 @@ public class Class62_Sub1_Sub1 extends Class62_Sub1 implements Receiver
 	    sequencer.close();
 	    sequencer = null;
 	}
-	if (reciever != null) {
+	if (browserMidi != null) {
+	    browserMidi.close();
+	    browserMidi = null;
+	    reciever = null;
+	} else if (reciever != null) {
 	    reciever.close();
 	    reciever = null;
 	}
@@ -98,7 +103,8 @@ public class Class62_Sub1_Sub1 extends Class62_Sub1 implements Receiver
     
     public Class62_Sub1_Sub1() {
 	try {
-	    reciever = MidiSystem.getReceiver();
+	    browserMidi = BrowserMidiOutput.tryOpen();
+	    reciever = browserMidi != null ? browserMidi.receiver : MidiSystem.getReceiver();
 	    sequencer = MidiSystem.getSequencer(false);
 	    sequencer.getTransmitter().setReceiver(this);
 	    sequencer.open();

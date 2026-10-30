@@ -172,16 +172,21 @@ public class Class39_Sub5_Sub7 extends SubNode
 	Class50.updateProjectiles();
 	Class62_Sub2.method1072(6255);
 	if (!TraversalMap.aBoolean504) {
-	    int i_22_ = JSocket.anInt301;
+	    int i_22_ = Interp.pitch();                      // camera blended between ticks at frame rates above 50
 	    if (Cache.anInt101 / 256 > i_22_)
 		i_22_ = Cache.anInt101 / 256;
-	    int i_23_ = SubNode.anInt1344 + Class34.anInt605 & 0x7ff;
+	    int cameraDistance = ModHook.zoomDist(i_22_ * 3 + 600);
+	    // browser pinch zoom (WebClientBridge) moves the camera only while a pinch offset is set,
+	    // so its 450-2600 clamp never cuts into the wheel zoom range
+	    if (WebClientBridge.cameraDistanceOffset() != 0)
+		cameraDistance = WebClientBridge.cameraDistance(cameraDistance);
+	    int i_23_ = SubNode.anInt1344 + Interp.yaw() & 0x7ff;
 	    if (Class44.aBooleanArray837[4]
 		&& Class2.anIntArray49[4] + 128 > i_22_)
 		i_22_ = Class2.anIntArray49[4] + 128;
 	    ClientApplet.method26
-		(1000, Class41.anInt765, i_23_, Class39_Sub10.anInt1431,
-		 ModHook.zoomDist(i_22_ * 3 + 600), i_22_,
+		(1000, Interp.camX(), i_23_, Interp.camY(),
+		 cameraDistance, i_22_,
 		 Class14.method212((Cache.aClass39_Sub5_Sub4_Sub4_Sub2_109
 				    .anInt2275),
 				   9990, NameTable.height,
@@ -233,12 +238,18 @@ public class Class39_Sub5_Sub7 extends SubNode
 	Model.anInt2407 = Resizable.vy(Class33.anInt599);
 	Model.anInt2413 = 0;
 	Model.aBoolean2398 = true;
-	DrawingArea.reset();
-	Class44.aClass38_836.method382(Class39_Sub11.anInt1470,
-				       Class39_Sub10.anInt1437,
-				       Node.anInt742, Class43.anInt799,
-				       Class39_Sub5_Sub4_Sub4.anInt2315,
-				       i_24_);
+	boolean gpu = Gpu.begin();                           // GPU setting: the world's triangles are drawn by OpenGL
+	if (!gpu || !Gpu.coversView())                       // the GPU picture replaces every pixel: no need to clear first
+	    DrawingArea.reset();
+	try {
+	    Class44.aClass38_836.method382(Class39_Sub11.anInt1470,
+					   Class39_Sub10.anInt1437,
+					   Node.anInt742, Class43.anInt799,
+					   Class39_Sub5_Sub4_Sub4.anInt2315,
+					   i_24_);
+	} finally {
+	    if (gpu) Gpu.end();
+	}
 	Class44.aClass38_836.method393();
 	Class1.method48(false);
 	JImage.method1012(0);
@@ -260,6 +271,7 @@ public class Class39_Sub5_Sub7 extends SubNode
 	Node.anInt742 = i_27_;
 	Class39_Sub5_Sub4_Sub4.anInt2315 = i_29_;
 	Class43.anInt799 = i_28_;
+        BrowserClientBootstrap.sceneRendered();
     }
     
     static {

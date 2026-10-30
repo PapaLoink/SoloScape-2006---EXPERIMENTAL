@@ -54,9 +54,6 @@ public final class ServerSettings {
     public static boolean skipRequirementsForMissingQuests = false;
     public static boolean recolorMissingQuests = false;
     public static int completeMissingQuestsMode = 0;
-    public static boolean clueMerchantEnabled = false;
-    public static int clueMerchantClueLevel = 1;
-    public static int clueMerchantPriceCoins = 50;
     public static boolean clanWarsBotsEnabled = false;
     public static int clanWarsTeamSize = 20;
     public static int clanWarsEventChanceDivisor = 24;

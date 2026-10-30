@@ -334,6 +334,10 @@ public class Class39_Sub5_Sub10_Sub2 extends DrawingArea
     public static void method660(int i, int i_47_, int i_48_, int i_49_,
 				 int i_50_, int i_51_, int i_52_, int i_53_,
 				 int i_54_) {
+	if (Gpu.capturing) {                               // GPU rendering: recorded, drawn by OpenGL at the end of the world
+	    Gpu.gouraud(i, i_47_, i_48_, i_49_, i_50_, i_51_, i_52_, i_53_, i_54_);
+	    return;
+	}
 	int i_55_ = 0;
 	int i_56_ = 0;
 	if (i_47_ != i) {
@@ -782,6 +786,10 @@ public class Class39_Sub5_Sub10_Sub2 extends DrawingArea
     
     public static void method662(int i, int i_61_, int i_62_, int i_63_,
 				 int i_64_, int i_65_, int i_66_) {
+	if (Gpu.capturing) {
+	    Gpu.flat(i, i_61_, i_62_, i_63_, i_64_, i_65_, i_66_);
+	    return;
+	}
 	int i_67_ = 0;
 	if (i_61_ != i)
 	    i_67_ = (i_64_ - i_63_ << 16) / (i_61_ - i);
@@ -1535,6 +1543,12 @@ public class Class39_Sub5_Sub10_Sub2 extends DrawingArea
 	} else {
 	    aBoolean2465 = anInterface2_2458.method10(-11819, i_126_);
 	    aBoolean2459 = anInterface2_2458.method9((byte) -50, i_126_);
+	    if (Gpu.capturing) {
+		Gpu.textured(i, i_109_, i_110_, i_111_, i_112_, i_113_, i_114_, i_115_, i_116_,
+			     i_117_, i_118_, i_119_, i_120_, i_121_, i_122_, i_123_, i_124_, i_125_,
+			     i_126_, is, aBoolean2465, aBoolean2459);
+		return;
+	    }
 	    i_118_ = i_117_ - i_118_;
 	    i_121_ = i_120_ - i_121_;
 	    i_124_ = i_123_ - i_124_;

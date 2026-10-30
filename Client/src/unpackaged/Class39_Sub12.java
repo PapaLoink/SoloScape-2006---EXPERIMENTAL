@@ -116,11 +116,23 @@ public class Class39_Sub12 extends Node {
                     Class26.anInt484 = 45;
                 }
             } else if (Class26.anInt484 == 45) {
-                Class66.method1101(0, Class39_Sub5_Sub9.signlink, 32031,
-                        !Class45.aBoolean867);
-                Class1.aClass39_Sub1_Sub1_32 = Class65.method1096(false,
-                        Class39_Sub5_Sub9.signlink,
-                        Class41.aCanvas778, 20697, 22050);
+                if ("lan-websocket".equals(System.getProperty("client.transport"))) {
+                    // CheerpJ can block while opening Java MIDI or sampled-audio devices.
+                    // Keep the browser experiment silent and retain the normal effect mixer.
+                    Class55.aClass62_1251 = null;
+                    Class15.anInt274 = 22050;
+                    jagex.world.actors.StillGraphic.aBoolean2342 = false;
+                    Class20.aClass13_395 = new Class13();
+                    Class1.aClass39_Sub1_Sub1_32 = new Class39_Sub1_Sub1();
+                    Class13.method191((byte) 121, Class1.aClass39_Sub1_Sub1_32);
+                    System.out.println("[local-render] Audio disabled; continuing browser startup.");
+                } else {
+                    Class66.method1101(0, Class39_Sub5_Sub9.signlink, 32031,
+                            !Class45.aBoolean867);
+                    Class1.aClass39_Sub1_Sub1_32 = Class65.method1096(false,
+                            Class39_Sub5_Sub9.signlink,
+                            Class41.aCanvas778, 20697, 22050);
+                }
                 ClientScript.aClass43_1693 = new Class43(22050, Class15.anInt274);
                 Class39_Sub7.anInt1387 = 35;
                 Class26.anInt484 = 50;

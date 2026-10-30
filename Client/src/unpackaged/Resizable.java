@@ -145,6 +145,7 @@ public final class Resizable {
     static void present() {
         if (enabled && Class31.state >= 25) ensureView();     // straight into the layout, even on the loading screen
         if (!active()) {
+            if (Gpu.presentedAt != 0) Gpu.releaseCanvas(ModHook.app);   // login screen / fixed layout: Java2D draws again
             fullscreenFixed = false;
             if (wasActive) { wasActive = false; ModHook.refresh(); }   // logging out: clear the last game frame
             return;
@@ -158,8 +159,9 @@ public final class Resizable {
             screen = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
             screenPx = ((DataBufferInt) screen.getRaster().getDataBuffer()).getData();
         }
-        java.util.Arrays.fill(screenPx, 0);
         fullscreenFixed = SubNode.anInt1348 != -1;
+        if (fullscreenFixed || view == null || view.width != w || view.height != h)
+            java.util.Arrays.fill(screenPx, 0);                // otherwise the view covers every pixel
         if (fullscreenFixed) {
             copy(fixed, FW, 0, 0, FW, FH, Math.max(0, (w - FW) / 2), Math.max(0, (h - FH) / 2), w, h);
         } else {
@@ -169,14 +171,23 @@ public final class Resizable {
                 if (view.width == w && view.height == h) copy(view.buffer, view.width, 0, 0, w, h, 0, 0, w, h);
                 else g2.drawImage(wrap(view), 0, 0, w, h, null);   // the window was just resized: stretch the last frame
             }
-            drawPanel(g2, mapImg = panel(mapImg, MAP_X, MAP_Y, MAP_W, MAP_H, mapMask()), w - sw(MAP_W), 0);
-            drawPanel(g2, sideImg = panel(sideImg, SIDE_X, SIDE_Y, SIDE_W, SIDE_H, sideMask()), w - sw(SIDE_W), h - sw(SIDE_H));
-            drawPanel(g2, chatImg = panel(chatImg, CHAT_X, CHAT_Y, CHAT_W, CHAT_H, null), 0, h - sw(CHAT_H));
+            drawPanel(g2, 0, MAP_X, MAP_Y, MAP_W, MAP_H, mapMask(), w - sw(MAP_W), 0);
+            drawPanel(g2, 1, SIDE_X, SIDE_Y, SIDE_W, SIDE_H, sideMask(), w - sw(SIDE_W), h - sw(SIDE_H));
+            drawPanel(g2, 2, CHAT_X, CHAT_Y, CHAT_W, CHAT_H, null, 0, h - sw(CHAT_H));
             g2.dispose();
             // a right-click menu opened over the view is drawn above the panels
             if (view != null && Class37.anInt653 == 0 && Class39_Sub12.aBoolean1493)
                 copy(view.buffer, view.width, Widget.anInt2063, Class39_Sub5_Sub7.anInt1784,
                     Class14.anInt227, jagex.utils.Huffmans.anInt757, Widget.anInt2063, Class39_Sub5_Sub7.anInt1784, w, h);
+        }
+        boolean direct = Gpu.direct;
+        Gpu.direct = false;
+        // once OpenGL has drawn to the canvas, Java2D can't show anything on it (NVIDIA): every frame goes through GL
+        if (direct && !fullscreenFixed && view != null && view.width == w && view.height == h || Gpu.presentedAt != 0) {
+            Graphics2D g2 = screen.createGraphics();          // the side buttons go into the frame, not onto the canvas
+            ModHook.drawButtons(g2, w, h);
+            g2.dispose();
+            if (GpuPresent.present(c, screenPx, w, h)) return;
         }
         Graphics g = ((Canvas_Sub1) c).rawGraphics();
         if (g == null) return;
@@ -185,7 +196,17 @@ public final class Resizable {
         ModHook.paintButtons();
     }
 
-    private static BufferedImage mapImg, sideImg, chatImg;
+    /** True when the world being drawn (w x h at ox, oy) is the whole resizable view, so GpuPresent can show it. */
+    static boolean directReady(int w, int h, int ox, int oy) {
+        if (Gpu.presentFailed || !active() || SubNode.anInt1348 != -1 || ox != 0 || oy != 0) return false;
+        java.awt.Component c = ModHook.app;
+        return c instanceof Canvas_Sub1 && c.getWidth() == w && c.getHeight() == h
+            && view != null && view.width == w && view.height == h && view.buffer == jagex.graphics.DrawingArea.buffer;
+    }
+
+    // per panel (map, side, chat): its cut-out at 2006 size, the last pixels it was cut from, and its scaled copy
+    private static final BufferedImage[] panelImg = new BufferedImage[3], scaledImg = new BufferedImage[3];
+    private static final int[][] panelSrc = new int[3][];
     private static BufferedImage viewImg;
     private static int[] viewImgPx;
 
@@ -211,8 +232,36 @@ public final class Resizable {
         return img;
     }
 
-    private static void drawPanel(Graphics2D g, BufferedImage img, int x, int y) {
-        g.drawImage(img, x, y, sw(img.getWidth()), sw(img.getHeight()), null);
+    /** Draws panel k at (x, y), scaling it again only when its 2006 pixels or the window scale changed. */
+    private static void drawPanel(Graphics2D g, int k, int fx, int fy, int fw, int fh, boolean[] mask, int x, int y) {
+        int tw = sw(fw), th = sw(fh);
+        BufferedImage out = scaledImg[k];
+        boolean resized = out == null || out.getWidth() != tw || out.getHeight() != th;
+        if (changed(k, fx, fy, fw, fh) || resized) {
+            panelImg[k] = panel(panelImg[k], fx, fy, fw, fh, mask);
+            if (resized) out = scaledImg[k] = new BufferedImage(tw, th, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D s = out.createGraphics();
+            s.setComposite(java.awt.AlphaComposite.Src);
+            s.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            s.drawImage(panelImg[k], 0, 0, tw, th, null);
+            s.dispose();
+        }
+        g.drawImage(out, x, y, null);
+    }
+
+    /** True when the panel's pixels in the fixed frame differ from last time (and remembers them). */
+    private static boolean changed(int k, int fx, int fy, int fw, int fh) {
+        int[] last = panelSrc[k];
+        boolean diff = false;
+        if (last == null) { last = panelSrc[k] = new int[fw * fh]; diff = true; }
+        for (int y = 0, i = 0; y < fh; y++) {
+            int row = (fy + y) * FW + fx;
+            for (int x = 0; x < fw; x++, i++) {
+                int p = fixed[row + x];
+                if (last[i] != p) { last[i] = p; diff = true; }
+            }
+        }
+        return diff;
     }
 
     // Panel shapes: the square stone around the minimap's dragon ring and beside the side panel's frame is left out.

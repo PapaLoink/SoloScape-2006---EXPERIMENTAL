@@ -12,6 +12,7 @@ import com.rs2.model.item.ItemContainer;
 import com.rs2.model.item.ItemContainerType;
 import com.rs2.model.item.ItemService;
 import com.rs2.model.item.ItemStack;
+import com.rs2.model.item.ItemDefinition;
 import com.rs2.model.player.EquipmentContainer;
 import com.rs2.model.player.Player;
 import com.rs2.model.quest.QuestDefinition;
@@ -36,7 +37,8 @@ public final class EquipmentManager {
             player.packetSender.sendItemContainer(15107, rawItems);
         }
         ItemStack itemStack = rawItems[3];
-        if (itemStack != null && ((ItemStack)itemStack).getDefinition().isMembersOnly() && ServerSettings.freeToPlayWorld) {
+        if (itemStack != null && (ItemDefinition.isRemovedContent(itemStack.getId())
+                || itemStack.getDefinition().isMembersOnly() && ServerSettings.freeToPlayWorld)) {
             itemStack = null;
         }
         this.player.setWeaponProfile(WeaponProfile.forItem((ItemStack)itemStack));
@@ -148,6 +150,10 @@ public final class EquipmentManager {
                                 if (GameplayTrace.enabled()) {
                                     GameplayTrace.log("equipment equip missing-item player=" + GameplayTrace.describe(this.player) + " inventorySlot=" + slot);
                                 }
+                                return;
+                            }
+                            if (ItemDefinition.isRemovedContent(itemStack.getId())) {
+                                this.player.packetSender.sendGameMessage("This item has been removed from the game.");
                                 return;
                             }
                             value2 = itemStack.getDefinition().getEquipmentSlot();
@@ -578,7 +584,8 @@ public final class EquipmentManager {
             if (!(((EquipmentManager)value).container.getItemAt(index2) == null || ((Player)value2).isCrystalBowEquipped() && index2 == 13)) {
                 value = ((Player)value2).getEquipmentManager();
                 value = ((EquipmentManager)value).container.getItemAt(index2);
-                if (!((ItemStack)value).getDefinition().isMembersOnly() || !ServerSettings.freeToPlayWorld) {
+                if (!ItemDefinition.isRemovedContent(((ItemStack)value).getId())
+                        && (!((ItemStack)value).getDefinition().isMembersOnly() || !ServerSettings.freeToPlayWorld)) {
                     int index3 = 0;
                     while (index3 < 14) {
                         int index4 = 0;
@@ -607,7 +614,8 @@ public final class EquipmentManager {
     public final void refreshWeaponInterface() {
         Object value = this;
         ItemStack itemStack = ((EquipmentManager)value).container.getItemAt(3);
-        if (itemStack != null && itemStack.getDefinition().isMembersOnly() && ServerSettings.freeToPlayWorld) {
+        if (itemStack != null && (ItemDefinition.isRemovedContent(itemStack.getId())
+                || itemStack.getDefinition().isMembersOnly() && ServerSettings.freeToPlayWorld)) {
             itemStack = null;
         }
         WeaponProfile weaponProfile = WeaponProfile.forItem(itemStack);
@@ -691,6 +699,7 @@ public final class EquipmentManager {
     }
 
     public final boolean canEquipItem(int itemId) {
+        if (ItemDefinition.isRemovedContent(itemId)) return false;
         int value;
         int value2;
         int index = 0;

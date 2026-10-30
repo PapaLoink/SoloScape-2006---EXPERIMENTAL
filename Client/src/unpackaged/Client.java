@@ -498,6 +498,7 @@ public class Client extends ClientApplet {
 
     public static void main(String[] strings) {
         try {
+            System.setProperty("sun.awt.noerasebackground", "true");   // GPU drawing to the window: no grey flash between frames
             WebClientBridge.startFromProperties();
             DeveloperToolsServer.startFromProperties();
             if (strings.length != 6) {

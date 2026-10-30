@@ -41,6 +41,7 @@ import javax.swing.SwingConstants;
 public final class ConfigEditorPanel extends JPanel {
     private static final Set<String> SERVER_EXCLUDED_KEYS = new HashSet<String>(Arrays.asList(
         "CACHE_VERSION",
+        "CLUE_MERCHANT",
         "WILDY_BOTS",
         "HOTZONES_FOR_WILDYBOTS",
         "SKILLING_BOTS",
@@ -60,6 +61,11 @@ public final class ConfigEditorPanel extends JPanel {
         "BOT_LOGIN",
         "RELOG_FROZEN_BOTS"
     ));
+
+    private static final ConfigEntry[] ADDITIONAL_SERVER_ENTRIES = new ConfigEntry[]{
+        new ConfigEntry("2007_CONTENT", "0", "1 = enable 2007 content, 0 = disable."),
+        new ConfigEntry("WILDERNESS_SLAYER", "0", "1 = enable Wilderness Slayer, 0 = disable.")
+    };
 
     private final Font controlFont;
     private final ConfigSourcePanel serverPanel;
@@ -123,13 +129,13 @@ public final class ConfigEditorPanel extends JPanel {
         File workingDirectory = new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
         File parentDirectory = workingDirectory.getParentFile();
         File siblingRuntimeConfig = parentDirectory == null
-            ? new File("../2006sp-Client/runtime/userConfig.cfg")
-            : new File(parentDirectory, "2006sp-Client/runtime/userConfig.cfg");
+            ? new File("../Client/runtime/userConfig.cfg")
+            : new File(parentDirectory, "Client/runtime/userConfig.cfg");
 
         File[] candidates = new File[]{
             siblingRuntimeConfig,
-            new File("../2006sp-Client/runtime/userConfig.cfg"),
-            new File("../2006sp-Client/userConfig.cfg"),
+            new File("../Client/runtime/userConfig.cfg"),
+            new File("../Client/userConfig.cfg"),
             new File("runtime/userConfig.cfg"),
             new File("userConfig.cfg")
         };
@@ -358,6 +364,13 @@ public final class ConfigEditorPanel extends JPanel {
                         + "Game simulation remains at 50 Hz; this only makes camera motion/redrawing smoother."
                 ));
             }
+            if (this.serverConfig) {
+                for (ConfigEntry entry : ADDITIONAL_SERVER_ENTRIES) {
+                    if (!entriesByKey.containsKey(entry.key)) {
+                        entriesByKey.put(entry.key, entry);
+                    }
+                }
+            }
             return new ArrayList<ConfigEntry>(entriesByKey.values());
         }
 
@@ -455,6 +468,7 @@ public final class ConfigEditorPanel extends JPanel {
                     reader.close();
                 }
 
+                Set<String> writtenKeys = new HashSet<String>();
                 boolean cameraRefreshRateWritten = false;
                 for (int lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
                     String trimmed = lines.get(lineIndex).trim();
@@ -463,6 +477,7 @@ public final class ConfigEditorPanel extends JPanel {
                     }
                     int closingBracket = trimmed.indexOf(']');
                     String key = trimmed.substring(1, closingBracket);
+                    writtenKeys.add(key);
                     JTextField valueField = this.valueFields.get(key);
                     if (valueField != null) {
                         lines.set(lineIndex, "[" + key + "];" + valueField.getText().trim());
@@ -481,6 +496,19 @@ public final class ConfigEditorPanel extends JPanel {
                         lines.add("//Game simulation remains at 50 Hz; this only makes camera motion/redrawing smoother.");
                         lines.add("");
                         lines.add("[CAMERA_REFRESH_RATE];" + cameraRefreshRateField.getText().trim());
+                    }
+                }
+
+                if (this.serverConfig) {
+                    for (ConfigEntry entry : ADDITIONAL_SERVER_ENTRIES) {
+                        JTextField valueField = this.valueFields.get(entry.key);
+                        if (!writtenKeys.contains(entry.key) && valueField != null) {
+                            lines.add("");
+                            lines.add("//" + entry.key + " - Parameters for customization:");
+                            lines.add("//" + entry.description);
+                            lines.add("");
+                            lines.add("[" + entry.key + "];" + valueField.getText().trim());
+                        }
                     }
                 }
 

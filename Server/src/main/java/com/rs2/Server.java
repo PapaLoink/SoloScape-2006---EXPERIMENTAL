@@ -28,7 +28,6 @@ import com.rs2.model.clue.TreasureTrailManager;
 import com.rs2.model.combat.CombatManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.gameplay.duel.DuelSession;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.magetrainingarena.AlchemistPlaygroundController;
 import com.rs2.model.gameplay.magetrainingarena.CreatureGraveyardController;
 import com.rs2.model.gameplay.magetrainingarena.EnchantmentChamberController;
@@ -110,6 +109,8 @@ implements Runnable {
     private ElapsedTimer cycleTimer;
     private final Queue loginQueue = new ConcurrentLinkedQueue();
     private static final Queue disconnectQueue;
+    private static volatile long idleLogoutConfigModified = Long.MIN_VALUE;
+    private static volatile long idleLogoutConfigLength = Long.MIN_VALUE;
     private static Thread serverThread;
     private static Thread engineThread;
     public static int serverStatus;
@@ -211,7 +212,67 @@ implements Runnable {
         }
     }
 
+    /**
+     * Isolated parser for the server-side AFK switch. The last configured
+     * value wins, matching the normal loadConfig() behavior. A malformed value
+     * does not silently enable AFK logout or override the current setting.
+     */
+    public static Boolean parseIdleLogoutSetting(BufferedReader reader) throws IOException {
+        Boolean result = null;
+        String line;
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+            if (!line.startsWith("[IDLE_LOGOUT]")) continue;
+            String[] parts = line.split(";", -1);
+            if (parts.length != 2 || !parts[0].trim().equals("[IDLE_LOGOUT]")
+                    || (!parts[1].trim().equals("0") && !parts[1].trim().equals("1"))) {
+                throw new IOException("Invalid idle logout config: " + line
+                        + " (expected [IDLE_LOGOUT];0 or [IDLE_LOGOUT];1)");
+            }
+            result = parts[1].trim().equals("1");
+        }
+        return result;
+    }
+
+    /**
+     * The desktop control panel loads server.cfg once in its constructor.
+     * Watch the file's metadata on each game tick so changing IDLE_LOGOUT
+     * takes effect without requiring the user to close the Java GUI.
+     */
+    private static synchronized void reloadIdleLogoutIfChanged() {
+        File file = new File("./config/server.cfg");
+        if (!file.isFile()) return;
+        long modified = file.lastModified();
+        long length = file.length();
+        if (modified == idleLogoutConfigModified && length == idleLogoutConfigLength)
+            return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            Boolean enabled = parseIdleLogoutSetting(reader);
+            if (enabled == null) {
+                System.err.println("[config] No [IDLE_LOGOUT] entry found in "
+                        + file.getAbsolutePath() + "; current setting remains "
+                        + (ServerSettings.idleLogoutEnabled ? "enabled" : "disabled"));
+            } else {
+                ServerSettings.idleLogoutEnabled = enabled;
+                System.out.println("[config] IDLE_LOGOUT="
+                        + (enabled ? "1 (enabled)" : "0 (disabled)")
+                        + " from " + file.getAbsolutePath());
+            }
+            idleLogoutConfigModified = modified;
+            idleLogoutConfigLength = length;
+        } catch (IOException exception) {
+            // Keep the last known valid setting while the file is being edited.
+            // A subsequent metadata change triggers another parse attempt.
+            System.err.println("[config] Unable to reload IDLE_LOGOUT: " + exception.getMessage());
+            idleLogoutConfigModified = modified;
+            idleLogoutConfigLength = length;
+        }
+    }
+
     public static void main(String[] args) {
+        // server.cfg is normally loaded only when the control panel is created.
+        // Also pick up edits made while that window has remained open.
+        reloadIdleLogoutIfChanged();
         String bindHost = System.getProperty("prs.bindHost", "0.0.0.0");
         runtimeMinutes = 0;
         shutdownRequested = false;
@@ -314,6 +375,8 @@ implements Runnable {
             QuestDefinition.loadDefinitions();
             ItemDefinition.loadDefinitions();
             NpcDefinition.loadDefinitions();
+            // Convert old binary saves after definitions are ready, before accepting logins.
+            CharacterFileManager.migrateLegacyCharacters();
             FoodHandler.loadPotionDefinitions();
             ShopManager.loadShops();
             InterfaceDefinition.loadDefinitions();
@@ -343,6 +406,8 @@ implements Runnable {
             PartyRoomManager.loadPartyChest();
             NpcDropTable.loadDropTables();
             GameplayHelper.loadNpcSpawns();
+            // March 2006 Romeo & Juliet rework supporting characters.
+            com.rs2.model.quest.impl.RomeoJulietSupportingNpcs.spawnMissingNpcs();
             if (ServerSettings.grandExchangeEnabled) {
                 GameplayHelper.spawnNpc(3863, 3183, 3436, 0, 4);
             }
@@ -378,9 +443,6 @@ implements Runnable {
             for (Object itemStackObject : startingRareItems) {
                 ItemStack itemStack = (ItemStack)itemStackObject;
                 trackedRareItems.add(itemStack);
-            }
-            if (ServerSettings.content2007Enabled) {
-                GodWarsDungeonManager.spawnGodWarsNpcs();
             }
             System.out.println("Online!");
             BotTaskDefinition.initializeProgressiveTaskPool();
@@ -665,6 +727,9 @@ implements Runnable {
     }
 
     private void processGameCycle() {
+        // Hot-reload just this setting, without overwriting the other live
+        // settings managed by the control panel.
+        reloadIdleLogoutIfChanged();
         ProfilerTimer elapsedTimer = ProfilerRegistry.getTimer("loginQueue");
         elapsedTimer.start();
         Player player;

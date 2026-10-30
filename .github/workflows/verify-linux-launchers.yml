@@ -1,0 +1,65 @@
+name: Verify Linux Launchers
+
+on:
+  push:
+    branches:
+      - feature/linux
+  pull_request:
+    paths:
+      - '**/*.sh'
+      - 'docs/LINUX.md'
+      - '.github/workflows/verify-linux-launchers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-launchers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Validate Linux shell scripts
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            bash -n "$file"
+            echo "Syntax OK: $file"
+          done < <(find . -type f -name '*.sh' -print0)
+      - name: Find the Java 8 JDK
+        run: |
+          set -euo pipefail
+          jdk=$(bash Setup-Java-8.sh)
+          test -x "$jdk/bin/javac"
+          "$jdk/bin/javac" -version
+      - name: Build the Java client on Linux
+        run: |
+          bash Client/Build-Client.sh
+          test -s Client/build/client.jar
+          jar tf Client/build/client.jar | grep -F 'unpackaged/Client.class'
+      - name: Build the Java server on Linux
+        run: |
+          bash Server/Build-Server.sh --no-pause
+          test -s Server/dist/server.jar
+          jar tf Server/dist/server.jar | grep -F 'com/rs2/launcher/ControlPanel.class'
+      - name: Prepare both Linux HotSwap watchers
+        run: |
+          bash Client/Start-Client-Dev-Mode.sh --prepare-only
+          test -s Client/build/hotswap-agent.jar
+          bash Server/Start-Server-Dev-Mode.sh --prepare-only
+          test -s Server/build/hotswap-agent.jar
+      - name: Validate Windows-only compatibility messaging
+        run: |
+          bash Client/WebClient/Enable-Original-Client.sh
+      - name: Clean without removing saves, cache, or launcher scripts
+        run: |
+          test -f Server/cache/main_file_cache.dat2
+          bash Start-Here-SoloScape.sh clean
+          test ! -d Client/build
+          test ! -d Server/dist
+          test -f Server/cache/main_file_cache.dat2
+          test -f Start-Here-SoloScape.sh

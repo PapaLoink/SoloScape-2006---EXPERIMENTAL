@@ -16,7 +16,6 @@ import com.rs2.model.gameplay.barrows.BarrowsManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.gameplay.duel.DuelHistory;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.partyroom.PartyRoomManager;
 import com.rs2.model.ground.GroundItemManager;
 import com.rs2.model.interaction.InteractionDispatcher;
@@ -133,8 +132,8 @@ extends TickTask {
                 CastleWarsEngineeringManager.getMainDoorInteractionApproach(
                         this.player, this.objectId, this.objectX, this.objectY);
         if (castleWarsMainDoorApproach != null) {
-            if (this.player.getPosition().getX() == castleWarsMainDoorApproach.getX()
-                    && this.player.getPosition().getY() == castleWarsMainDoorApproach.getY()
+            if (CastleWarsEngineeringManager.isAtMainDoorInteractionApproach(
+                    this.player, this.objectId, this.objectX, this.objectY)
                     && CastleWarsManager.handleFirstObjectAction(
                             this.player, this.objectId, this.objectX, this.objectY)) {
                 this.stop();
@@ -287,10 +286,6 @@ extends TickTask {
             return;
         }
         if (BarrowsManager.handleTunnelDoorObject(this.player, this.objectId, this.objectX, this.objectY)) {
-            this.stop();
-            return;
-        }
-        if (ServerSettings.content2007Enabled && GodWarsDungeonManager.handleFirstObjectAction(this.player, this.objectId, this.objectX, this.objectY)) {
             this.stop();
             return;
         }

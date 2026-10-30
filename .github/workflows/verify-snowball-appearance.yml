@@ -10,6 +10,8 @@ on:
       - 'Server/src/test/java/GublinchChristmasEventChecks.java'
       - 'Client/tests/SnowballAppearanceChecks.java'
       - 'Client/tests/ChildAnimationChecks.java'
+      - 'Client/tests/GublinchAnimationChecks.java'
+      - 'Server/src/main/java/com/rs2/model/quest/event/GublinchChristmasEvent.java'
       - '.github/workflows/verify-snowball-appearance.yml'
   workflow_dispatch:
 permissions:
@@ -30,7 +32,7 @@ jobs:
           mkdir -p /tmp/snowball-classes data/characters
           find src/main/java ../Client/src -name '*.java' > /tmp/snowball-sources.txt
           javac -encoding UTF-8 -cp 'lib/*' -d /tmp/snowball-classes @/tmp/snowball-sources.txt
-          javac -encoding UTF-8 -cp '/tmp/snowball-classes:lib/*' -d /tmp/snowball-classes src/test/java/ArmourAppearanceChecks.java src/test/java/GublinchChristmasEventChecks.java ../Client/tests/SnowballAppearanceChecks.java ../Client/tests/ChildAnimationChecks.java
+          javac -encoding UTF-8 -cp '/tmp/snowball-classes:lib/*' -d /tmp/snowball-classes src/test/java/ArmourAppearanceChecks.java src/test/java/GublinchChristmasEventChecks.java ../Client/tests/SnowballAppearanceChecks.java ../Client/tests/ChildAnimationChecks.java ../Client/tests/GublinchAnimationChecks.java
       - name: Check actual appearance packets and native hand models
         working-directory: Server
         run: |
@@ -39,6 +41,9 @@ jobs:
       - name: Check rescued child animation meshes
         working-directory: Server
         run: java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' unpackaged.ChildAnimationChecks
+      - name: Check native Gublinch crumble animation
+        working-directory: Server
+        run: java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' unpackaged.GublinchAnimationChecks
       - name: Check Christmas event and pelting
         working-directory: Server
         run: timeout 180 java -Djava.awt.headless=true -cp '/tmp/snowball-classes:lib/*' GublinchChristmasEventChecks

@@ -21,6 +21,8 @@ $AgentSource = Join-Path $Root "dev\hotswap\HotSwapAgent.java"
 $AgentManifest = Join-Path $Root "dev\hotswap\MANIFEST.MF"
 $ServerRoot = Join-Path (Split-Path $Root -Parent) "Server"
 $ServerCache = Join-Path $ServerRoot "cache"
+$LibJars = (Get-ChildItem -Path (Join-Path $Root "lib") -Filter *.jar -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }) -join ";"
+$CompileCp = if ($LibJars) { "$ClassesDir;$LibJars" } else { $ClassesDir }
 
 function Assert-Command([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -39,7 +41,7 @@ function Compile-AllClientClasses {
     }
     Set-Content -Path $SourcesFile -Value $sourceLines -Encoding ASCII
 
-    & javac -encoding UTF-8 -d $ClassesDir "@$SourcesFile"
+    & javac -encoding UTF-8 -cp $CompileCp -d $ClassesDir "@$SourcesFile"
     if ($LASTEXITCODE -ne 0) {
         throw "Initial client compilation failed with exit code $LASTEXITCODE."
     }
@@ -93,7 +95,7 @@ function Compile-ChangedSources([string[]]$Paths) {
 
     $javacArgs = @(
         "-encoding", "UTF-8",
-        "-cp", $ClassesDir,
+        "-cp", $CompileCp,
         "-sourcepath", $SourceRoot,
         "-d", $ClassesDir
     ) + $Paths
@@ -122,13 +124,14 @@ function Start-DevClient {
     $agentArgument = "-javaagent:$AgentJar=$ClassesDir;$RestartFlag"
     $cacheArgument = '-Dclient.cache="{0}"' -f $ServerCache
     $javaArgs = @(
+        "-Dsun.java2d.d3d=false",
         "-XX:ErrorFile=$errorLog",
         $cacheArgument,
         "-Dsoloscape.mcp.port=$McpPort",
         "-Dclient.host=127.0.0.1",
         "-Dclient.port=43594",
         $agentArgument,
-        "-cp", $ClassesDir,
+        "-cp", $CompileCp,
         "unpackaged.Client"
     ) + $argsToUse
 

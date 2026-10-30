@@ -557,6 +557,21 @@ public final class NpcDefinition {
             definition.combatLevel = 0;
             definition.attackable = false;
             decodeRevision443(definition, entry.getValue());
+            // These event NPC IDs differ from the older server examine dataset.
+            switch (id) {
+                case 828:
+                    definition.description = "A sea shanty-singing werewolf wearing a Santa Claus robe.";
+                    break;
+                case 5017:
+                    definition.description = "A sweaty gublinch.";
+                    break;
+                case 5018:
+                    definition.description = "A chilled, smelly gublinch.";
+                    break;
+                case 5019:
+                    definition.description = "A freezing cold gublinch.";
+                    break;
+            }
         }
     }
 

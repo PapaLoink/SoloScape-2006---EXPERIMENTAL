@@ -29,7 +29,6 @@ import com.rs2.model.combat.CombatManager;
 import com.rs2.model.dialogue.DialogueManager;
 import com.rs2.model.gameplay.PositionRange;
 import com.rs2.model.gameplay.barrows.BarrowsManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.ground.GroundItem;
 import com.rs2.model.ground.GroundItemManager;
 import com.rs2.model.item.ItemContainer;
@@ -881,13 +880,7 @@ public class GameplayHelper {
             }
         } else {
             Object value = player2;
-            if (((Entity)value).isInArea(2816, 2943, 5248, 5375)) {
-                GodWarsDungeonManager.refreshKillCountOverlay(player2);
-                if (GameplayHelper.updateWalkableInterface(player2, 19556)) {
-                    value = player2;
-                    ((Player)value).packetSender.sendPlayerOption("null", 1, false);
-                }
-            } else {
+            {
                 value = player2;
                 if (((Entity)value).isInArea(2494, 2569, 3701, 3785)) {
                     if (GameplayHelper.updateWalkableInterface(player2, 11877)) {
@@ -1008,6 +1001,9 @@ public class GameplayHelper {
     }
 
     public static void openProductionInterface(Player interfaceId, String interfaceId2) {
+        if (com.rs2.model.skill.fletching.logs.LogFletchingMenu.open(interfaceId, interfaceId2)) {
+            return;
+        }
         Object value;
         if (interfaceId2 == "potteryUnfired") {
             if (!ItemDefinition.isDefined(4438)) {
@@ -1031,7 +1027,7 @@ public class GameplayHelper {
             // Revision 443 uses the full-screen spinning widget (459), not
             // the unmapped legacy make-item chatboxes 8866/8880.
             if (ServerSettings.clientBuild == 443) {
-                ((Player)interfaceId).packetSender.showInterface(8880);
+                com.rs2.model.skill.fletching.logs.LogFletchingMenu.restoreSpinningInterface((Player)interfaceId);
                 return;
             }
             if (!ItemDefinition.isDefined(6051)) {

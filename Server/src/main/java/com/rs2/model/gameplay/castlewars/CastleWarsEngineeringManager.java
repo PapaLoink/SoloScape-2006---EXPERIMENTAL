@@ -732,6 +732,29 @@ public final class CastleWarsEngineeringManager {
         return true;
     }
 
+    /** Both halves of a large door share one opening. A player alongside either
+     * closed leaf can operate the pair without stepping across the doorway. */
+    public static boolean isAtMainDoorInteractionApproach(Player player,
+                                                          int objectId,
+                                                          int objectX,
+                                                          int objectY) {
+        if (player == null || !isClosedMainDoorObject(objectId)
+                || player.getPosition().getPlane() != MAIN_DOOR_PLANE) {
+            return false;
+        }
+        MainDoorState door = findMainDoor(objectId, objectX, objectY);
+        if (door == null || door.mode != MainDoorMode.CLOSED) {
+            return false;
+        }
+        for (MainDoorLeaf leaf : door.leaves) {
+            if (player.getPosition().getX() == leaf.closedX
+                    && Math.abs(player.getPosition().getY() - leaf.closedY) == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static Position getMainDoorInteractionApproach(Player player,
                                                           int objectId,
                                                           int objectX,
@@ -1246,8 +1269,8 @@ public final class CastleWarsEngineeringManager {
 
     public static void cleanupPlayerSupplies(Player player) {
         int[] ids = new int[]{ROCK_ITEM_ID, EXPLOSIVE_POTION_ID, BARRICADE_ITEM_ID,
-                CLIMBING_ROPE_ITEM_ID, TOOLKIT_ID, EMPTY_BUCKET_ITEM_ID,
-                BUCKET_OF_WATER_ITEM_ID};
+                CLIMBING_ROPE_ITEM_ID, TOOLKIT_ID, BRONZE_PICKAXE_ID,
+                TINDERBOX_ITEM_ID, EMPTY_BUCKET_ITEM_ID, BUCKET_OF_WATER_ITEM_ID};
         for (int id : ids) {
             int amount = player.getInventoryManager().getItemAmount(id);
             if (amount > 0) {

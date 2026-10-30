@@ -54,6 +54,8 @@ public abstract class Class39_Sub5_Sub4_Sub4 extends Class39_Sub5_Sub4 {
     public int[] anIntArray2273;
     public int anInt2274;
     public int anInt2275;
+    public int ipX, ipY, ipSaveX, ipSaveY;                  // Interp: position at the previous tick, and the real one during a blended draw
+    public boolean ipBlended;
     public int anInt2276;
     public int anInt2277;
     public static JString aClass3_2278 = Class39_Sub5_Sub9.createJstring("Name des Gegenstands eingeben:");

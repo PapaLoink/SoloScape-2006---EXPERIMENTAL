@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>SoloScape</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: black; }
+    #viewport {
+      position: fixed; inset: 0; box-sizing: border-box;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
+               env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow: hidden;
+    }
+    #display { position: relative; width: 100%; height: 100%; background: black; touch-action: none; user-select: none; }
+    #keyboard {
+      position: fixed; z-index: 10000; top: 50%;
+      right: max(8px, env(safe-area-inset-right)); transform: translateY(-50%);
+      width: 44px; height: 44px; padding: 8px; border: 1px solid #9a8357;
+      border-radius: 8px; background: #201c15e6; color: #f1d695; cursor: pointer;
+      touch-action: manipulation;
+    }
+    #keyboard:disabled { opacity: .4; }
+    #keyboard[aria-pressed="true"] { background: #66512b; }
+    #phone-input {
+      position: fixed; top: 8px; left: 8px; width: 1px; height: 1px;
+      opacity: 0; border: 0; padding: 0; font-size: 16px; pointer-events: none;
+    }
+  </style>
+  <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+  <script src="local-render-bridge.js"></script>
+</head>
+<body>
+<div id="viewport"><div id="display"></div></div>
+<button id="keyboard" type="button" aria-label="Toggle keyboard" aria-pressed="false" title="Keyboard" disabled>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+    <path d="M5 9h2m2 0h2m2 0h2m2 0h2M5 12h2m2 0h2m2 0h2m2 0h2M7 16h10"/>
+  </svg>
+</button>
+<textarea id="phone-input" aria-label="Game keyboard input" inputmode="none" readonly enterkeyhint="enter"
+  autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="-1"></textarea>
+<script>
+(async () => {
+  'use strict';
+  const viewport = document.getElementById('viewport');
+  const display = document.getElementById('display');
+  const keyboard = document.getElementById('keyboard');
+  const phoneInput = document.getElementById('phone-input');
+  let clientBridge;
+  let keyboardRequested = false;
+  let keyboardViewport = null;
+  let keyboardCloseTimer;
+  let lastGameTapY = null;
+  let pendingKeys = Promise.resolve();
+  function sendKey(code, character) {
+    if (!clientBridge) return;
+    pendingKeys = pendingKeys.then(() => clientBridge.sendKey(code, character))
+      .catch(error => console.error('[local-render] Keyboard input failed:', error));
+  }
+  function resetInput() {
+    // A placeholder gives mobile keyboards something to backspace over.
+    phoneInput.value = ' ';
+    phoneInput.setSelectionRange(1, 1);
+  }
+  function closeKeyboard() {
+    keyboardRequested = false;
+    phoneInput.readOnly = true;
+    phoneInput.inputMode = 'none';
+    if (document.activeElement === phoneInput) phoneInput.blur();
+    keyboard.setAttribute('aria-pressed', 'false');
+  }
+  function suppressRuntimeEditors() {
+    // CheerpJ may create or refocus hidden text controls even with input methods off.
+    for (const editor of document.querySelectorAll('input, textarea, [contenteditable]')) {
+      if (editor === phoneInput) continue;
+      if (editor.getAttribute('inputmode') !== 'none') editor.setAttribute('inputmode', 'none');
+      if ('readOnly' in editor && !editor.readOnly) editor.readOnly = true;
+      if (editor.hasAttribute('contenteditable') && editor.getAttribute('contenteditable') !== 'false') {
+        editor.setAttribute('contenteditable', 'false');
+      }
+    }
+  }
+  suppressRuntimeEditors();
+  new MutationObserver(suppressRuntimeEditors).observe(document.body, {
+    subtree: true, childList: true, attributes: true,
+    attributeFilter: ['inputmode', 'readonly', 'contenteditable']
+  });
+  document.addEventListener('pointerdown', event => {
+    suppressRuntimeEditors();
+    if (!keyboard.contains(event.target)) closeKeyboard();
+  }, { capture: true });
+  document.addEventListener('focusin', event => {
+    const target = event.target;
+    if (target === phoneInput && keyboardRequested) return;
+    if (target.matches && target.matches('input, textarea, [contenteditable="true"]')) {
+      target.blur();
+    }
+  }, { capture: true });
+  keyboard.addEventListener('pointerdown', event => event.preventDefault());
+  keyboard.addEventListener('click', () => {
+    if (document.activeElement === phoneInput) {
+      closeKeyboard();
+    } else {
+      keyboardRequested = true;
+      phoneInput.readOnly = false;
+      phoneInput.inputMode = 'text';
+      resetInput();
+      // Focus synchronously inside the user's tap so mobile browsers open the keyboard.
+      phoneInput.focus({ preventScroll: true });
+    }
+  });
+  phoneInput.addEventListener('focus', () => {
+    if (!keyboardRequested) {
+      closeKeyboard();
+      return;
+    }
+    clearTimeout(keyboardCloseTimer);
+    // Capture the full-size display before the keyboard changes the visual viewport.
+    if (!keyboardViewport) {
+      keyboardViewport = {
+        width: parseFloat(viewport.style.width),
+        height: parseFloat(viewport.style.height)
+      };
+    }
+    keyboard.setAttribute('aria-pressed', 'true');
+    fitClient();
+  });
+  phoneInput.addEventListener('blur', () => {
+    keyboardRequested = false;
+    phoneInput.readOnly = true;
+    phoneInput.inputMode = 'none';
+    keyboard.setAttribute('aria-pressed', 'false');
+    phoneInput.value = '';
+    // Keep the size stable through the keyboard's closing animation.
+    keyboardCloseTimer = setTimeout(() => {
+      keyboardViewport = null;
+      fitClient();
+    }, 400);
+  });
+  display.addEventListener('pointerdown', event => {
+    lastGameTapY = event.clientY - viewport.getBoundingClientRect().top;
+    closeKeyboard();
+  }, { capture: true });
+  phoneInput.addEventListener('beforeinput', event => {
+    if (event.isComposing) return;
+    if (event.inputType.startsWith('delete')) {
+      event.preventDefault();
+      sendKey(8, 8);
+      resetInput();
+    } else if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+      event.preventDefault();
+      sendKey(10, 10);
+      resetInput();
+    }
+  });
+  function forwardText() {
+    const text = phoneInput.value.startsWith(' ') ? phoneInput.value.slice(1) : phoneInput.value;
+    for (const character of text) {
+      const value = character.charCodeAt(0);
+      if (character === '\\n') sendKey(10, 10);
+      else sendKey(0, value);
+    }
+    resetInput();
+  }
+  phoneInput.addEventListener('input', event => {
+    if (event.isComposing) return;
+    // Fallback for keyboards that omit a cancellable beforeinput deletion event.
+    if (event.inputType.startsWith('delete')) {
+      sendKey(8, 8);
+      resetInput();
+    } else {
+      forwardText();
+    }
+  });
+  phoneInput.addEventListener('compositionend', forwardText);
+  phoneInput.addEventListener('keydown', event => {
+    event.stopPropagation();
+    if (event.isComposing) return;
+    const code = { Enter: 10, Tab: 9, Backspace: 8, ArrowLeft: 37, ArrowRight: 39,
+      ArrowUp: 38, ArrowDown: 40, Delete: 127 }[event.key];
+    if (code) {
+      event.preventDefault();
+      sendKey(code, code === 10 || code === 8 ? code : 0);
+      resetInput();
+    }
+  });
+  phoneInput.addEventListener('keyup', event => event.stopPropagation());
+  phoneInput.addEventListener('keypress', event => event.stopPropagation());
+
+  // Local touch gestures use the real Java input path, not synthetic DOM clicks.
+  const touchPoints = new Map();
+  let activeTouch = null;
+  let pinchBlocked = false;
+  let pinchDistance = null;
+  let touchGeneration = 0;
+  let lastTouchTime = -Infinity;
+  // Input is useful only while it still represents the user's current gesture.
+  const TAP_MAX_AGE_MS = 500;
+  let pointerQueue = Promise.resolve();
+  function queuePointer(action) {
+    const result = pointerQueue.then(action);
+    pointerQueue = result.catch(error => console.error('[local-render] Touch input failed:', error));
+    return result;
+  }
+  function mouse(id, button, point) {
+    return queuePointer(() => clientBridge.sendMouse(id, button, point.x, point.y));
+  }
+  function gamePoint(event) {
+    const rect = display.getBoundingClientRect();
+    const scale = Math.min(rect.width / 765, rect.height / 503);
+    const x = (event.clientX - rect.left - (rect.width - 765 * scale) / 2) / scale;
+    const y = (event.clientY - rect.top - (rect.height - 503 * scale) / 2) / scale;
+    return { x: Math.floor(x), y: Math.floor(y),
+      inside: scale > 0 && x >= 0 && x < 765 && y >= 0 && y < 503,
+      scene: x >= 0 && x < 512 && y >= 0 && y < 334 };
+  }
+  function fingerDistance() {
+    if (touchPoints.size !== 2) return null;
+    const [a, b] = Array.from(touchPoints.values());
+    return a.scene && b.scene ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : null;
+  }
+  function captureTouch(event) {
+    if (event.pointerType === 'mouse' || !clientBridge) return false;
+    lastTouchTime = performance.now();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return true;
+  }
+  function primeTouchHover(touch, point) {
+    touch.hoverPoint = point;
+    touch.hoverAt = performance.now();
+    const generation = touchGeneration;
+    touch.hover = queuePointer(() => generation === touchGeneration
+      ? clientBridge.sendMouse(503, 0, point.x, point.y) : -1);
+  }
+  function tapAfterHover(touch, generation) {
+    // Serialize Java calls, but never replay old taps after a stalled bridge/frame.
+    // Start the deadline at finger-up, including time spent waiting in the queue.
+    const deadline = performance.now() + TAP_MAX_AGE_MS;
+    const current = () => generation === touchGeneration && performance.now() < deadline;
+    return queuePointer(async () => {
+      if (!current()) return;
+      // Reuse hover primed while the finger was down. Starting it again on lift
+      // needlessly adds another full render frame to every stationary tap.
+      const primed = touch.hoverPoint && touch.hoverPoint.x === touch.point.x &&
+        touch.hoverPoint.y === touch.point.y;
+      const frame = primed ? await touch.hover :
+        await clientBridge.sendMouse(503, 0, touch.point.x, touch.point.y);
+      if (touch.point.scene && frame >= 0) {
+        let ready = false;
+        while (current()) {
+          ready = await clientBridge.sceneHoverReady(touch.point.x, touch.point.y, frame);
+          if (ready) break;
+          await new Promise(resolve => setTimeout(resolve, 16));
+        }
+        if (!ready) return;
+      }
+      if (!current()) return;
+      const button = touch.held >= 450 ? 3 : 1;
+      await clientBridge.sendMouse(501, button, touch.point.x, touch.point.y);
+      try {
+        const releaseDeadline = performance.now() + TAP_MAX_AGE_MS;
+        while (generation === touchGeneration && performance.now() < releaseDeadline) {
+          if (await clientBridge.clickConsumed()) break;
+          await new Promise(resolve => setTimeout(resolve, 16));
+        }
+      } finally {
+        await clientBridge.sendMouse(502, button, touch.point.x, touch.point.y);
+      }
+    });
+  }
+  display.addEventListener('pointerdown', event => {
+    if (!captureTouch(event)) return;
+    const point = gamePoint(event);
+    if (!point.inside) return;
+    display.setPointerCapture?.(event.pointerId);
+    touchPoints.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY, scene: point.scene });
+    if (touchPoints.size >= 2) {
+      touchGeneration++;
+      if (activeTouch && activeTouch.down) mouse(502, activeTouch.button, activeTouch.point);
+      activeTouch = null;
+      pinchBlocked = true;
+      pinchDistance = fingerDistance();
+      return;
+    }
+    if (pinchBlocked) return;
+    // A new finger-down supersedes any tap still waiting for Java or scene picking.
+    touchGeneration++;
+    activeTouch = { id: event.pointerId, point, start: point,
+      clientX: event.clientX, clientY: event.clientY, started: performance.now(),
+      button: point.scene ? 2 : 1, down: false, lastMove: -Infinity };
+    primeTouchHover(activeTouch, point);
+  }, { capture: true, passive: false });
+  display.addEventListener('pointermove', event => {
+    if (!captureTouch(event)) return;
+    const finger = touchPoints.get(event.pointerId);
+    if (finger) {
+      finger.clientX = event.clientX;
+      finger.clientY = event.clientY;
+    }
+    if (pinchBlocked) {
+      const distance = fingerDistance();
+      if (distance !== null && pinchDistance !== null) {
+        const steps = Math.max(-10, Math.min(10, Math.trunc((distance - pinchDistance) / 12)));
+        if (steps) {
+          queuePointer(() => clientBridge.zoom(-steps));
+          pinchDistance += steps * 12;
+        }
+      }
+      return;
+    }
+    if (!activeTouch || activeTouch.id !== event.pointerId) return;
+    const point = gamePoint(event);
+    if (!point.inside) return;
+    activeTouch.point = point;
+    if (!activeTouch.down && Math.hypot(event.clientX - activeTouch.clientX,
+        event.clientY - activeTouch.clientY) > 12) {
+      // A deliberate drag cancels pending taps; small finger drift does not.
+      touchGeneration++;
+      mouse(501, activeTouch.button, activeTouch.start);
+      activeTouch.down = true;
+    }
+    if (!activeTouch.down && performance.now() - activeTouch.hoverAt >= 16 &&
+        Math.hypot(point.x - activeTouch.hoverPoint.x, point.y - activeTouch.hoverPoint.y) >= 4) {
+      // Warm the menu during normal finger drift, before the finger lifts.
+      primeTouchHover(activeTouch, point);
+    }
+    if (activeTouch.down && performance.now() - activeTouch.lastMove >= 25) {
+      mouse(506, activeTouch.button, point);
+      activeTouch.lastMove = performance.now();
+    }
+  }, { capture: true, passive: false });
+  display.addEventListener('pointerup', event => {
+    if (!captureTouch(event)) return;
+    touchPoints.delete(event.pointerId);
+    if (pinchBlocked) {
+      if (!touchPoints.size) { pinchBlocked = false; pinchDistance = null; }
+      return;
+    }
+    if (!activeTouch || activeTouch.id !== event.pointerId) return;
+    const touch = activeTouch;
+    activeTouch = null;
+    const point = gamePoint(event);
+    if (touch.down) {
+      if (point.inside) { touch.point = point; mouse(506, touch.button, point); }
+      mouse(502, touch.button, touch.point);
+    } else if (point.inside) {
+      touch.held = performance.now() - touch.started;
+      // Small finger drift is still a tap. Prime the exact release coordinate,
+      // not the earlier finger-down coordinate used to distinguish a drag.
+      touch.point = point;
+      tapAfterHover(touch, touchGeneration).catch(error =>
+        console.error('[local-render] Tap failed:', error));
+    }
+  }, { capture: true, passive: false });
+  function cancelTouches() {
+    touchGeneration++;
+    if (activeTouch && activeTouch.down) mouse(502, activeTouch.button, activeTouch.point);
+    activeTouch = null;
+    touchPoints.clear();
+    pinchBlocked = false;
+    pinchDistance = null;
+  }
+  display.addEventListener('pointercancel', event => {
+    if (captureTouch(event)) cancelTouches();
+  }, { capture: true, passive: false });
+  window.addEventListener('blur', cancelTouches);
+  // Avoid CheerpJ also turning the same finger gesture into a second mouse click.
+  for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel',
+      'mousedown', 'mousemove', 'mouseup', 'click', 'contextmenu']) {
+    display.addEventListener(type, event => {
+      if (type.startsWith('touch') || event.sourceCapabilities?.firesTouchEvents ||
+          performance.now() - lastTouchTime < 800) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, { capture: true, passive: false });
+  }
+
+  function fitClient() {
+    const visible = window.visualViewport;
+    const visibleWidth = visible ? visible.width : window.innerWidth;
+    const visibleHeight = visible ? visible.height : window.innerHeight;
+    const left = visible ? visible.offsetLeft : 0;
+    const top = visible ? visible.offsetTop : 0;
+    // Freeze the game dimensions while typing. Move the last tapped field above
+    // the keyboard instead of rescaling the entire client into the remaining space.
+    const width = keyboardViewport ? keyboardViewport.width : visibleWidth;
+    const height = keyboardViewport ? keyboardViewport.height : visibleHeight;
+    const anchorY = lastGameTapY === null ? height * 0.55 : lastGameTapY;
+    const pan = keyboardViewport
+      ? Math.min(Math.max(0, height - visibleHeight), Math.max(0, anchorY + 48 - visibleHeight))
+      : 0;
+    viewport.style.width = width + 'px';
+    viewport.style.height = height + 'px';
+    viewport.style.left = left + 'px';
+    viewport.style.top = (top - pan) + 'px';
+    keyboard.style.top = (top + visibleHeight / 2) + 'px';
+  }
+  window.addEventListener('resize', fitClient);
+  window.addEventListener('orientationchange', () => {
+    keyboardViewport = null;
+    lastGameTapY = null;
+    closeKeyboard();
+    fitClient();
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitClient);
+    window.visualViewport.addEventListener('scroll', fitClient);
+  }
+  fitClient();
+  try {
+    if (typeof cheerpjInit !== 'function') {
+      throw new Error('CheerpJ runtime did not load. Check access to its CDN.');
+    }
+    await cheerpjInit({
+      version: 8,
+      // Game taps should not focus CheerpJ's mobile text-input overlay.
+      enableInputMethods: false,
+      status: 'default',
+      natives: window.localRenderSocketNatives,
+      javaProperties: [
+        'client.host=127.0.0.1', // Only used to parse a host; no browser-loopback TCP.
+        'client.port=43594',
+        'client.transport=lan-websocket'
+      ]
+    });
+    cheerpjCreateDisplay(-1, -1, display);
+    const library = await cheerpjRunLibrary('/app/client.jar');
+    clientBridge = await library.unpackaged.BrowserClientBootstrap;
+    await clientBridge.start();
+    keyboard.disabled = false;
+  } catch (error) {
+    console.error('[local-render] Startup failed:', error);
+  }
+})();
+</script>
+</body>
+</html>

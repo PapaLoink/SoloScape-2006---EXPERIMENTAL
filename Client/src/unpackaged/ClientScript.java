@@ -858,6 +858,13 @@ public class ClientScript extends SubNode
 	    } else {
 		for (int i_116_ = 4; i_116_ >= 0; i_116_--) {
 		    if (Class39_Sub14.aClass3Array1519[i_116_] != null) {
+			// Castle Wars teammates cannot attack one another. Hide the
+			// option rather than simply demoting it to right-click.
+			if (Cache.aClass39_Sub5_Sub4_Sub4_Sub2_109
+			    .isCastleWarsTeammate(class39_sub5_sub4_sub4_sub2)
+			    && Class39_Sub14.aClass3Array1519[i_116_]
+			        .method97(ClientApplet.aClass3_7, -66))
+			    continue;
 			int i_117_ = 0;
 			int i_118_ = 0;
 			if (!Class39_Sub14.aClass3Array1519[i_116_]

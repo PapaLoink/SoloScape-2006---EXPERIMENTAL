@@ -26,12 +26,16 @@ echo Collecting Java sources...
 )
 
 echo Compiling client...
-"%JAVA_HOME%\bin\javac.exe" -encoding UTF-8 -d "build\classes" @"build\sources.txt"
+"%JAVA_HOME%\bin\javac.exe" -encoding UTF-8 -cp "lib\*" -d "build\classes" @"build\sources.txt"
 if errorlevel 1 exit /b 1
 
 echo Creating build\client.jar...
 if exist "src\assets" xcopy /e /i /y "src\assets" "build\classes\assets" >nul
-"%JAVA_HOME%\bin\jar.exe" cfe "build\client.jar" unpackaged.Client -C "build\classes" .
+set "LIBCP="
+for %%L in ("lib\*.jar") do set "LIBCP=!LIBCP! ../lib/%%~nxL"
+>"build\manifest.txt" echo Main-Class: unpackaged.Client
+if defined LIBCP >>"build\manifest.txt" echo Class-Path:!LIBCP!
+"%JAVA_HOME%\bin\jar.exe" cfm "build\client.jar" "build\manifest.txt" -C "build\classes" .
 if errorlevel 1 exit /b 1
 
 copy /y "Play-Client.bat.template" "Play-Client.bat" >nul

@@ -160,10 +160,34 @@ public class Bzip2Block {
         }
     }
 
+    /** Native 443 Make-X action widgets in the 1/2/3-product fletching chatboxes. */
+    static boolean isFletchingMakeX(int packedWidgetId, int openChatboxGroup) {
+        int group = packedWidgetId >>> 16;
+        int child = packedWidgetId & 0xffff;
+        if (group != openChatboxGroup) return false;
+        if (group == 304) return child == 5 || child == 9 || child == 13;
+        if (group == 303) return child == 4 || child == 8;
+        // Single-product 309 starts with Make All at child 3, X at 4.
+        return group == 309 && child == 4;
+    }
+
     public static void method1035(byte i, int i_21_, int i_22_) {
         FrameBuffer.outgoingGameBuffer.putFrame(153);
         FrameBuffer.outgoingGameBuffer.putWordLe(i_21_);
         FrameBuffer.outgoingGameBuffer.putDword(i_22_);
+
+        // The native Make X click can put the chatbox into its "Please wait"
+        // state while the server round-trip is pending. Show the numeric entry
+        // immediately for the paired revision-443 client instead of relying
+        // solely on the server's subsequent opcode 32 to open it. The same
+        // WIDGET_SELECT packet above still tells the server which item was
+        // selected and it validates the eventual entered quantity.
+        if (isFletchingMakeX(i_22_, Class39_Sub5_Sub14.anInt1912)) {
+            Class39_Sub5_Sub4_Sub4.anInt2285 = 1; // native numeric input mode
+            Class39_Sub12.aBoolean1489 = false;
+            Class66.aClass3_1151 = Class66.blankString;
+            Class14.aBoolean245 = true;
+        }
     }
 
     public static IndexedColorSprite method1036(boolean bool) {
@@ -1047,6 +1071,14 @@ public class Bzip2Block {
                                 : class39_sub5_sub17.anInt2090;
                     }
                     class39_sub5_sub17.aClass3_2029 = class3;
+                    if (i_97_ == ((228 << 16) | 0)) {
+                        JSocket.configureCastleWarsOfferSwords();
+                    }
+                }
+                // Hidden 211:3 selector controls the icon in the adjacent
+                // passive 211:4 sprite. It is never printed in the chatbox.
+                if (i_97_ == ((211 << 16) | 3)) {
+                    JSocket.updateLevelUpSkillIcon(class3);
                 }
                 if ((i_97_ >>> 16) == 214) {
                     JSocket.updateTutorialChatScroll();

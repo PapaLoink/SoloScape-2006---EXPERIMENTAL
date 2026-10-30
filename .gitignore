@@ -18,3 +18,14 @@ modsettings.properties
 # Jagex's original client EXE (download it from the SoloScape v1 release instead).
 /Client/WebClient/runescape.exe
 /Client/WebClient/Original/
+# Generated artifacts from the Linux build and HotSwap launchers.
+/Client/build/
+/Server/build/
+/Server/dist/
+/Client/client.log
+/Client/client-hs-err.log
+/Client/client-web-hs-err.log
+/Server/discord-relay.properties
+
+# Windows folder settings
+desktop.ini

@@ -78,6 +78,7 @@ public final class InterfaceBridge {
         mappings.put(2492, 234);  // five-option dialogue
         mappings.put(356, 210);   // statement, one line
         mappings.put(359, 211);   // statement, two lines
+        mappings.put(19580, 211); // dedicated 443 level-up chatbox (native two-line statement)
         mappings.put(363, 212);   // statement, three lines
         mappings.put(368, 213);   // statement, four lines
         mappings.put(374, 214);   // statement, five lines
@@ -86,6 +87,8 @@ public final class InterfaceBridge {
         mappings.put(197, 380);   // Wilderness level overlay
         mappings.put(201, 389);   // duel-area overlay
         mappings.put(4535, 24);   // Barrows overlay
+        mappings.put(6673, 57);  // Castle Wars waiting room overlay
+        mappings.put(11344, 59); // Castle Wars in-game status overlay
         mappings.put(12414, 96);  // cave darkness, light (opacity 50)
         mappings.put(12416, 97);  // cave darkness, heavy (opacity 200)
         mappings.put(12418, 98);  // cave darkness, medium (opacity 150)
@@ -99,6 +102,9 @@ public final class InterfaceBridge {
         mappings.put(1743, 307);  // cooking quantity chatbox
         mappings.put(8866, 459); // legacy two-product spinning interface
         mappings.put(8880, 459); // legacy three-product spinning interface
+        mappings.put(20120, 304); // three-item knife-on-logs chatbox
+        mappings.put(20121, 303); // two-item knife-on-logs chatbox
+        mappings.put(20122, 309); // one-item knife-on-logs chatbox
         mappings.put(679, 324);  // tanning (legacy fallback)
         mappings.put(14670, 324); // tanning
         mappings.put(8134, 275);  // quest detail page
@@ -120,6 +126,15 @@ public final class InterfaceBridge {
 
     private static Map<Integer, Integer> createComponentMappings() {
         Map<Integer, Integer> mappings = new LinkedHashMap<Integer, Integer>();
+        // Native Castle Wars HUD (group 59): stock text components.
+        // Score and flag icons are driven by varps 377/378 instead.
+        put(mappings, 11346, 59, 1);  // Saradomin score label
+        put(mappings, 11352, 59, 7);  // Main door health
+        put(mappings, 11353, 59, 8);  // Match time
+        put(mappings, 11356, 59, 11); // Side door
+        put(mappings, 11358, 59, 13); // First tunnel
+        put(mappings, 11360, 59, 15); // Second tunnel
+        put(mappings, 11362, 59, 17); // Catapult
         putRange(mappings, 18890, 500, 0, 49);
         putRange(mappings, 18939, 501, 0, 45);
         putRange(mappings, 18984, 502, 0, 34);
@@ -193,6 +208,22 @@ public final class InterfaceBridge {
         put(mappings, 13718, 307, 4);  // Cook X
         put(mappings, 13719, 307, 5);  // Cook 5
         put(mappings, 13720, 307, 6);  // Cook 1
+        // Native revision-443 make-item chatboxes: one, two or three items.
+        // Keep 8880/8866 on group 459 for spinning; fletching alone uses
+        // these virtual legacy roots with showChatboxInterface().
+        // Their child 2+ model slots and Make-X actions come from the cache.
+        put(mappings, 20200, 304, 2);  // three-item first model
+        put(mappings, 20201, 304, 3);  // three-item second model
+        put(mappings, 20202, 304, 4);  // three-item third model
+        put(mappings, 20203, 304, 18); // synthetic item name, first
+        put(mappings, 20204, 304, 19); // synthetic item name, second
+        put(mappings, 20205, 304, 20); // synthetic item name, third
+        put(mappings, 20206, 303, 2);  // two-item first model
+        put(mappings, 20207, 303, 3);  // two-item second model
+        put(mappings, 20208, 303, 13); // synthetic name, first
+        put(mappings, 20209, 303, 14); // synthetic name, second
+        put(mappings, 20210, 309, 2);  // one-item model
+        put(mappings, 20211, 309, 8);  // synthetic name
         // Cache-backed group 459: 92-95 flax, 97-100 wool, 104-107 magic roots.
         // Each four-button group is ordered Make X, Make 10, Make 5, Make 1.
         put(mappings, 8890, 459, 92);  // flax X
@@ -469,6 +500,7 @@ public final class InterfaceBridge {
         // Plain statement chatboxes used by Tutorial Island setup/finish prompts.
         put(mappings, 357, 210, 0);
         putRange(mappings, 360, 211, 0, 2);
+        put(mappings, 19581, 211, 3); // hidden skill name, selects native 320 skill sprite
         putRange(mappings, 364, 212, 0, 3);
         putRange(mappings, 369, 213, 0, 4);
         putRange(mappings, 375, 214, 0, 5);
@@ -603,7 +635,6 @@ public final class InterfaceBridge {
     private static Set<Integer> createCustomFlatGroups() {
         Set<Integer> ids = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
         ids.add(11877); // legacy snow overlay retained by the hybrid client
-        ids.add(19556); // custom God Wars kill-count overlay in client runtime cache
         ids.add(18890); // custom Grand Exchange offer overview
         ids.add(18939); // custom Grand Exchange offer editor
         ids.add(18984); // custom Grand Exchange offer status
@@ -615,7 +646,6 @@ public final class InterfaceBridge {
 
     private static Set<Integer> createCustomFlatComponents() {
         Set<Integer> ids = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
-        for (int id = 19557; id <= 19565; id++) ids.add(id);
         // Legacy quest-journal rows 19103 and 19497 do not exist in the stock
         // 443 widget cache. Sending either as a flat component makes the client
         // interpret it as group 0 with a huge child index and crash on login.

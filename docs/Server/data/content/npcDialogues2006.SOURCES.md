@@ -6,7 +6,7 @@ Pinned commit: `4949e619a53f40c0fe83395df89bd35ff1f044f4`.
 
 These are independent preservation reconstructions, not recovered Jagex transcripts. Some reference files explicitly rely on later OSRS or RS3 dialogue. No exact-2006 accuracy claim is made.
 
-Imported source code is covered by [the accompanying MIT notice](npcDialogues2006.LICENSE.txt). Jagex retains rights in its game content.
+Imported source code is covered by [the accompanying MIT notice](../../../../Server/data/content/npcDialogues2006.LICENSE.txt). Jagex retains rights in its game content.
 
 The compiler imports complete dialogue-only entries, with two explicit supplements: NPC 278 uses only the completed Cook conversation; NPC 300 uses only the unstarted Rune Mysteries conversation. Eligibility guards live in HistoricalNpcDialogues; existing quest handlers run first.
 

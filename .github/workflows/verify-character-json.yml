@@ -1,0 +1,39 @@
+name: Verify JSON Character Saves
+on:
+  push:
+    branches:
+      - fix/webclient-mobile-cleanup
+    paths:
+      - 'Server/src/main/java/com/rs2/Server.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/main/java/com/rs2/model/player/CharacterFile*.java'
+      - 'Server/src/main/java/com/rs2/util/CharacterFileManager.java'
+      - 'Server/src/main/java/com/rs2/util/CharacterJson*.java'
+      - 'Server/src/test/java/CharacterJsonSaveChecks.java'
+      - 'Server/src/test/java/CharacterRuntimeSaveChecks.java'
+      - '.github/workflows/verify-character-json.yml'
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/util/CharacterJson*.java'
+      - 'Server/src/main/java/com/rs2/util/CharacterFileManager.java'
+      - 'Server/src/test/java/CharacterJsonSaveChecks.java'
+      - 'Server/src/test/java/CharacterRuntimeSaveChecks.java'
+  workflow_dispatch:
+jobs:
+  character-json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and JSON character regression tests
+        working-directory: Server
+        run: |
+          mkdir -p build-json-checks
+          find src/main/java -name '*.java' > /tmp/soloscape-json-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d build-json-checks @/tmp/soloscape-json-sources.txt
+          javac -encoding UTF-8 -cp 'build-json-checks:lib/*' -d build-json-checks src/test/java/CharacterJsonSaveChecks.java src/test/java/CharacterRuntimeSaveChecks.java
+          java -cp 'build-json-checks:lib/*' CharacterJsonSaveChecks
+          java -cp 'build-json-checks:lib/*' CharacterRuntimeSaveChecks

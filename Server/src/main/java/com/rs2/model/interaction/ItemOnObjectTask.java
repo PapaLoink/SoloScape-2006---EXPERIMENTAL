@@ -7,7 +7,6 @@ import com.rs2.model.GameplayHelper;
 import com.rs2.model.Position;
 import com.rs2.model.combat.AttackStyleDefinition;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.interaction.InteractionDispatcher;
 import com.rs2.model.item.ItemDefinition;
 import com.rs2.model.item.ItemService;
@@ -137,10 +136,6 @@ extends TickTask {
             }
         }
         if (ServerSettings.content2007Enabled) {
-            if (GodWarsDungeonManager.handleGodswordShardOnAnvil(this.player, this.itemId, this.objectId)) {
-                this.stop();
-                return;
-            }
             if (DragonfireShieldSmithing.handleItemOnAnvil(this.player, this.itemId, this.objectId)) {
                 this.stop();
                 return;

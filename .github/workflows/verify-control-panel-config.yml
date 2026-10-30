@@ -1,0 +1,39 @@
+name: Verify Control Panel Configuration
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Server/src/main/java/com/rs2/ConfigFile.java'
+      - 'Server/src/main/java/com/rs2/launcher/ConfigEditorPanel.java'
+      - 'Server/src/test/java/ControlPanelConfigChecks.java'
+      - '.github/workflows/verify-control-panel-config.yml'
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/ConfigFile.java'
+      - 'Server/src/main/java/com/rs2/launcher/ConfigEditorPanel.java'
+      - 'Server/src/test/java/ControlPanelConfigChecks.java'
+      - '.github/workflows/verify-control-panel-config.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  control-panel-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and check config loading and persistence
+        working-directory: Server
+        run: |
+          mkdir -p build-control-panel-checks
+          find src/main/java -name '*.java' > /tmp/soloscape-control-panel-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d build-control-panel-checks @/tmp/soloscape-control-panel-sources.txt
+          javac -encoding UTF-8 -cp 'build-control-panel-checks:lib/*' -d build-control-panel-checks src/test/java/ControlPanelConfigChecks.java
+          checks="$PWD/build-control-panel-checks"
+          libraries="$PWD/lib/*"
+          sandbox=$(mktemp -d)
+          cd "$sandbox"
+          java -Djava.awt.headless=true -cp "$checks:$libraries" ControlPanelConfigChecks

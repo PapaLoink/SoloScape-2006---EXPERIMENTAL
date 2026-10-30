@@ -247,6 +247,65 @@ public class JSocket implements Runnable {
         }
     }
 
+    /**
+     * Castle Wars replacement offers use the native two-choice parchment.
+     * Move only its small sword ornaments outward; keep the red heading and
+     * the clickable option rows at their stock positions.
+     *
+     * This runs after the title packet arrives as well as on initial load,
+     * and restores stock geometry when another two-choice dialogue opens.
+     */
+    public static void configureCastleWarsOfferSwords() {
+        if (Class62_Sub1.widgets == null || Class62_Sub1.widgets.length <= 228) {
+            return;
+        }
+        Widget[] group = Class62_Sub1.widgets[228];
+        if (group == null || group.length <= 3 || group[0] == null) {
+            return;
+        }
+
+        Widget title = group[0];
+        boolean castleWarsOffer = isCastleWarsOfferTitle(title.aClass3_2029);
+        Widget leftSword = null;
+        Widget rightSword = null;
+        for (Widget widget : group) {
+            if (widget == null || widget.type != 5
+                    || widget.quadWidth <= 0 || widget.quadWidth > 48
+                    || widget.quadHeight <= 0 || widget.quadHeight > 40
+                    || Math.abs(widget.anInt2024 - title.anInt2024) > 28) {
+                continue;
+            }
+            if (leftSword == null || widget.anInt2090 < leftSword.anInt2090) {
+                leftSword = widget;
+            }
+            if (rightSword == null || widget.anInt2090 > rightSword.anInt2090) {
+                rightSword = widget;
+            }
+        }
+        // Do not disturb unrelated sprite decorations if the cache's title
+        // has no distinct pair of swords around its heading.
+        if (leftSword == null || rightSword == null || leftSword == rightSword
+                || rightSword.anInt2090 - leftSword.anInt2090 < 100) {
+            return;
+        }
+        int spread = castleWarsOffer ? 24 : 0;
+        leftSword.anInt2091 = leftSword.anInt2090 - spread;
+        rightSword.anInt2091 = rightSword.anInt2090 + spread;
+    }
+
+    private static boolean isCastleWarsOfferTitle(JString title) {
+        String prefix = "A place is available on the ";
+        if (title == null || title.bytes == null || title.length < prefix.length()) {
+            return false;
+        }
+        for (int i = 0; i < prefix.length(); ++i) {
+            if ((title.bytes[i] & 0xff) != prefix.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static void applyTutorialDialogueGeometry(int groupId) {
         int[] textY = getTutorialDialogueTextY(groupId);
         if (textY == null || groupId < 0 || groupId >= Class62_Sub1.widgets.length) {
@@ -718,6 +777,201 @@ public class JSocket implements Runnable {
         Class14.aBoolean245 = true;
     }
 
+    /**
+     * Native 443 production chatboxes (303, 304, 309) already contain actual
+     * item models and per-item Make X/10/5/1 actions. They lack a dedicated
+     * visible product-name line. Add passive captions below each item model,
+     * inside the 96px-tall chatbox clip, without replacing the native actions.
+     *
+     * The server targets only these synthetic children when fletching.
+     */
+    private static void configureFletchingChatbox(int parent) {
+        int count = parent == 304 ? 3 : parent == 303 ? 2 : parent == 309 ? 1 : 0;
+        if (count == 0) {
+            return;
+        }
+        Widget[] group = Class62_Sub1.widgets[parent];
+        int titleChild = parent == 304 ? 17 : parent == 303 ? 12 : 7;
+        int firstCaption = titleChild + 1;
+        if (group == null || group.length <= titleChild || group[titleChild] == null) {
+            return;
+        }
+        if (group.length < firstCaption + count) {
+            Widget[] expanded = new Widget[firstCaption + count];
+            System.arraycopy(group, 0, expanded, 0, group.length);
+            Class62_Sub1.widgets[parent] = group = expanded;
+        }
+
+        Widget title = group[titleChild];
+        for (int i = 0; i < count; i++) {
+            if (group[firstCaption + i] != null) {
+                continue;
+            }
+            Widget label = new Widget();
+            label.anInt2084 = (parent << 16) | firstCaption + i;
+            label.anInt2050 = -1;
+            label.aBoolean2013 = title.aBoolean2013;
+            label.type = 4;
+            label.anInt2078 = title.anInt2078;
+            // Native group 304's three slots occupy equal 160px columns;
+            // group 303 uses two 240px columns, and 309 one full-width slot.
+            int left = parent == 304 ? i * 160 : parent == 303 ? i * 240 : 0;
+            int width = parent == 304 ? 160 : parent == 303 ? 240 : 479;
+            label.anInt2090 = label.anInt2091 = left;
+            label.anInt2024 = label.anInt2021 = 78;
+            label.quadWidth = width;
+            label.quadHeight = 16;
+            label.anInt2105 = title.anInt2105;
+            label.anInt2032 = 1;
+            label.anInt1996 = title.anInt1996;
+            label.anInt2036 = title.anInt2036;
+            label.aBoolean2059 = title.aBoolean2059;
+            label.activeQuadColor = label.inactiveQuadColor = 0x402800;
+            label.aClass3_2029 = Class39_Sub5_Sub9.createJstring("");
+            label.aClass3_2048 = Class39_Sub5_Sub9.createJstring("");
+            label.anInt2089 = 0;
+            label.anInt2049 = label.anInt1998 = 0;
+            group[firstCaption + i] = label;
+        }
+        Class14.aBoolean245 = true;
+    }
+
+    /**
+     * Group 211 is the stock two-line statement chatbox, but has no icon.
+     * Append a passive skill selector and a 25x25 sprite in its unused left
+     * margin. The icon uses exactly the same sprite as native Skills tab 320.
+     * All ordinary statement widgets and the Continue action stay untouched.
+     */
+    // Group 211's text widgets are shared with ordinary statements, so keep
+    // their native widths and restore them as soon as level-up closes.
+    private static final int[] levelUpTextWidths = new int[2];
+
+    private static void configureLevelUpChatbox() {
+        Widget[] group = Class62_Sub1.widgets[211];
+        if (group == null || group.length < 3 || group[0] == null) {
+            return;
+        }
+        if (group.length < 5) {
+            Widget[] expanded = new Widget[5];
+            System.arraycopy(group, 0, expanded, 0, group.length);
+            Class62_Sub1.widgets[211] = group = expanded;
+        }
+        if (group[3] == null) {
+            Widget selector = new Widget();
+            selector.anInt2084 = (211 << 16) | 3;
+            selector.anInt2050 = -1;
+            selector.type = 4;
+            selector.anInt2089 = 0;
+            selector.anInt2049 = selector.anInt1998 = 0;
+            selector.aBoolean2055 = true; // Server-only control, never painted.
+            selector.aClass3_2029 = Class39_Sub5_Sub9.createJstring("");
+            selector.aClass3_2048 = Class39_Sub5_Sub9.createJstring("");
+            group[3] = selector;
+        }
+        if (group[4] == null) {
+            for (int i = 0; i < levelUpTextWidths.length; i++) {
+                levelUpTextWidths[i] = group[i].quadWidth;
+            }
+            Widget icon = new Widget();
+            icon.anInt2084 = (211 << 16) | 4;
+            icon.anInt2050 = -1;
+            // Original level-up graphics are roughly 60 pixels tall. The
+            // Skills-tab sprites are just 25px, so the old-format renderer
+            // would draw them tiny even if quadWidth were changed. Use the
+            // existing new-format sprite scaling branch (method687) instead.
+            icon.aBoolean2013 = true;
+            icon.type = 5;
+            icon.anInt2090 = icon.anInt2091 = 6;
+            icon.anInt2024 = icon.anInt2021 = 16;
+            icon.quadWidth = 64;
+            icon.quadHeight = 64;
+            icon.anInt2093 = icon.anInt2034 = -1;
+            icon.anInt2089 = 0;
+            icon.anInt2049 = icon.anInt1998 = 0;
+            icon.aBoolean2055 = true; // Hidden on ordinary statements.
+            group[4] = icon;
+        }
+    }
+
+    /**
+     * Skill order is SkillManager.SKILL_NAMES (0..21). IDs below are the
+     * matching original sprite widgets in revision-443 Skills tab group 320,
+     * not inferred sprite archive numbers or external image assets.
+     */
+    public static void updateLevelUpSkillIcon(jagex.utils.JString skillName) {
+        Widget[] levelUp = Class62_Sub1.widgets[211];
+        if (levelUp == null || levelUp.length < 5 || levelUp[4] == null) {
+            return;
+        }
+        Widget icon = levelUp[4];
+        icon.aBoolean2055 = true; // Also clears the icon on ordinary statements.
+        if (skillName == null) {
+            for (int i = 0; i < levelUpTextWidths.length; i++) {
+                Widget line = levelUp[i];
+                if (line != null) {
+                    line.anInt2091 = line.anInt2090;
+                    line.quadWidth = levelUpTextWidths[i];
+                }
+            }
+            Class14.aBoolean245 = true;
+            return;
+        }
+
+        String[] skillNames = {
+            "Attack", "Defence", "Strength", "Hitpoints", "Ranged", "Prayer",
+            "Magic", "Cooking", "Woodcutting", "Fletching", "Fishing",
+            "Firemaking", "Crafting", "Smithing", "Mining", "Herblore",
+            "Agility", "Thieving", "Slayer", "Farming", "Runecrafting",
+            "Construction"
+        };
+        int[] skillSprites = {
+            48, 54, 51, 49, 57, 60, 63, 59, 65, 64, 56,
+            62, 61, 53, 50, 55, 52, 58, 110, 115, 105, 45
+        };
+        for (int i = 0; i < skillNames.length; i++) {
+            if (!skillName.method97(Class39_Sub5_Sub9.createJstring(skillNames[i]), -66)) {
+                continue;
+            }
+            if (loadWidget(320) && Class62_Sub1.widgets[320] != null) {
+                Widget source = Class62_Sub1.widgets[320][skillSprites[i]];
+                if (source != null && source.type == 5
+                        && (source.anInt2093 >= 0 || source.runtimeSprite != null)) {
+                    icon.anInt2093 = icon.anInt2034 = source.anInt2093;
+                    icon.runtimeSprite = source.runtimeSprite;
+                    icon.anInt2022 = source.anInt2022;
+                    icon.anInt2003 = source.anInt2003;
+                    icon.aBoolean2107 = source.aBoolean2107;
+                    icon.aBoolean2038 = source.aBoolean2038;
+                    icon.anInt2030 = source.anInt2030;
+                    icon.aBoolean2055 = false;
+                    // Shift the blue heading and level line clear of the
+                    // 64px icon. Native dialogue text bounds are restored by
+                    // the empty selector when this level-up closes.
+                    for (int lineIndex = 0; lineIndex < levelUpTextWidths.length; lineIndex++) {
+                        Widget line = levelUp[lineIndex];
+                        if (line != null) {
+                            line.anInt2091 = 76;
+                            line.quadWidth = 400;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        // The server clears this selector by sending an empty JString, not
+        // null. Restore ordinary statement geometry after that packet.
+        if (icon.aBoolean2055) {
+            for (int i = 0; i < levelUpTextWidths.length; i++) {
+                Widget line = levelUp[i];
+                if (line != null) {
+                    line.anInt2091 = line.anInt2090;
+                    line.quadWidth = levelUpTextWidths[i];
+                }
+            }
+        }
+        Class14.aBoolean245 = true;
+    }
+
     public static boolean loadWidget(int parent) {
         if (unpackaged.ChristmasEventSnow.loadOverlayWidget(parent)) return true;
         if (unpackaged.GrandExchangeWidgets.load(parent)) return true;
@@ -730,12 +984,19 @@ public class JSocket implements Runnable {
         if (Class39_Sub5_Sub4.widgetsLoaded[parent]) {
             if (parent == 214) {
                 configureTutorialChatbox();
+            } else if (parent == 211) {
+                configureLevelUpChatbox();
             } else if (parent == 307) {
                 configureCookingChatbox();
+            } else if (parent == 303 || parent == 304 || parent == 309) {
+                configureFletchingChatbox(parent);
             } else if (parent == 137) {
                 configureWorldTeleportButtons();
             } else {
                 applyTutorialDialogueGeometry(parent);
+            }
+            if (parent == 228) {
+                configureCastleWarsOfferSwords();
             }
             return true;
         }
@@ -768,12 +1029,19 @@ public class JSocket implements Runnable {
         }
         if (parent == 214) {
             configureTutorialChatbox();
+        } else if (parent == 211) {
+            configureLevelUpChatbox();
         } else if (parent == 307) {
             configureCookingChatbox();
+        } else if (parent == 303 || parent == 304 || parent == 309) {
+            configureFletchingChatbox(parent);
         } else if (parent == 137) {
             configureWorldTeleportButtons();
         } else {
             applyTutorialDialogueGeometry(parent);
+        }
+        if (parent == 228) {
+            configureCastleWarsOfferSwords();
         }
         Class39_Sub5_Sub4.widgetsLoaded[parent] = true;
         return true;

@@ -12,6 +12,13 @@ public final class CharacterFileBankTab {
         return this.items;
     }
 
+    /** Used when reading a complete bank tab from an editable JSON character save. */
+    public static CharacterFileBankTab fromItems(java.util.List items) {
+        CharacterFileBankTab tab = new CharacterFileBankTab(0);
+        tab.items.addAll(items);
+        return tab;
+    }
+
     CharacterFileBankTab(byte value2) {
         this();
     }

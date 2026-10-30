@@ -144,7 +144,7 @@ public final class ModHook {
     }
     static void setIdle(int c) { idleChoice = c; saveSettings(); }
 
-    // post-2006 content (God Wars Dungeon, Grand Exchange): the server is told on login and whenever this changes
+    // post-2006 content (Grand Exchange): the server is told on login and whenever this changes
     public static volatile boolean postCutoff;
     private static volatile boolean postCutoffSent;
     static void setPostCutoff(boolean b) { postCutoff = b; postCutoffSent = false; saveSettings(); }
@@ -196,6 +196,10 @@ public final class ModHook {
         showFps = "1".equals(SET.getProperty("showfps"));
         try { zoomPct = Math.max(35, Math.min(175, Integer.parseInt(SET.getProperty("zoom", "100")))); } catch (Exception e) { zoomPct = 100; }
         Resizable.enabled = "1".equals(SET.getProperty("resizable"));
+        Gpu.enabled = "1".equals(SET.getProperty("gpu"));
+        GpuModels.wanted = "1".equals(SET.getProperty("gpumodels"));
+        try { FramePacer.fps = Integer.parseInt(SET.getProperty("fps", "50")); } catch (Exception e) { FramePacer.fps = 50; }
+        FramePacer.fps = FramePacer.RATES[FramePacer.rateIndex()];
         SET.remove("fpslimit");                             // from the removed frame rate limit
     }
 
@@ -216,6 +220,9 @@ public final class ModHook {
         SET.setProperty("showfps", showFps ? "1" : "0");
         SET.setProperty("zoom", Integer.toString(zoomPct));
         SET.setProperty("resizable", Resizable.enabled ? "1" : "0");
+        SET.setProperty("gpu", Gpu.enabled ? "1" : "0");
+        SET.setProperty("gpumodels", GpuModels.wanted ? "1" : "0");
+        SET.setProperty("fps", Integer.toString(FramePacer.fps));
         try (OutputStream out = new FileOutputStream("./modsettings.properties")) { SET.store(out, "client settings"); } catch (Throwable t) { }
     }
 
@@ -614,7 +621,7 @@ public final class ModHook {
 
     /** Draws the buttons in canvas pixel coordinates; g must be at the canvas' base transform. */
     private static int[] muteGhost;
-    private static void drawButtons(Graphics g, int w, int h) {
+    static void drawButtons(Graphics g, int w, int h) {
         for (int kind = 0; kind < 3; kind++) {
             if (!active(kind)) {
                 // The login screen's mute button was painted straight onto the canvas; wipe it once when it goes away.
@@ -673,7 +680,7 @@ public final class ModHook {
 
     static void paintButtons() {
         try {
-            if (!(app instanceof Canvas_Sub1)) return;
+            if (!(app instanceof Canvas_Sub1) || Gpu.presenting()) return;   // OpenGL owns the canvas: buttons are in its frame
             Canvas_Sub1 c = (Canvas_Sub1) app;
             Graphics g = c.rawGraphics();
             if (g == null) return;

@@ -72,7 +72,12 @@ public class Signlink implements Runnable {
             try {
                 int opcode = resource.opcode;
                 if (opcode == 1) {
-                    resource.returnObject = new Socket(hostAddress, resource.intParam);
+                    // Opt-in browser-local transport; desktop Java uses native TCP.
+                    if ("lan-websocket".equals(System.getProperty("client.transport"))) {
+                        resource.returnObject = new LanWebSocketSocket();
+                    } else {
+                        resource.returnObject = new Socket(hostAddress, resource.intParam);
+                    }
                 } else if (opcode != 2) {
                     if (opcode == 4) {
                         resource.returnObject = new DataInputStream(((URL) resource.objParam).openStream());

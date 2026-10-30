@@ -30,6 +30,7 @@ if not exist "build\client.jar" (
         exit /b 1
     )
 )
-rem The watcher runs hidden: it opens the EXE and stops the rendering client when the EXE closes.
-start "" powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0Start-Original-Client.ps1" -Exe "%EXE%"
+rem Leave the rendering client running after the original EXE closes.
+start "" /b "%JAVA_HOME%\bin\javaw.exe" -Dsun.java2d.d3d=false -Dclient.background=true -Dweb.bridge.port=8081 -Dweb.bridge.root=WebClient/web -Dclient.cache=../Server/cache -Dclient.host=127.0.0.1 -Dclient.port=43594 -jar build/client.jar 1 local live highmem members english
+echo SoloScape browser service started in the background at http://127.0.0.1:8081/
 exit /b 0

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SoloScape</title>
+  <style>html, body { margin: 0; background: black; }</style>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+  const page = window.matchMedia('(pointer: coarse)').matches ? 'mobile.html' : 'desktop.html';
+  window.location.replace(page + window.location.search + window.location.hash);
+})();
+</script>
+</body>
+</html>

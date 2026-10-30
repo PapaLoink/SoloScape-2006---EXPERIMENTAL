@@ -154,6 +154,12 @@ implements PacketHandler {
                     CookingManager.startCookingTask(player, amount);
                     return;
                 }
+                // Resolve the pending fletching item's Make-X input before
+                // dispatching the overlapping spinning-wheel widget IDs.
+                if (com.rs2.model.skill.fletching.logs.LogFletchingMenu.handleAmount(
+                        player, player.getSelectedInterfaceId(), amount)) {
+                    return;
+                }
                 if (SmeltingHandler.handleSmeltingButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handlePotteryButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handleSilverCraftingButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handleSpinningButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handleGlassblowingButton(player, player.getSelectedInterfaceId(), amount) || GameplayHelper.handleCraftedArmorButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handleWeavingButton(player, player.getSelectedInterfaceId(), amount) || CraftingHandler.handleDramenStaffButton(player, player.getSelectedInterfaceId(), amount) || EntityUpdateState.handleOrbChargeButton(player, player.getSelectedInterfaceId(), amount) || CacheArchive.handleLogCuttingButton(player, player.getSelectedInterfaceId(), amount)) {
                     break;
                 }

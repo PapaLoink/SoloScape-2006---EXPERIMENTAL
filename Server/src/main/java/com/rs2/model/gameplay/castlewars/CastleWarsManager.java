@@ -2326,6 +2326,10 @@ public final class CastleWarsManager {
             return;
         }
         dropCarriedFlag(player);
+        // Castle Wars supplies and bandages are lost on death, but ordinary
+        // equipment, runes, potions and weapons remain with the player.
+        removeBandages(player);
+        CastleWarsEngineeringManager.cleanupPlayerSupplies(player);
         player.clearPvpCombatReferences();
         moveToTeamSpawn(player, team);
         if (player.botEnabled) {
@@ -2981,6 +2985,13 @@ public final class CastleWarsManager {
         }
 
         player.getPacketSender().showWalkableInterface(WAITING_INTERFACE_ID);
+        // The stock 443 waiting overlay displays its countdown from varp 380.
+        // Retain the old string updates for 377 clients.
+        player.getPacketSender().sendConfig(380, countdownMinutes(
+                gameInProgress ? Math.max(0L, gameEndMillis - now)
+                        + WAITING_DURATION_SECONDS * 1000L
+                        : nextGameStartMillis >= 0L && hasMinimumPlayersToStartInternal()
+                        ? Math.max(0L, nextGameStartMillis - now) : 0L));
         player.getPacketSender().sendInterfaceText(timerText, WAITING_TIMER_TEXT_ID);
         player.getPacketSender().sendInterfaceText("", WAITING_ZAMORAK_TEXT_ID);
         player.getPacketSender().sendInterfaceText("", WAITING_SARADOMIN_TEXT_ID);
@@ -2997,6 +3008,7 @@ public final class CastleWarsManager {
 
     private static void updateGameInterface(Player player, long now) {
         player.getPacketSender().showWalkableInterface(GAME_INTERFACE_ID);
+        player.getPacketSender().sendConfig(380, countdownMinutes(Math.max(0L, gameEndMillis - now)));
         player.getPacketSender().sendInterfaceText("Zamorak = " + zamorakScore, GAME_ZAMORAK_SCORE_TEXT_ID);
         player.getPacketSender().sendInterfaceText(saradominScore + " = Saradomin", GAME_SARADOMIN_SCORE_TEXT_ID);
         player.getPacketSender().sendInterfaceText(formatTime(Math.max(0L, gameEndMillis - now)), GAME_TIMER_TEXT_ID);
@@ -3097,6 +3109,10 @@ public final class CastleWarsManager {
 
     private static void clearCastleWarsInterface(Player player) {
         player.getPacketSender().showWalkableInterface(-1);
+    }
+
+    private static int countdownMinutes(long millis) {
+        return (int) Math.min(255L, Math.max(0L, (millis + 59999L) / 60000L));
     }
 
     private static String formatTime(long millis) {

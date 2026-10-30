@@ -121,6 +121,8 @@ public final class GrandExchangeSearch {
     }
 
     static boolean isSearchable(int id) {
+        // Removed broken weapons and their noted/crafting forms.
+        if (id == 11235 || id == 11236 || (id >= 11686 && id <= 11715)) return false;
         if (id < 0 || id >= itemLimit()) return false;
         ItemDefinition item = Class26.getItemDefinition(id);
         if (!developerPicker() && item.aClass3_1661 == null) return false;

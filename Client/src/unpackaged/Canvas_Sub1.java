@@ -25,7 +25,8 @@ public class Canvas_Sub1 extends Canvas
     public static JString aClass3_13;
     public static JString aClass3_14
 	= Class39_Sub5_Sub9.createJstring("white:");
-    public static int anInt15;
+    // Browser touch input waits for rendered scene picking on another thread.
+    public static volatile int anInt15;
     public static JString aClass3_16;
     public static JString aClass3_17
 	= (Class39_Sub5_Sub9.createJstring

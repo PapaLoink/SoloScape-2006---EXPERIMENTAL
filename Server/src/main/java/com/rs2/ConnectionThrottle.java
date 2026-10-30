@@ -1,36 +1,35 @@
 package com.rs2;
 
-import com.rs2.ConnectionThrottleSettings;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class ConnectionThrottle {
-    private static ConcurrentHashMap connectionCountsByHost = new ConcurrentHashMap();
+    // Browser clients share the gateway's loopback address and each need cache
+    // and login sockets. Leave room for five players plus reconnect handshakes.
+    private static final int LOOPBACK_LIMIT = 16;
+    private static final int REMOTE_LIMIT = 3;
+    private static final ConcurrentHashMap<String, Integer> connectionCountsByHost =
+            new ConcurrentHashMap<String, Integer>();
 
-    public static boolean tryAcquireConnectionSlot(String slot) {
-        if (!ConnectionThrottleSettings.connectionsEnabled) {
-            return false;
-        }
-        Integer integer = (Integer)connectionCountsByHost.putIfAbsent(slot, 1);
-        if (integer != null && integer == 3) {
-            return false;
-        }
-        integer = integer == null ? 0 : integer;
-        connectionCountsByHost.replace(slot, integer + 1);
-        return true;
+    private static int limitFor(String host) {
+        return host.startsWith("127.") || host.equals("::1")
+                || host.equals("0:0:0:0:0:0:0:1") ? LOOPBACK_LIMIT : REMOTE_LIMIT;
     }
 
-    public static void releaseConnectionSlot(String slot) {
-        Integer integer = (Integer)connectionCountsByHost.get(slot);
-        if (integer == null) {
-            return;
-        }
-        if (integer == 1) {
-            connectionCountsByHost.remove(slot);
-            return;
-        }
-        if (integer != null) {
-            connectionCountsByHost.replace(slot, integer - 1);
-        }
+    public static boolean tryAcquireConnectionSlot(String host) {
+        if (!ConnectionThrottleSettings.connectionsEnabled) return false;
+        AtomicBoolean acquired = new AtomicBoolean(false);
+        connectionCountsByHost.compute(host, (key, count) -> {
+            int current = count == null ? 0 : count;
+            if (current >= limitFor(key)) return count;
+            acquired.set(true);
+            return current + 1;
+        });
+        return acquired.get();
+    }
+
+    public static void releaseConnectionSlot(String host) {
+        connectionCountsByHost.computeIfPresent(host,
+                (key, count) -> count <= 1 ? null : count - 1);
     }
 }
-

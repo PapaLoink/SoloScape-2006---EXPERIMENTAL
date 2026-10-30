@@ -108,7 +108,7 @@ public abstract class SpecialAttackDefinition {
     }
 
     public static SpecialAttackDefinition forItem(ItemStack itemStack) {
-        if (itemStack == null) {
+        if (itemStack == null || ItemDefinition.isRemovedContent(itemStack.getId())) {
             return null;
         }
         String itemName = ItemDefinition.forId(itemStack.getId()).getName().toLowerCase();

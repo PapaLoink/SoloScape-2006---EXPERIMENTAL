@@ -85,6 +85,9 @@ public class Class68
         if (i >= 500 && i <= 505) return;
         // So do the classic interface groups (ClassicInterface).
         if (ClassicInterface.isRuntimeGroup(i)) return;
+        if (i < 0 || Class39_Sub5_Sub4.widgetsLoaded == null
+                || i >= Class39_Sub5_Sub4.widgetsLoaded.length
+                || Class62_Sub1.widgets == null || i >= Class62_Sub1.widgets.length) return;
 	if (i != -1 && Class39_Sub5_Sub4.widgetsLoaded[i]) {
 	    Class39_Sub5_Sub16.wigetFileLoader.removeChildBuffers(i);
 	    if (Class62_Sub1.widgets[i] != null) {

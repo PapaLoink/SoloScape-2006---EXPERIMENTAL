@@ -9,7 +9,6 @@ import com.rs2.model.Entity;
 import com.rs2.model.GameplayHelper;
 import com.rs2.model.World;
 import com.rs2.model.clue.PuzzleBoxHandler;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.item.ItemStack;
 import com.rs2.model.objects.functions.FlourMillHandler;
 import com.rs2.model.player.CharacterFileBankTab;
@@ -66,6 +65,8 @@ import org.joda.time.DateTime;
 import org.joda.time.base.AbstractDateTime;
 
 public final class CharacterFileManager {
+    // Retain the retired rope slot to preserve legacy character-save layouts.
+    private static final int LEGACY_GOD_WARS_ROPE_CONFIG_ID = 1048;
     public static int[] musicUnlockConfigIds = new int[]{20, 21, 22, 23, 24, 25, 298, 311, 346, 414, 464, 598, 662, 721};
     // Revision 443 unlock bits for the late-2006 tracks (Roc and Roll, High Spirits, Floating Free,
     // the three Christmas tracks and Where Eagles Lair). Saved after the older fields so existing files still load.
@@ -73,6 +74,9 @@ public final class CharacterFileManager {
     private static ConcurrentHashMap loginIpReservations = new ConcurrentHashMap();
     public static ArrayList deadHardcoreIronmanRecords = new ArrayList();
     public static ArrayList liveHiscoreRecords = new ArrayList();
+    // Binary serializer is retained only for temporary compatibility staging.
+    // The primary on-disk format is now the editable .json CharacterFileRecord.
+    private static final ThreadLocal<File> stagedSaveTarget = new ThreadLocal<File>();
 
     public static boolean savePlayer(Player player) {
         if (player.isBot) {
@@ -82,9 +86,6 @@ public final class CharacterFileManager {
             if (ServerSettings.sqliteHiscoresEnabled) {
                 HiscoresDatabase.savePlayer(player);
             }
-        }
-        if (System.currentTimeMillis() - player.lastCharacterSaveMillis < 50L) {
-            return true;
         }
         String username = player.getUsername();
         LoginProtocol.beginCharacterSave(username);
@@ -96,20 +97,58 @@ public final class CharacterFileManager {
                 return false;
             }
 
-            final int maxSaveAttempts = 3;
-            for (int attempt = 1; attempt <= maxSaveAttempts; attempt++) {
+            if (ServerSettings.sqlitePlayerSaveEnabled) {
+                // Preserve the independently configured database backend.
                 CharacterFileManager.writePlayerFile(player);
-                boolean valid = CharacterFileManager.validateCharacterFile(String.valueOf(characterDirectory.getPath()) + "/", player.getUsername());
-                if (valid) {
-                    return true;
-                }
-
-                if (attempt < maxSaveAttempts) {
-                    System.out.println("Something went wrong while saving: " + player.getUsername() + " (attempt " + attempt + "/" + maxSaveAttempts + "), trying again.");
-                }
+                player.lastCharacterSaveMillis = System.currentTimeMillis();
+                return true;
             }
 
-            System.err.println("Failed to save " + player.getUsername() + " after " + maxSaveAttempts + " attempts.");
+            File stagingDirectory = new File(characterDirectory, ".json-staging");
+            if (!stagingDirectory.isDirectory() && !stagingDirectory.mkdirs()) {
+                System.err.println("Unable to create JSON staging directory: " + stagingDirectory);
+                return false;
+            }
+            File staged = new File(stagingDirectory, username + ".dat");
+            File json = new File(characterDirectory, username + ".json");
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    stagedSaveTarget.set(staged);
+                    try {
+                        CharacterFileManager.writePlayerFile(player);
+                    } finally {
+                        stagedSaveTarget.remove();
+                    }
+                    // The legacy writer still serializes every gameplay field.
+                    // Read it back to convert into a named, editable JSON record.
+                    String stagingPath = stagingDirectory.getPath() + File.separator;
+                    if (!CharacterFileManager.validateCharacterFile(stagingPath, username))
+                        throw new IOException("Temporary legacy save failed validation");
+                    CharacterFileRecord record =
+                            CharacterFileManager.readCharacterFileRecord(stagingPath, username, true);
+                    if (record == null)
+                        throw new IOException("Cannot parse temporary legacy character save");
+                    CharacterJsonCodec.save(json, record);
+                    // Do not keep stale .dat files alongside new canonical JSON saves.
+                    File legacy = new File(characterDirectory, username + ".dat");
+                    if (legacy.isFile()) {
+                        Files.move(legacy.toPath(),
+                                new File(characterDirectory, username + ".dat.bak").toPath(),
+                                StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    // Mark the save only after the JSON file was committed successfully.
+                    player.lastCharacterSaveMillis = System.currentTimeMillis();
+                    return true;
+                } catch (Exception exception) {
+                    System.err.println("Character JSON save attempt " + attempt
+                            + " failed for " + username + ": " + exception);
+                } finally {
+                    stagedSaveTarget.remove();
+                    try { Files.deleteIfExists(staged.toPath()); }
+                    catch (IOException ignored) { }
+                }
+            }
+            System.err.println("Failed to save JSON character " + username + " after 3 attempts.");
             return false;
         } finally {
             LoginProtocol.endCharacterSave(username);
@@ -260,7 +299,8 @@ public final class CharacterFileManager {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 return;
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             }
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             new ElapsedTimer();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            value6 = new File("./data/characters/" + ((Player)value).getUsername() + ".dat");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            value6 = stagedSaveTarget.get() != null ? stagedSaveTarget.get()
+                                        : new File("./data/characters/" + ((Player)value).getUsername() + ".dat");
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             if (!((File)value6).exists()) {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ((File)value6).createNewFile();
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             }
@@ -1195,7 +1235,6 @@ public final class CharacterFileManager {
             ((DataOutputStream)value6).writeLong(((Player)value).reservedSaveLong1);
             ((DataOutputStream)value6).writeInt(((Player)value).reservedSaveInt2);
             ((DataOutputStream)value6).writeInt(((Player)value).reservedSaveInt3);
-            ((Player)value).lastCharacterSaveMillis = System.currentTimeMillis();
             value7 = value;
             ((DataOutputStream)value6).writeUTF("");
             ((DataOutputStream)value6).writeInt(((Player)value).familyCrestGauntletItemId);
@@ -1265,7 +1304,7 @@ public final class CharacterFileManager {
             ((DataOutputStream)value6).writeByte(((Player)value).gameMode);
             ((DataOutputStream)value6).writeInt(((Player)value).barrowsRunsCompleted);
             ((DataOutputStream)value6).writeLong(((Player)value).godWarsLastAltarBlessingMillis);
-            ((DataOutputStream)value6).writeInt(((Player)value).configStates[GodWarsDungeonManager.ropeShortcutConfigId]);
+            ((DataOutputStream)value6).writeInt(((Player)value).configStates[LEGACY_GOD_WARS_ROPE_CONFIG_ID]);
             value3 = 0;
             while (value3 < ((Player)value).godWarsKillCounts.length) {
                 ((DataOutputStream)value6).writeInt(((Player)value).godWarsKillCounts[value3]);
@@ -1403,6 +1442,14 @@ public final class CharacterFileManager {
      * Enabled aggressive exception aggregation
      */
     public static void saveCharacterFileRecord(CharacterFileRecord record) {
+        if (!Boolean.getBoolean("soloscape.legacyCharacterWriter")) {
+            try {
+                CharacterJsonCodec.save(new File("./data/characters/" + record.username + ".json"), record);
+            } catch (IOException exception) {
+                throw new IllegalStateException("Cannot save JSON character " + record.username, exception);
+            }
+            return;
+        }
         Object value = record;
         try {
             int value2;
@@ -2068,7 +2115,7 @@ public final class CharacterFileManager {
             ((DataOutputStream)value3).writeByte(((CharacterFileRecord)value).gameMode);
             ((DataOutputStream)value3).writeInt(((CharacterFileRecord)value).barrowsRunsCompleted);
             ((DataOutputStream)value3).writeLong(((CharacterFileRecord)value).godWarsLastAltarBlessingMillis);
-            ((DataOutputStream)value3).writeInt(((CharacterFileRecord)value).configStates[GodWarsDungeonManager.ropeShortcutConfigId]);
+            ((DataOutputStream)value3).writeInt(((CharacterFileRecord)value).configStates[LEGACY_GOD_WARS_ROPE_CONFIG_ID]);
             index6 = 0;
             while (index6 < ((CharacterFileRecord)value).godWarsKillCounts.length) {
                 ((DataOutputStream)value3).writeInt(((CharacterFileRecord)value).godWarsKillCounts[index6]);
@@ -2181,6 +2228,48 @@ public final class CharacterFileManager {
         }
     }
 
+
+    /**
+     * Automatic, idempotent startup migration. Original .dat files become
+     * .dat.bak only after verified JSON is fully written. Invalid legacy files
+     * are never deleted; JSON is always authoritative once present.
+     */
+    public static void migrateLegacyCharacters() {
+        if (ServerSettings.sqlitePlayerSaveEnabled) return;
+        File directory = new File("./data/characters/");
+        File[] characters = directory.listFiles();
+        if (characters == null) return;
+        int converted = 0;
+        int failed = 0;
+        for (File legacy : characters) {
+            if (!legacy.isFile() || !legacy.getName().endsWith(".dat")) continue;
+            String username = legacy.getName().substring(0, legacy.getName().length() - 4);
+            File json = new File(directory, username + ".json");
+            if (json.exists()) continue;
+            try {
+                if (!validateCharacterFile(directory.getPath() + File.separator, username))
+                    throw new IOException("Invalid legacy .dat");
+                CharacterFileRecord record = readCharacterFileRecord(
+                        directory.getPath() + File.separator, username, true);
+                if (record == null || !username.equalsIgnoreCase(record.username))
+                    throw new IOException("Legacy username mismatch or unreadable character");
+                CharacterJsonCodec.save(json, record);
+                Files.move(legacy.toPath(),
+                        new File(directory, username + ".dat.bak").toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+                converted++;
+            } catch (Exception exception) {
+                failed++;
+                System.err.println("[characters] Could not migrate " + username
+                        + "; original data kept: " + exception);
+            }
+        }
+        if (converted > 0 || failed > 0) {
+            System.out.println("[characters] .dat to JSON: " + converted
+                    + " migrated, " + failed + " need attention.");
+        }
+    }
+
     public static void loadPlayer(Player player) {
         if (ServerSettings.sqlitePlayerSaveEnabled) {
             Object socketChannel = player.getSocketChannel().socket().getInetAddress().getHostAddress();
@@ -2226,7 +2315,8 @@ public final class CharacterFileManager {
         while (index < length) {
             File backupDirectory = fileArray[index];
             File file = new File(String.valueOf(backupDirectory.getPath()) + "/characters/" + player.getUsername() + ".dat");
-            if (file.exists() && CharacterFileManager.validateCharacterFile(String.valueOf(backupDirectory.getPath()) + "/characters/", player.getUsername())) {
+            File json = new File(String.valueOf(backupDirectory.getPath()) + "/characters/" + player.getUsername() + ".json");
+            if ((file.exists() || json.exists()) && CharacterFileManager.validateCharacterFile(String.valueOf(backupDirectory.getPath()) + "/characters/", player.getUsername())) {
                 try {
                     CharacterFileManager.loadPlayerFromFile(String.valueOf(backupDirectory.getPath()) + "/characters/", player);
                     System.out.println("Restoring from backup: " + player);
@@ -2268,6 +2358,11 @@ public final class CharacterFileManager {
             int index2 = 0;
             while (index2 < length2) {
                 File backupFile = fileArray2[index2];
+                if (!backupFile.isFile() || !(backupFile.getName().endsWith(".dat")
+                        || backupFile.getName().endsWith(".json"))) {
+                    ++index2;
+                    continue;
+                }
                 String name = CharacterFileManager.stripFileExtension(backupFile.getName());
                 if (!CharacterFileManager.validateCharacterFile(String.valueOf(characterDirectory.getPath()) + "/", name)) {
                     System.out.println("corrupted file found: " + backupFile.getPath());
@@ -2313,7 +2408,8 @@ public final class CharacterFileManager {
         int index = 0;
         while (index < length) {
             File sourceFile = fileArray[index];
-            if (sourceFile.isFile()) {
+            if (sourceFile.isFile() && (sourceFile.getName().endsWith(".json")
+                    || sourceFile.getName().endsWith(".dat"))) {
                 file2 = new File("./data/backups/" + (String)value3 + "/characters");
                 file = new File("./data/backups/" + (String)value3 + "/characters/" + sourceFile.getName());
                 try {
@@ -2356,6 +2452,16 @@ public final class CharacterFileManager {
      * Enabled aggressive exception aggregation
      */
     private static boolean validateCharacterFile(String path, String username) {
+        File json = new File(path + username + ".json");
+        if (json.isFile()) {
+            try {
+                CharacterJsonCodec.read(json, username);
+                return true;
+            } catch (IOException exception) {
+                System.err.println("Invalid JSON save: " + json + " - " + exception.getMessage());
+                return false;
+            }
+        }
         Object value = path;
         Object value2 = username;
         if (!((File)(value = new File(String.valueOf(value) + (String)value2 + ".dat"))).exists()) {
@@ -3165,8 +3271,21 @@ public final class CharacterFileManager {
             }
             ++index;
         }
-        byte[] bytes = FileUtil.readBytes("./data/characters/" + player.getUsername() + ".dat");
-        FileUtil.writeBytes("./data/dead_hcim_characters/" + player.getUsername() + ".dat", bytes);
+        File primaryJson = new File("./data/characters/" + player.getUsername() + ".json");
+        if (primaryJson.isFile()) {
+            try {
+                File deadDir = new File("./data/dead_hcim_characters/");
+                if (!deadDir.isDirectory()) deadDir.mkdirs();
+                Files.copy(primaryJson.toPath(),
+                        new File(deadDir, player.getUsername() + ".json").toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException exception) {
+                System.err.println("Failed to archive hardcore character: " + exception);
+            }
+        } else {
+            byte[] bytes = FileUtil.readBytes("./data/characters/" + player.getUsername() + ".dat");
+            FileUtil.writeBytes("./data/dead_hcim_characters/" + player.getUsername() + ".dat", bytes);
+        }
         CharacterFileRecord characterFileRecord = CharacterFileManager.readCharacterFileRecord("./data/dead_hcim_characters/", player.getUsername(), true);
         if (characterFileRecord != null) {
             deadHardcoreIronmanRecords.add(characterFileRecord);
@@ -3199,6 +3318,15 @@ public final class CharacterFileManager {
      * Enabled aggressive exception aggregation
      */
     private static CharacterFileRecord readCharacterFileRecord(String path, String username, boolean enabled6) {
+        File json = new File(path + username + ".json");
+        if (json.isFile()) {
+            try {
+                return CharacterJsonCodec.read(json, username);
+            } catch (IOException exception) {
+                System.err.println("Refusing invalid JSON character " + username + ": " + exception);
+                return null;
+            }
+        }
         Object value = path;
         Object value2 = username;
         if (!((File)(value = new File(String.valueOf(value) + (String)value2 + ".dat"))).exists()) {
@@ -3228,10 +3356,10 @@ public final class CharacterFileManager {
                     text = dataInputStream.readUTF();
                     value6 = value2;
                     ((CharacterFileRecord)value2).hostAddress = text;
-                    dataInputStream.readInt();
+                    int savedRights = dataInputStream.readInt();
                     boolean enabled = false;
                     value6 = value2;
-                    ((CharacterFileRecord)value2).playerRights = 0;
+                    ((CharacterFileRecord)value2).playerRights = savedRights;
                     String text2 = dataInputStream.readUTF();
                     value6 = value2;
                     ((CharacterFileRecord)value2).legacyProfileString = text2;
@@ -4015,7 +4143,7 @@ public final class CharacterFileManager {
                     }
                     if (s >= 21) {
                         ((CharacterFileRecord)value2).godWarsLastAltarBlessingMillis = dataInputStream.readLong();
-                        ((CharacterFileRecord)value2).configStates[GodWarsDungeonManager.ropeShortcutConfigId] = dataInputStream.readInt();
+                        ((CharacterFileRecord)value2).configStates[LEGACY_GOD_WARS_ROPE_CONFIG_ID] = dataInputStream.readInt();
                         index = 0;
                         while (index < ((CharacterFileRecord)value2).godWarsKillCounts.length) {
                             ((CharacterFileRecord)value2).godWarsKillCounts[index] = dataInputStream.readInt();
@@ -4166,13 +4294,15 @@ public final class CharacterFileManager {
 
     public static void loadPlayerFromFile(String path, Player player) {
         File file = new File(String.valueOf(path) + player.getUsername() + ".dat");
-        if (!file.exists()) {
+        File jsonFile = new File(String.valueOf(path) + player.getUsername() + ".json");
+        if (!file.exists() && !jsonFile.exists()) {
             if (Server.getInstance() != null) {
                 Server.getInstance().queueLogin(player);
             }
             return;
         }
-        if (!CharacterFileManager.validateCharacterFile(path, player.getUsername()) && path.equals("./data/characters/")) {
+        if (!CharacterFileManager.validateCharacterFile(path, player.getUsername())
+                && path.equals("./data/characters/")) {
             CharacterFileManager.restorePlayerFromBackup(player);
             if (player.loadedCharacterFromBackup) {
                 return;
@@ -4202,6 +4332,20 @@ public final class CharacterFileManager {
         if (record == null) {
             System.out.println("Account not loading: " + player);
             return;
+        }
+        // Existing .dat files migrate on login too (including if startup skipped one).
+        // Conversion is performed only after a successful legacy parse.
+        if (!jsonFile.exists() && file.exists() && path.equals("./data/characters/")) {
+            try {
+                CharacterJsonCodec.save(jsonFile, record);
+                Files.move(file.toPath(),
+                        new File(path + player.getUsername() + ".dat.bak").toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("[characters] Migrated " + player.getUsername() + " to JSON");
+            } catch (IOException exception) {
+                System.err.println("[characters] Migration failed for " + player.getUsername()
+                        + "; original .dat retained: " + exception);
+            }
         }
         CharacterFileManager.applyCharacterFileRecordToPlayer(record, player);
         AppearancePacketHandler.validateAppearance(player);
@@ -4404,7 +4548,7 @@ public final class CharacterFileManager {
         }
         player.barrowsRunsCompleted = record.barrowsRunsCompleted;
         player.godWarsLastAltarBlessingMillis = record.godWarsLastAltarBlessingMillis;
-        player.configStates[GodWarsDungeonManager.ropeShortcutConfigId] = record.configStates[GodWarsDungeonManager.ropeShortcutConfigId];
+        player.configStates[LEGACY_GOD_WARS_ROPE_CONFIG_ID] = record.configStates[LEGACY_GOD_WARS_ROPE_CONFIG_ID];
         CharacterFileManager.copy(record.godWarsKillCounts, player.godWarsKillCounts);
         player.craftingThreadUseCount = record.craftingThreadUseCount;
         player.membershipExpiresMillis = record.membershipExpiresMillis;

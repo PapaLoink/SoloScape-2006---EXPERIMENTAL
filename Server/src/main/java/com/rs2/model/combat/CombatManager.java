@@ -23,7 +23,6 @@ import com.rs2.model.combat.attack.WeaponCombatAttack;
 import com.rs2.model.combat.hit.HitDefinition;
 import com.rs2.model.gameplay.barrows.BarrowsManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.npc.Npc;
 import com.rs2.model.npc.NpcDefinition;
 import com.rs2.model.objects.DynamicObject;
@@ -138,14 +137,6 @@ extends TickTask {
             SmithingHandler attackOption = (SmithingHandler)iterator.next();
             if (attackOption.getState() == CombatAttackState.a || selectedAttackOption != null && attackOption.getAttack().getAttackRange() <= selectedAttackOption.getAttack().getAttackRange()) continue;
             selectedAttackOption = attackOption;
-        }
-        if (entity.isPlayer() && entity2.isNpc() && selectedAttackOption != null) {
-            Npc targetNpc = (Npc)entity2;
-            Player attackingPlayer = (Player)entity;
-            if (selectedAttackOption.getAttack().getCombatType() == CombatType.MELEE && GodWarsDungeonManager.armadylNpcIds.contains(targetNpc.getNpcId())) {
-                attackingPlayer.packetSender.sendGameMessage("The Aviansie is flying too high for you to attack using melee.");
-                return;
-            }
         }
         int attack = selectedAttackOption == null ? 1 : selectedAttackOption.getAttack().getAttackRange();
         entity.setAttackRange(attack);
@@ -409,9 +400,6 @@ extends TickTask {
                 killerPlayer.getSlayerManager().recordKill(killedNpc);
                 killerPlayer.getPrayerManager().awardNpcPrayerExperience(killedNpc);
                 BarrowsManager.recordNpcKill(killerPlayer, killedNpc);
-                if (ServerSettings.content2007Enabled) {
-                    GodWarsDungeonManager.recordKillCount(killerPlayer, killedNpc.getNpcId());
-                }
             }
         }
         if (entity.isNpc()) {

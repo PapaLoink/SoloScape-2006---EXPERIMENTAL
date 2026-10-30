@@ -27,9 +27,9 @@ set "CLIENT_LOG=client.log"
 echo Client output will be saved to %CLIENT_LOG%.
 
 if "%~1"=="" (
-    "%JAVA_HOME%\bin\java.exe" -XX:ErrorFile=client-hs-err.log -Dclient.cache="%CLIENT_CACHE_ROOT%" -Dclient.host=127.0.0.1 -Dclient.port=43594 -jar "build\client.jar" 1 local live highmem members english >>"%CLIENT_LOG%" 2>&1
+    "%JAVA_HOME%\bin\java.exe" -Dsun.java2d.d3d=false -XX:ErrorFile=client-hs-err.log -Dclient.cache="%CLIENT_CACHE_ROOT%" -Dclient.host=127.0.0.1 -Dclient.port=43594 -jar "build\client.jar" 1 local live highmem members english >>"%CLIENT_LOG%" 2>&1
 ) else (
-    "%JAVA_HOME%\bin\java.exe" -XX:ErrorFile=client-hs-err.log -Dclient.cache="%CLIENT_CACHE_ROOT%" -Dclient.host=127.0.0.1 -Dclient.port=43594 -jar "build\client.jar" %* >>"%CLIENT_LOG%" 2>&1
+    "%JAVA_HOME%\bin\java.exe" -Dsun.java2d.d3d=false -XX:ErrorFile=client-hs-err.log -Dclient.cache="%CLIENT_CACHE_ROOT%" -Dclient.host=127.0.0.1 -Dclient.port=43594 -jar "build\client.jar" %* >>"%CLIENT_LOG%" 2>&1
 )
 
 set "EXIT_CODE=%ERRORLEVEL%"

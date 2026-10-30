@@ -28,7 +28,6 @@ import com.rs2.model.dialogue.DialogueManager;
 import com.rs2.model.gameplay.barrows.BarrowsManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.magetrainingarena.MageTrainingArenaRewardShop;
 import com.rs2.model.gameplay.partyroom.PartyRoomManager;
 import com.rs2.model.ground.GroundItem;
@@ -913,7 +912,7 @@ implements PacketHandler {
             player.getDuelController().resetDuel(true);
             return;
         }
-        if (player.getQuestManager().handleItemOnItem(firstItemId, secondItemId) || ServerSettings.content2007Enabled && GodWarsDungeonManager.handleGodWarsItemCombination(player, firstItemId, secondItemId)) {
+        if (player.getQuestManager().handleItemOnItem(firstItemId, secondItemId)) {
             return;
         }
         if (ItemActionPacketHandler.handleFoodPreparation(player, firstItemId, secondItemId)) {
@@ -2162,9 +2161,6 @@ implements PacketHandler {
         }
         if (new ItemStack(reader).getDefinition().isMembersOnly() && ServerSettings.freeToPlayWorld) {
             player.packetSender.sendGameMessage("You need to be in members world to access members content.");
-            return;
-        }
-        if (ServerSettings.content2007Enabled && GodWarsDungeonManager.dismantleGodsword(player, reader)) {
             return;
         }
         if (GodBookHandler.showMissingPages(player, reader)) {

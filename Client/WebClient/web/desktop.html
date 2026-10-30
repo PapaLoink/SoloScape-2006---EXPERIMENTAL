@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>SoloScape</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: black; }
+    #display { position: fixed; inset: 0; width: 100%; height: 100%; background: black; }
+  </style>
+  <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+  <script src="local-render-bridge.js"></script>
+</head>
+<body>
+<div id="display"></div>
+<script>
+(async () => {
+  'use strict';
+  // Desktop input controls. Keep navigation keys out of the text-input path.
+  const display = document.getElementById('display');
+  let client = null;
+  const heldArrows = new Set();
+  const arrowCodes = { ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40 };
+  let inputQueue = Promise.resolve();
+  let middleDrag = null;
+  let lastMiddleEvent = -Infinity;
+  let wheelDelta = 0;
+  function enqueue(action) {
+    inputQueue = inputQueue.then(action)
+      .catch(error => console.error('[desktop] Input failed:', error));
+    return inputQueue;
+  }
+  function gamePoint(event) {
+    const rect = display.getBoundingClientRect();
+    const scale = Math.min(rect.width / 765, rect.height / 503);
+    const x = Math.floor((event.clientX - rect.left - (rect.width - 765 * scale) / 2) / scale);
+    const y = Math.floor((event.clientY - rect.top - (rect.height - 503 * scale) / 2) / scale);
+    return { x, y, inside: scale > 0 && x >= 0 && x < 765 && y >= 0 && y < 503,
+      scene: x >= 0 && x < 512 && y >= 0 && y < 334 };
+  }
+  function sendMouse(id, button, point) {
+    return enqueue(() => client.sendMouse(id, button, point.x, point.y));
+  }
+  function consume(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+  window.addEventListener('keydown', event => {
+    const code = arrowCodes[event.key];
+    if (!client || !code) return;
+    consume(event);
+    if (!heldArrows.has(code)) {
+      heldArrows.add(code);
+      enqueue(() => client.setKeyDown(code, true));
+    }
+  }, { capture: true });
+  window.addEventListener('keyup', event => {
+    const code = arrowCodes[event.key];
+    if (!client || !code) return;
+    consume(event);
+    heldArrows.delete(code);
+    enqueue(() => client.setKeyDown(code, false));
+  }, { capture: true });
+  window.addEventListener('keypress', event => {
+    if (client && arrowCodes[event.key]) consume(event);
+  }, { capture: true });
+  display.addEventListener('pointerdown', event => {
+    if (!client || event.button !== 1 || event.pointerType !== 'mouse') return;
+    const point = gamePoint(event);
+    if (!point.scene || !point.inside) return;
+    consume(event);
+    lastMiddleEvent = performance.now();
+    display.setPointerCapture?.(event.pointerId);
+    middleDrag = { id: event.pointerId, point, queuedPoint: point, frame: null, sending: false };
+    sendMouse(503, 0, point);
+    sendMouse(501, 2, point);
+  }, { capture: true, passive: false });
+  function samePoint(a, b) { return a.x === b.x && a.y === b.y; }
+  function scheduleMiddleMove(drag) {
+    if (drag.frame !== null || drag.sending || samePoint(drag.point, drag.queuedPoint)) return;
+    drag.frame = requestAnimationFrame(() => {
+      drag.frame = null;
+      if (middleDrag !== drag) return;
+      // Keep at most one move in flight. New events replace the pending position,
+      // rather than accumulating hundreds of Java calls behind the cursor.
+      const point = drag.point;
+      drag.queuedPoint = point;
+      drag.sending = true;
+      sendMouse(506, 2, point).finally(() => {
+        drag.sending = false;
+        if (middleDrag === drag) scheduleMiddleMove(drag);
+      });
+    });
+  }
+  display.addEventListener('pointermove', event => {
+    if (!middleDrag || middleDrag.id !== event.pointerId) return;
+    consume(event);
+    lastMiddleEvent = performance.now();
+    const point = gamePoint(event);
+    // Pointer capture can deliver coordinates outside the canvas. Clamp them so
+    // leaving and re-entering does not resume from a stale interior position.
+    middleDrag.point = { x: Math.max(0, Math.min(764, point.x)),
+      y: Math.max(0, Math.min(502, point.y)) };
+    scheduleMiddleMove(middleDrag);
+  }, { capture: true, passive: false });
+  function releaseMiddle(event) {
+    if (!middleDrag || (event && middleDrag.id !== event.pointerId)) return;
+    if (event) consume(event);
+    lastMiddleEvent = performance.now();
+    const drag = middleDrag;
+    middleDrag = null;
+    if (drag.frame !== null) cancelAnimationFrame(drag.frame);
+    // Flush the final position before release, even if the last animation frame
+    // has not run yet. Previously queued movement remains ordered before it.
+    if (!samePoint(drag.point, drag.queuedPoint)) sendMouse(506, 2, drag.point);
+    sendMouse(502, 2, drag.point);
+  }
+  display.addEventListener('pointerup', releaseMiddle, { capture: true, passive: false });
+  display.addEventListener('pointercancel', releaseMiddle, { capture: true, passive: false });
+  display.addEventListener('lostpointercapture', releaseMiddle, { capture: true });
+  for (const type of ['mousedown', 'mouseup', 'mousemove', 'auxclick']) {
+    display.addEventListener(type, event => {
+      if (client && (middleDrag || performance.now() - lastMiddleEvent < 100) &&
+          (type === 'mousemove' || event.button === 1)) consume(event);
+    }, { capture: true, passive: false });
+  }
+  display.addEventListener('wheel', event => {
+    if (!client || event.ctrlKey || !gamePoint(event).scene) return;
+    consume(event);
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 :
+      event.deltaMode === 2 ? display.getBoundingClientRect().height : 1);
+    if (Math.sign(delta) !== Math.sign(wheelDelta)) wheelDelta = 0;
+    wheelDelta += delta;
+    const steps = Math.max(-10, Math.min(10, Math.trunc(wheelDelta / 60)));
+    if (steps) {
+      wheelDelta -= steps * 60;
+      enqueue(() => client.zoom(steps));
+    }
+  }, { capture: true, passive: false });
+  window.addEventListener('blur', () => {
+    if (!client) return;
+    for (const code of heldArrows) enqueue(() => client.setKeyDown(code, false));
+    heldArrows.clear();
+    releaseMiddle();
+    wheelDelta = 0;
+  });
+  // Start runtime after installing the desktop controls.
+
+  try {
+    if (typeof cheerpjInit !== 'function') {
+      throw new Error('CheerpJ runtime did not load. Check access to its CDN.');
+    }
+    await cheerpjInit({
+      version: 8,
+      enableInputMethods: true,
+      status: 'default',
+      natives: window.localRenderSocketNatives,
+      javaProperties: [
+        'client.host=127.0.0.1',
+        'client.port=43594',
+        'client.transport=lan-websocket'
+      ]
+    });
+    cheerpjCreateDisplay(-1, -1, display);
+    const library = await cheerpjRunLibrary('/app/client.jar');
+    client = await library.unpackaged.BrowserClientBootstrap;
+    await client.start();
+  } catch (error) {
+    console.error('[local-render] Startup failed:', error);
+  }
+})();
+</script>
+</body>
+</html>

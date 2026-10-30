@@ -115,6 +115,10 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    ArchiveWorker.aClass46_1206.method938((byte) -50);
 	    while (Class15.aLong281 == 0L
 		   || Class2.getSystemTime() < Class15.aLong281) {
+		if (FramePacer.active()) {                 // frame rate setting above 50: ticks stay at 20 ms
+		    FramePacer.iterate(this);
+		    continue;
+		}
 		Class2.anInt50
 		    = ArchiveWorker.aClass46_1206.method939(4,
 						      (Class39_Sub5_Sub6
@@ -224,6 +228,10 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    Deque.anInt919 = i_7_;
 	    IsaacPrng.anInt1087 = i_6_;
 	    Class10.frame = new Frame();
+        boolean browserLocal = "lan-websocket".equals(System.getProperty("client.transport"));
+        if (browserLocal) {
+            Class10.frame.setUndecorated(true);
+        }
 	    boolean background = Boolean.getBoolean("client.background")
 		&& Integer.getInteger("web.bridge.port", -1) > 0;
 	    if (background) {
@@ -243,10 +251,22 @@ public abstract class ClientApplet extends Applet implements Runnable, FocusList
 	    });
 	    Class10.frame.addWindowListener(this);
 	    Class10.frame.setVisible(true);
-	    if (!background) Class10.frame.toFront();
 	    Insets insets = Class10.frame.getInsets();
 	    Class10.frame.setSize(insets.right + (insets.left + i_6_), insets.top + i_7_ + insets.bottom);
-	    Class10.frame.setMinimumSize(new Dimension(Class10.frame.getWidth(), Class10.frame.getHeight()));
+            if (browserLocal) {
+                // Let CheerpJ keep the window fitted to its responsive display.
+                // positionGameCanvas already scales and centres the fixed game UI.
+                Class10.frame.setMinimumSize(new Dimension(1, 1));
+                Class10.frame.setLocation(0, 0);
+                Class10.frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+            } else {
+                Class10.frame.setMinimumSize(new Dimension(Class10.frame.getWidth(), Class10.frame.getHeight()));
+                if (!background) {
+                    // Place the fully sized, decorated native window away from screen edges.
+                    Class10.frame.setLocationRelativeTo(null);
+                    Class10.frame.toFront();
+                }
+            }
 	    if (!background) ModHook.init(Class10.frame, this);
 	    Cache.aClass21_108 = Class39_Sub5_Sub9.signlink = new Signlink(true, null, inetaddress, i_10_, string, i_8_);
 	    Class39_Sub5_Sub9.signlink.requestThread(this, 1);

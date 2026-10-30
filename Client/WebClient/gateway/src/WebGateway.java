@@ -32,7 +32,9 @@ public final class WebGateway {
         ServerSocket listener = null;
         int httpPort = requestedHttpPort;
         BindException lastBindError = null;
-        for (int candidate = requestedHttpPort; candidate <= requestedHttpPort + 20; candidate++) {
+        boolean strictPort = "strict".equalsIgnoreCase(arg(args, 5, ""));
+        for (int candidate = requestedHttpPort;
+             candidate <= requestedHttpPort + (strictPort ? 0 : 20); candidate++) {
             ServerSocket attempt = new ServerSocket();
             attempt.setReuseAddress(true);
             try {
@@ -87,6 +89,12 @@ public final class WebGateway {
             if (request == null) return;
 
             if ("websocket".equalsIgnoreCase(request.headers.get("upgrade")) && "/game".equals(request.path)) {
+                // This unauthenticated TCP relay must not be reachable from other web origins.
+                if (!sameOrigin(request)) {
+                    writeHttp(out, 403, "text/plain; charset=utf-8",
+                            "WebSocket origin not allowed".getBytes(StandardCharsets.UTF_8), true);
+                    return;
+                }
                 upgradeAndRelay(socket, in, out, request);
                 return;
             }
@@ -134,6 +142,14 @@ public final class WebGateway {
         return new HttpRequest(first[0], path, headers);
     }
 
+    private static boolean sameOrigin(HttpRequest request) {
+        String origin = request.headers.get("origin");
+        String host = request.headers.get("host");
+        return origin != null && host != null && (
+                origin.equalsIgnoreCase("http://" + host)
+                || origin.equalsIgnoreCase("https://" + host));
+    }
+
     private static void serveStatic(OutputStream out, HttpRequest request) throws IOException {
         if (!"GET".equals(request.method) && !"HEAD".equals(request.method)) {
             writeHttp(out, 405, "text/plain; charset=utf-8", "Method Not Allowed".getBytes(StandardCharsets.UTF_8), true);
@@ -145,12 +161,96 @@ public final class WebGateway {
             writeHttp(out, 404, "text/plain; charset=utf-8", "Not Found".getBytes(StandardCharsets.UTF_8), true);
             return;
         }
-        byte[] body = Files.readAllBytes(file);
-        writeHttp(out, 200, contentType(file.getFileName().toString()), body, "GET".equals(request.method));
+        // CheerpJ needs HTTP byte ranges for JARs. Serve all static resources
+        // with 200/206 and stream the bytes (including large cache archives).
+        long total = Files.size(file);
+        long start = 0;
+        long end = total - 1;
+        boolean partial = false;
+        String requestedRange = request.headers.get("range");
+        if (requestedRange != null) {
+            // Support one "bytes=start-end", "bytes=start-" or "bytes=-suffix"
+            // range. Reject malformed, unsupported and multi-range requests.
+            String spec = requestedRange.startsWith("bytes=")
+                    ? requestedRange.substring("bytes=".length()).trim() : "";
+            int dash = spec.indexOf('-');
+            if (total == 0 || dash < 0 || dash != spec.lastIndexOf('-') || spec.indexOf(',') >= 0) {
+                writeUnsatisfiableRange(out, total);
+                return;
+            }
+            String first = spec.substring(0, dash).trim();
+            String last = spec.substring(dash + 1).trim();
+            try {
+                if (first.isEmpty()) {
+                    long suffix = Long.parseLong(last);
+                    if (suffix <= 0) {
+                        writeUnsatisfiableRange(out, total);
+                        return;
+                    }
+                    start = suffix >= total ? 0 : total - suffix;
+                } else {
+                    start = Long.parseLong(first);
+                    if (start < 0 || start >= total) {
+                        writeUnsatisfiableRange(out, total);
+                        return;
+                    }
+                    if (!last.isEmpty()) {
+                        end = Math.min(end, Long.parseLong(last));
+                    }
+                    if (end < start) {
+                        writeUnsatisfiableRange(out, total);
+                        return;
+                    }
+                }
+                partial = true;
+            } catch (NumberFormatException invalidRange) {
+                writeUnsatisfiableRange(out, total);
+                return;
+            }
+        }
+
+        long bodyLength = partial ? end - start + 1 : total;
+        String headers = "HTTP/1.1 " + (partial ? "206 Partial Content" : "200 OK") + "\r\n"
+                + "Content-Type: " + contentType(file.getFileName().toString()) + "\r\n"
+                + "Content-Length: " + bodyLength + "\r\n"
+                + "Accept-Ranges: bytes\r\n"
+                + (partial ? "Content-Range: bytes " + start + "-" + end + "/" + total + "\r\n" : "")
+                + "Cache-Control: no-cache\r\n"
+                + "X-Content-Type-Options: nosniff\r\n"
+                + "Connection: close\r\n\r\n";
+        out.write(headers.getBytes(StandardCharsets.ISO_8859_1));
+        if ("GET".equals(request.method)) {
+            try (java.nio.channels.SeekableByteChannel channel = Files.newByteChannel(file)) {
+                channel.position(start);
+                byte[] chunk = new byte[65536];
+                long remaining = bodyLength;
+                while (remaining > 0) {
+                    int count = channel.read(java.nio.ByteBuffer.wrap(chunk, 0,
+                            (int) Math.min((long) chunk.length, remaining)));
+                    if (count < 0) throw new EOFException("File changed while serving " + file);
+                    if (count == 0) continue;
+                    out.write(chunk, 0, count);
+                    remaining -= count;
+                }
+            }
+        }
+        out.flush();
+    }
+
+    private static void writeUnsatisfiableRange(OutputStream out, long total) throws IOException {
+        String headers = "HTTP/1.1 416 Range Not Satisfiable\r\n"
+                + "Content-Range: bytes */" + total + "\r\n"
+                + "Accept-Ranges: bytes\r\n"
+                + "Content-Length: 0\r\n"
+                + "Cache-Control: no-cache\r\n"
+                + "Connection: close\r\n\r\n";
+        out.write(headers.getBytes(StandardCharsets.ISO_8859_1));
+        out.flush();
     }
 
     private static void writeHttp(OutputStream out, int status, String type, byte[] body, boolean includeBody) throws IOException {
-        String reason = status == 200 ? "OK" : status == 404 ? "Not Found" : "Method Not Allowed";
+        String reason = status == 200 ? "OK" : status == 404 ? "Not Found"
+                : status == 403 ? "Forbidden" : "Method Not Allowed";
         String headers = "HTTP/1.1 " + status + " " + reason + "\r\n"
                 + "Content-Type: " + type + "\r\n"
                 + "Content-Length: " + body.length + "\r\n"

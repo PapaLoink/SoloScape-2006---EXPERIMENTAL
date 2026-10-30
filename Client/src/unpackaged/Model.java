@@ -1057,6 +1057,10 @@ public class Model extends Class39_Sub5_Sub4
 					bool_244_ = true;
 				}
 			    }
+			    // GPU rendering: the GPU transforms, culls and sorts the faces (not near the camera or under the mouse)
+			    if (!bool_242_ && !bool_244_
+				&& GpuModels.queue(this, i, i_221_, i_222_, i_223_, i_224_, i_225_, i_226_, i_227_, i_230_))
+				return;
 			    int i_248_ = Class39_Sub5_Sub10_Sub2.anInt2462;
 			    int i_249_ = Class39_Sub5_Sub10_Sub2.anInt2467;
 			    int i_250_ = 0;

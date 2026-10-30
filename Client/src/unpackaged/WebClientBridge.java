@@ -39,6 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Streams the real Java client's 765x503 software-rendered framebuffer to a
@@ -58,14 +59,90 @@ public final class WebClientBridge {
         return thread;
     });
     private static final AtomicBoolean ENCODE_PENDING = new AtomicBoolean(false);
+    private static final ExecutorService AUDIO_SENDER = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "webclient-audio-sender");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private static final AtomicInteger AUDIO_PENDING = new AtomicInteger();
+    // Extra 3D camera distance for browser pinch zoom; never affects normal Java client.
+    private static final AtomicInteger CAMERA_DISTANCE_OFFSET = new AtomicInteger();
 
     private static volatile boolean enabled;
     private static volatile Path webRoot;
     private static volatile long lastFrameNanos;
     private static volatile int actualPort = -1;
     private static volatile boolean frameAvailable;
+    // Only the original runescape.exe wrapper opts into shutdown after browser exit.
+    private static final boolean EXIT_ON_LAST_CLIENT =
+            Boolean.getBoolean("web.bridge.exitOnLastClient");
+    private static final AtomicBoolean EXIT_CHECK_PENDING = new AtomicBoolean(false);
 
     private WebClientBridge() {
+    }
+
+    static boolean isEnabled() {
+        return enabled;
+    }
+
+    static int cameraDistanceOffset() {
+        return (enabled || "lan-websocket".equals(System.getProperty("client.transport")))
+                ? CAMERA_DISTANCE_OFFSET.get() : 0;
+    }
+
+    static int cameraDistance(int normalDistance) {
+        return clamp(normalDistance + cameraDistanceOffset(), 450, 2600);
+    }
+
+    // Positive steps zoom out, negative steps zoom in. Bounds keep the scene usable.
+    static void adjustCameraZoom(int steps) {
+        if (!enabled && !"lan-websocket".equals(System.getProperty("client.transport"))) return;
+        final int amount = clamp(steps, -10, 10) * 70;
+        CAMERA_DISTANCE_OFFSET.updateAndGet(
+                old -> clamp(old + amount, -550, 850));
+    }
+
+    private static boolean hasAudioListeners() {
+        for (ClientSession client : CLIENTS)
+            if (client.audioEnabled) return true;
+        return false;
+    }
+
+    /**
+     * Audio wire packet: ASCII 'A', stream (1=effects, 2=music),
+     * channel count, unsigned big-endian sample rate, and little-endian signed
+     * 16-bit interleaved PCM. Video packets continue to be plain PNGs.
+     */
+    public static void publishAudio(int stream, int sampleRate, int channels,
+                                    byte[] pcm, int length) {
+        if (!enabled || !hasAudioListeners() || length <= 0 || pcm == null
+                || (stream != 1 && stream != 2)
+                || channels < 1 || channels > 2 || sampleRate <= 0 || sampleRate > 65535
+                || length > pcm.length || length % (channels * 2) != 0) return;
+        if (AUDIO_PENDING.incrementAndGet() > 8) {
+            AUDIO_PENDING.decrementAndGet(); // Drop late audio instead of building a lag queue.
+            return;
+        }
+        final byte[] packet = new byte[5 + length];
+        packet[0] = 'A';
+        packet[1] = (byte) stream;
+        packet[2] = (byte) channels;
+        packet[3] = (byte) (sampleRate >>> 8);
+        packet[4] = (byte) sampleRate;
+        System.arraycopy(pcm, 0, packet, 5, length);
+        try {
+            AUDIO_SENDER.execute(() -> {
+                try {
+                    for (ClientSession client : CLIENTS) {
+                        if (client.audioEnabled) client.sendBinary(packet);
+                    }
+                } finally {
+                    AUDIO_PENDING.decrementAndGet();
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException ignored) {
+            AUDIO_PENDING.decrementAndGet();
+        }
     }
 
     public static void startFromProperties() {
@@ -87,6 +164,19 @@ public final class WebClientBridge {
             Thread server = new Thread(() -> acceptLoop(listener), "webclient-http");
             server.setDaemon(true);
             server.start();
+            if (Boolean.getBoolean("web.bridge.openBrowser")) {
+                Thread browser = new Thread(() -> {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(java.net.URI.create(
+                                "http://127.0.0.1:" + actualPort + "/"));
+                    } catch (Exception exception) {
+                        System.err.println("[webclient] Could not open browser automatically: "
+                                + exception.getMessage());
+                    }
+                }, "webclient-open-browser");
+                browser.setDaemon(true);
+                browser.start();
+            }
             System.out.println("[webclient] Real Java client bridge enabled.");
             System.out.println("[webclient] Local: http://127.0.0.1:" + actualPort + "/");
             for (String address : lanAddresses()) {
@@ -99,7 +189,10 @@ public final class WebClientBridge {
 
     private static ServerSocket bind(int requestedPort) throws IOException {
         BindException last = null;
-        for (int port = requestedPort; port <= requestedPort + 20; port++) {
+        // Launchers use a fixed URL; don't silently start on a different port.
+        int lastPort = Boolean.getBoolean("web.bridge.strictPort")
+                ? requestedPort : requestedPort + 20;
+        for (int port = requestedPort; port <= lastPort; port++) {
             ServerSocket socket = new ServerSocket();
             socket.setReuseAddress(true);
             try {
@@ -277,7 +370,29 @@ public final class WebClientBridge {
         } finally {
             CLIENTS.remove(session);
             session.close();
+            maybeExitAfterLastClient();
         }
+    }
+
+    private static void maybeExitAfterLastClient() {
+        if (!EXIT_ON_LAST_CLIENT || !CLIENTS.isEmpty()
+                || !EXIT_CHECK_PENDING.compareAndSet(false, true)) return;
+        Thread checker = new Thread(() -> {
+            try {
+                // A short grace period permits a transient IE WebSocket reconnect.
+                Thread.sleep(1500L);
+                if (CLIENTS.isEmpty()) {
+                    System.out.println("[webclient] Original client disconnected; exiting Java renderer.");
+                    System.exit(0);
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            } finally {
+                EXIT_CHECK_PENDING.set(false);
+            }
+        }, "webclient-original-close");
+        checker.setDaemon(true);
+        checker.start();
     }
 
     /** Called from JImage.draw for every native client blit. */
@@ -346,15 +461,24 @@ public final class WebClientBridge {
             if (button == MouseEvent.BUTTON1) modifiers = InputEvent.BUTTON1_DOWN_MASK;
             if (button == MouseEvent.BUTTON2) modifiers = InputEvent.BUTTON2_DOWN_MASK;
             if (button == MouseEvent.BUTTON3) modifiers = InputEvent.BUTTON3_DOWN_MASK | InputEvent.META_MASK;
-            int canvasX = clamp(x, 0, WIDTH - 1);
-            int canvasY = clamp(y, 0, HEIGHT - 1);
-            if (canvas instanceof Canvas_Sub1) {
+            // Unlike a real pointer exit, clamping (-1,-1) to (0,0) makes
+            // RuneScape think the cursor jumped to the corner of the game.
+            boolean exited = id == MouseEvent.MOUSE_EXITED;
+            int canvasX = exited ? -1 : clamp(x, 0, WIDTH - 1);
+            int canvasY = exited ? -1 : clamp(y, 0, HEIGHT - 1);
+            if (!exited && canvas instanceof Canvas_Sub1) {
                 canvasX = ((Canvas_Sub1) canvas).toCanvasX(canvasX);
                 canvasY = ((Canvas_Sub1) canvas).toCanvasY(canvasY);
             }
+            // Drag/move/exit events have no changed button according to AWT;
+            // the held button is carried in modifiersEx instead.
+            int eventButton = (id == MouseEvent.MOUSE_MOVED ||
+                    id == MouseEvent.MOUSE_DRAGGED || exited)
+                    ? MouseEvent.NOBUTTON : button;
             MouseEvent event = new MouseEvent(canvas, id, when, modifiers,
                     canvasX, canvasY, 1,
-                    button == MouseEvent.BUTTON3, button);
+                    button == MouseEvent.BUTTON3 && id == MouseEvent.MOUSE_RELEASED,
+                    eventButton);
             canvas.dispatchEvent(event);
         });
     }
@@ -387,12 +511,20 @@ public final class WebClientBridge {
         int type = payload[0] & 0xFF;
         if (type == 1 && payload.length >= 5) {
             mouse(MouseEvent.MOUSE_MOVED, MouseEvent.NOBUTTON, u16(payload, 1), u16(payload, 3));
-        } else if ((type == 2 || type == 3) && payload.length >= 6) {
+        } else if (type == 6 && payload.length == 1) {
+            mouse(MouseEvent.MOUSE_EXITED, MouseEvent.NOBUTTON, -1, -1);
+        } else if (type == 9 && payload.length == 2) {
+            // Browser pinch packet, signed wheel-like steps. Unlike AWT wheel
+            // events this changes camera distance, not inventory scrollbar state.
+            adjustCameraZoom(payload[1]);
+        } else if ((type == 2 || type == 3 || type == 7) && payload.length >= 6) {
             int button = payload[1] & 0xFF;
+            if (button < MouseEvent.BUTTON1 || button > MouseEvent.BUTTON3) return;
             int x = u16(payload, 2);
             int y = u16(payload, 4);
-            mouse(type == 2 ? MouseEvent.MOUSE_PRESSED : MouseEvent.MOUSE_RELEASED,
-                    button, x, y);
+            int eventId = type == 2 ? MouseEvent.MOUSE_PRESSED
+                    : type == 3 ? MouseEvent.MOUSE_RELEASED : MouseEvent.MOUSE_DRAGGED;
+            mouse(eventId, button, x, y);
         } else if ((type == 4 || type == 5) && payload.length >= 5) {
             int code = u16(payload, 1);
             int character = u16(payload, 3);
@@ -446,6 +578,7 @@ public final class WebClientBridge {
         private final OutputStream out;
         private final Object writeLock = new Object();
         private volatile boolean closed;
+        private volatile boolean audioEnabled;
 
         ClientSession(Socket socket, InputStream in, OutputStream out) {
             this.socket = socket;
@@ -460,7 +593,11 @@ public final class WebClientBridge {
                 if (frame.opcode == 9) {
                     sendFrame(10, frame.payload);
                 } else if (frame.opcode == 2) {
-                    handleInput(frame.payload);
+                    if (frame.payload.length == 2 && (frame.payload[0] & 0xff) == 8) {
+                        audioEnabled = frame.payload[1] == 1;
+                    } else {
+                        handleInput(frame.payload);
+                    }
                 }
             }
         }
@@ -500,6 +637,7 @@ public final class WebClientBridge {
 
         void close() {
             closed = true;
+            audioEnabled = false;
             try { socket.close(); } catch (IOException ignored) { }
         }
     }

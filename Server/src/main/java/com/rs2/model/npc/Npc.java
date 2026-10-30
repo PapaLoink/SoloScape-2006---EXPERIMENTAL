@@ -12,7 +12,6 @@ import com.rs2.model.clue.ClueKeyHandler;
 import com.rs2.model.combat.CombatType;
 import com.rs2.model.combat.hit.HitType;
 import com.rs2.model.gameplay.abyss.AbyssManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.partyroom.PartyRoomManager;
 import com.rs2.model.ground.GroundItem;
 import com.rs2.model.ground.GroundItemManager;
@@ -333,9 +332,6 @@ extends Entity {
                         }
                         ((Entity)value3).getUpdateState().setForcedText("Balloons dropping in: " + (String)value);
                     }
-                }
-                if (ServerSettings.content2007Enabled) {
-                    GodWarsDungeonManager.handleBossBattleCry(this);
                 }
                 this.processStatRestoration();
                 this.getTargetMovement().process();

@@ -146,7 +146,6 @@ public final class GublinchChristmasEventChecks {
                     check(npc.getFacingDirection() == 3, "Shanty Claws must face south");
                 }
                 if (npc.getNpcId() >= 5046 && npc.getNpcId() <= 5048) {
-                    // Jack, Jill and Jeff dock spawns from the RuneScape wiki NPC maps.
                     int expectedX = npc.getNpcId() == 5046 ? 2904 : npc.getNpcId() == 5047 ? 2907 : 2906;
                     int expectedY = npc.getNpcId() == 5046 ? 3178 : npc.getNpcId() == 5047 ? 3174 : 3172;
                     check(npc.getSpawnPosition().equals(new Position(expectedX, expectedY, 0)),
@@ -237,7 +236,7 @@ public final class GublinchChristmasEventChecks {
         check(pelting.getIntervalTicks() == 1,
                 "Pelting pursuit must check movement every tick");
         // Exercise the scheduled action: first shot is immediate, then ticks 9 and 18.
-        for (int elapsed = 0; elapsed <= 24; elapsed++) {
+        for (int elapsed = 0; elapsed <= 28; elapsed++) {
             advanceEventTicks(1);
             int shots = Math.min(3, 1 + elapsed / 9);
             check(player.getEquipmentManager().getContainer().getItemAmount(10501) == 3 - shots,
@@ -319,6 +318,7 @@ public final class GublinchChristmasEventChecks {
         GublinchChristmasEvent.operateHat(player);
         check(player.getUpdateState().getAnimationId() == 5059, "Hat operation animation missing");
         checkHatEquipmentOperation();
+        checkChristmasExamines();
         checkSnowballsAgainstNormalNpc();
         checkRewardBranches(other);
         checkPeltVisuals();
@@ -464,6 +464,65 @@ public final class GublinchChristmasEventChecks {
         payload.putShort((short)target.getIndex()).flip();
         new com.rs2.net.packet.handler.NpcInteractionPacketHandler().handle(player,
                 new IncomingPacket(ClientPackets.NPC_OPTION_2, 2, PacketBuffer.wrapReader(payload)));
+    }
+
+    private static void checkChristmasExamines() throws Exception {
+        int[] ids = {828, 5017, 5018, 5019, 19030, 19031, 19033, 19034, 19035,
+                19036, 19037, 19038, 19040, 20100};
+        String[] expected = {
+            "A sea shanty-singing werewolf wearing a Santa Claus robe.",
+            "A sweaty gublinch.",
+            "A chilled, smelly gublinch.",
+            "A freezing cold gublinch.",
+            "A large pile of snow.",
+            "A large pile of snow.",
+            "A large pile of snow.",
+            "A large pile of snow.",
+            "A large pile of snow.",
+            "A strong metal cage.",
+            "A strong cage; it has a gublinch in it.",
+            "A pretty wintumber tree.",
+            "It leads back up to the surface.",
+            "These childerkins have been childernapped by the gublinch."
+        };
+        Player viewer = player(12);
+        try (ServerSocketChannel listener = ServerSocketChannel.open()) {
+            listener.bind(new InetSocketAddress("127.0.0.1", 0));
+            try (SocketChannel sender = SocketChannel.open(listener.getLocalAddress());
+                 SocketChannel receiver = listener.accept()) {
+                receiver.socket().setSoTimeout(3000);
+                Field socket = Player.class.getDeclaredField("socketChannel");
+                socket.setAccessible(true);
+                socket.set(viewer, sender);
+                viewer.setOutboundCipher(new IsaacCipher(new int[4]));
+                IsaacCipher decoder = new IsaacCipher(new int[4]);
+                DataInputStream input = new DataInputStream(receiver.socket().getInputStream());
+                for (int index = 0; index < ids.length; index++) {
+                    boolean object = index >= 4;
+                    String description = object
+                            ? com.rs2.model.objects.ObjectDefinition.forId(ids[index]).getDescription()
+                            : NpcDefinition.forId(ids[index]).getDescription();
+                    check(description.equals(expected[index]), "Incorrect event examine: " + ids[index]);
+                    ByteBuffer payload = ByteBuffer.allocate(2);
+                    if (object) payload.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                    payload.putShort((short)ids[index]).flip();
+                    if (object)
+                        new com.rs2.net.packet.handler.ObjectInteractionPacketHandler().handle(viewer,
+                                new IncomingPacket(ClientPackets.OBJECT_EXAMINE, 2, PacketBuffer.wrapReader(payload)));
+                    else
+                        new com.rs2.net.packet.handler.NpcInteractionPacketHandler().handle(viewer,
+                                new IncomingPacket(ClientPackets.NPC_EXAMINE, 2, PacketBuffer.wrapReader(payload)));
+                    check(((input.readUnsignedByte() - decoder.nextInt()) & 255) == 157,
+                            "Examine did not return a game message");
+                    byte[] message = new byte[input.readUnsignedByte()];
+                    input.readFully(message);
+                    check(message[message.length - 1] == 0
+                                    && new String(message, 0, message.length - 1, "ISO-8859-1")
+                                            .equals(expected[index]),
+                            "Examine returned the wrong text: " + ids[index]);
+                }
+            }
+        }
     }
 
     private static void checkHatEquipmentOperation() throws Exception {
@@ -697,7 +756,9 @@ public final class GublinchChristmasEventChecks {
             if (spawn.getX() > 3180) east++;
             if (spawn.getY() >= 5355) north++;
         }
-        check(anchors.size() == 15, "Expected fifteen dungeon Gublinch, got " + anchors.size());
+        Set<String> expectedAnchors = new HashSet<String>(java.util.Arrays.asList(
+                "3184,5340", "3191,5325", "3147,5328", "3153,5341", "3164,5341", "3147,5355", "3161,5359", "3171,5353", "3187,5353", "3189,5366", "3177,5365", "3191,5334", "3148,5321", "3149,5366", "3171,5338"));
+        check(anchors.equals(expectedAnchors), "Gublinch spawns differ from the supplied fifteen anchors: " + anchors);
         check(west >= 4 && east >= 4 && north >= 4, "Gublinch do not cover both loops and the northern chamber");
     }
 
@@ -724,6 +785,9 @@ public final class GublinchChristmasEventChecks {
             check(!GublinchChristmasEvent.pelt(thrower, npc), "Third successful shot did not finish pelting");
             check(npc.isActive(), "Third throw removed the target before impact");
             advanceEventTicks(3);
+            check(npc.isActive() && npc.getUpdateState().getAnimationId() == 5072,
+                    "Third impact did not start the native crumble");
+            advanceEventTicks(5);
             check(World.getNpcs()[index] != npc, "Frozen Gublinch was not removed");
             check(!npc.isActive(), "Removed Gublinch remains visible in local NPC lists");
         }
@@ -774,35 +838,83 @@ public final class GublinchChristmasEventChecks {
 
         // Miss before each successful hit, including the potentially lethal third hit.
         // Misses must neither advance nor reset the normal/chilled/frozen progression.
-        int successfulHits = 0;
-        for (int shot = 0; shot < 6; shot++) {
-            boolean hit = (shot & 1) != 0;
-            int previousForm = target.getNpcId();
-            boolean keepPelting = (Boolean) pelt.invoke(null, thrower, target, hit ? 0 : 9999);
-            if (hit) successfulHits++;
-            check(keepPelting == (successfulHits < 3), "Miss stopped automatic pelting");
-            check(thrower.getEquipmentManager().getContainer().getItemAmount(10501) == 5 - shot,
-                    "A missed shot did not consume exactly one snowball");
-            advanceEventTicks(2);
-            check(target.isActive() && target.getNpcId() == previousForm,
-                    "Accuracy result was applied before tick 3");
-            advanceEventTicks(1);
-            if (successfulHits < 3) {
-                check(target.isActive() && target.getNpcId() == 5017 + successfulHits,
-                        "Miss advanced or reset the Gublinch freeze stage");
-                check(GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
-                        "Misses caused a premature shard drop");
-            } else {
-                check(!target.isActive() && GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
-                        "Fatal hit must remove the Gublinch before showing shards");
-                advanceEventTicks(1);
-                check(GroundItemManager.findVisibleItem(thrower, 10506, tile) != null,
-                        "Shards did not appear one tick after removal");
+        Player observer = player(13);
+        observer.setPosition(thrower.getPosition().copy());
+        observer.getLastKnownRegionPosition().set(observer.getPosition());
+        observer.refreshLocalViewArea();
+        Player previousObserver = World.getPlayers()[13];
+        try (ServerSocketChannel listener = ServerSocketChannel.open()) {
+            listener.bind(new InetSocketAddress("127.0.0.1", 0));
+            try (SocketChannel sender = SocketChannel.open(listener.getLocalAddress());
+                 SocketChannel receiver = listener.accept()) {
+                receiver.socket().setSoTimeout(3000);
+                Field socket = Player.class.getDeclaredField("socketChannel");
+                socket.setAccessible(true);
+                socket.set(observer, sender);
+                World.getPlayers()[13] = observer;
+                IsaacCipher decoder = new IsaacCipher(new int[4]);
+                DataInputStream input = new DataInputStream(receiver.socket().getInputStream());
+                int successfulHits = 0;
+                for (int shot = 0; shot < 6; shot++) {
+                    boolean hit = (shot & 1) != 0;
+                    int previousForm = target.getNpcId();
+                    int previousAnimation = target.getUpdateState().getAnimationId();
+                    boolean keepPelting = (Boolean) pelt.invoke(null, thrower, target, hit ? 0 : 9999);
+                    byte[] projectile = new byte[19];
+                    input.readFully(projectile);
+                    check(((projectile[0] & 255) - decoder.nextInt() & 255) == 82
+                                    && ((projectile[3] & 255) - decoder.nextInt() & 255) == 101,
+                            "Accuracy check did not receive the outgoing projectile");
+                    if (hit) successfulHits++;
+                    check(keepPelting == (successfulHits < 3), "Miss stopped automatic pelting");
+                    check(thrower.getEquipmentManager().getContainer().getItemAmount(10501) == 5 - shot,
+                            "A missed shot did not consume exactly one snowball");
+                    advanceEventTicks(2);
+                    check(target.isActive() && target.getNpcId() == previousForm,
+                            "Accuracy result was applied before tick 3");
+                    check(input.available() == 0, "Outcome effect appeared before arrival");
+                    advanceEventTicks(1);
+                    readSnowballOutcome(input, decoder, hit ? 862 : 858);
+                    check(target.getUpdateState().getAnimationId()
+                                    == (successfulHits == 3 ? 5072 : previousAnimation),
+                            "Snowball outcome used the wrong NPC reaction animation");
+                    if (successfulHits < 3) {
+                        check(target.isActive() && target.getNpcId() == 5017 + successfulHits,
+                                "Miss advanced or reset the Gublinch freeze stage");
+                        check(GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
+                                "Misses caused a premature shard drop");
+                    } else {
+                        check(target.isActive() && target.getUpdateState().getAnimationId() == 5072,
+                                "Fatal hit must play the native crumble");
+                        advanceEventTicks(5);
+                        check(!target.isActive() && GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
+                                "Crumble must finish and remove the NPC before showing shards");
+                        advanceEventTicks(1);
+                        check(GroundItemManager.findVisibleItem(thrower, 10506, tile) != null,
+                                "Shards did not appear one tick after removal");
+                    }
+                    check(thrower.getUpdateState().getAnimationId() == -1
+                                    && thrower.getUpdateState().getGraphicId() == -1,
+                            "Misses changed the tick-3 animation completion");
+                }
+            } finally {
+                World.getPlayers()[13] = previousObserver;
             }
-            check(thrower.getUpdateState().getAnimationId() == -1
-                            && thrower.getUpdateState().getGraphicId() == -1,
-                    "Misses changed the tick-3 animation completion");
         }
+    }
+
+    private static void readSnowballOutcome(DataInputStream input, IsaacCipher decoder, int expected)
+            throws Exception {
+        byte[] effect = new byte[10];
+        input.readFully(effect);
+        check(((effect[0] & 255) - decoder.nextInt() & 255) == 82,
+                "Snowball outcome zone base missing");
+        check(((effect[3] & 255) - decoder.nextInt() & 255) == 115,
+                "Snowball outcome spot-animation packet missing");
+        check(((effect[5] & 255) << 8 | effect[6] & 255) == expected,
+                "Incorrect snowball hit/miss effect");
+        check(effect[8] == 0 && effect[9] == 0,
+                "Snowball outcome effect was delayed beyond impact");
     }
 
     private static void advanceEventTicks(int count) {
@@ -815,6 +927,14 @@ public final class GublinchChristmasEventChecks {
     }
 
     private static void checkPeltVisuals() throws Exception {
+        for (int[] effect : new int[][]{{858, 2223, 914}, {862, 20502, 5066}}) {
+            ConfigReader nativeEffect = new ConfigReader(Definitions.readGroup(13).get(effect[0]));
+            check(nativeEffect.readUnsignedByte() == 1 && nativeEffect.readUnsignedShort() == effect[1]
+                            && nativeEffect.readUnsignedByte() == 2 && nativeEffect.readUnsignedShort() == effect[2],
+                    "Snowball outcome effect uses the wrong native model/sequence: " + effect[0]);
+            check(Definitions.readGroup(12).get(effect[2]) != null,
+                    "Snowball outcome effect sequence is missing");
+        }
         ConfigReader graphic = new ConfigReader(Definitions.readGroup(13).get(861));
         check(graphic.readUnsignedByte() == 1 && graphic.readUnsignedShort() == 20502,
                 "Snowball projectile uses the wrong cache model");
@@ -900,12 +1020,29 @@ public final class GublinchChristmasEventChecks {
                                     && thrower.getUpdateState().getGraphicId() == 860,
                             "Throw animation or hand effect ended before tick 3");
                     advanceEventTicks(1);
+                    readSnowballOutcome(input, decoder, 862);
                     if (hit < 2) {
                         check(target.isActive() && target.getNpcId() == 5017 + Math.min(hit + 1, 2),
                                 "Gublinch did not react when the snowball arrived");
                     } else {
-                        check(!target.isActive() && GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
-                                "Final impact must remove the Gublinch before its drop appears");
+                        check(target.isActive() && target.getNpcId() == 5019
+                                        && target.getUpdateState().getAnimationId() == 5072,
+                                "Final impact must crumble the frozen mesh before removal");
+                        check(target.getMovementMode() == com.rs2.model.npc.NpcMovementMode.STATIONARY
+                                        && target.getMovementQueue().getSteps().size() <= 1,
+                                "Crumbling Gublinch must stop wandering");
+                        thrower.getEquipmentManager().getContainer().setItem(3, new ItemStack(10501, 1));
+                        check(!GublinchChristmasEvent.pelt(thrower, target)
+                                        && thrower.getEquipmentManager().getContainer().getItemAmount(10501) == 1,
+                                "Crumbling target accepted another throw");
+                        check(input.available() == 0, "Crumbling target emitted another projectile");
+                        for (int tick = 1; tick <= 4; tick++) {
+                            advanceEventTicks(1);
+                            check(target.isActive()
+                                            && GroundItemManager.findVisibleItem(thrower, 10506, tile) == null,
+                                    "NPC or shards changed before the crumble completed");
+                        }
+                        advanceEventTicks(1);
                     }
                     check(thrower.getUpdateState().getAnimationId() == -1
                                     && thrower.getUpdateState().getGraphicId() == -1,

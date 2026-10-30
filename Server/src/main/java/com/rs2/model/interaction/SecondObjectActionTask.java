@@ -8,7 +8,6 @@ import com.rs2.model.combat.AttackStyleDefinition;
 import com.rs2.model.dialogue.DialogueManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
-import com.rs2.model.gameplay.godwars.GodWarsDungeonManager;
 import com.rs2.model.gameplay.partyroom.PartyRoomManager;
 import com.rs2.model.interaction.InteractionDispatcher;
 import com.rs2.model.interaction.MiningShortcutTask;
@@ -106,6 +105,11 @@ extends TickTask {
             this.stop();
             return;
         }
+        if (AlKharidGateToll.isTollGate(this.objectId, this.objectX, this.objectY, this.objectPlane)) {
+            AlKharidGateToll.tryPass(this.player);
+            this.stop();
+            return;
+        }
         if (this.player.getQuestManager().handleSecondObjectAction(this.objectId, this.objectX, this.objectY)) {
             this.stop();
             return;
@@ -121,12 +125,6 @@ extends TickTask {
         if (ThievingObjectHandler.handleThievingObject(this.player, this.objectId, this.objectX, this.objectY)) {
             this.stop();
             return;
-        }
-        if (ServerSettings.content2007Enabled) {
-            if (GodWarsDungeonManager.handleSecondObjectAction(this.player, this.objectId)) {
-                this.stop();
-                return;
-            }
         }
         if (StallThievingHandler.handleStallThieving(this.player, this.objectId, this.objectX, this.objectY)) {
             this.stop();

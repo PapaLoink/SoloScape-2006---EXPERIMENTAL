@@ -1,0 +1,30 @@
+name: Verify Al Kharid gate toll
+on:
+  push:
+    branches:
+      - fix/26-al-kharid-gate-toll
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/interaction/AlKharidGateToll.java'
+      - 'Server/src/main/java/com/rs2/model/interaction/SecondObjectActionTask.java'
+      - 'Server/src/main/java/com/rs2/model/dialogue/DialogueManager.java'
+      - 'Server/src/test/java/AlKharidGateTollChecks.java'
+      - '.github/workflows/verify-al-kharid-gate-toll.yml'
+  workflow_dispatch:
+jobs:
+  gate-toll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and verify Al Kharid gate
+        working-directory: Server
+        run: |
+          mkdir -p gate-toll-test-classes
+          find src/main/java -name '*.java' > /tmp/gate-toll-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d gate-toll-test-classes @/tmp/gate-toll-sources.txt
+          javac -encoding UTF-8 -cp 'gate-toll-test-classes:lib/*' -d gate-toll-test-classes src/test/java/AlKharidGateTollChecks.java
+          java -cp 'gate-toll-test-classes:lib/*' AlKharidGateTollChecks

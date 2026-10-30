@@ -19,6 +19,7 @@ import com.rs2.model.ground.GroundItem;
 import com.rs2.model.ground.GroundItemManager;
 import com.rs2.model.item.ItemDefinition;
 import com.rs2.model.item.ItemStack;
+import com.rs2.model.interaction.AlKharidGateToll;
 import com.rs2.model.item.action.BarrowsRepairHandler;
 import com.rs2.model.item.action.GodBookHandler;
 import com.rs2.model.npc.Npc;
@@ -2226,80 +2227,6 @@ public class DialogueManager {
                 }
                 break;
             }
-            case 3886: {
-                switch (player.getDialogueManager().getDialogueStep()) {
-                    case 1: {
-                        if (player.ownsClueScroll()) {
-                            return false;
-                        }
-                        if (player.isMember()) {
-                            if (ServerSettings.freeToPlayWorld) {
-                                player.packetSender.sendGameMessage("You need to be in members world to access members content.");
-                            } else {
-                                player.getDialogueManager().showPlayerOneLineDialogue("Hi!", 591);
-                            }
-                        } else {
-                            player.packetSender.sendGameMessage("You need a members account to access members content.");
-                        }
-                        return true;
-                    }
-                    case 2: {
-                        player.getDialogueManager().showNpcTwoLineDialogue("Hello adventurer.", "Let me show you something.", 591);
-                        return true;
-                    }
-                    case 3: {
-                        player.getDialogueManager().showNpcTwoLineDialogue("This scroll should lead to a treasure, but", "I'm not able to solve it.", 591);
-                        return true;
-                    }
-                    case 4: {
-                        player.getDialogueManager().showNpcOneLineDialogue("Would you like to buy it for " + GameUtil.formatNumber((long)ServerSettings.clueMerchantPriceCoins) + " coins?", 591);
-                        return true;
-                    }
-                    case 5: {
-                        player.getDialogueManager().showTwoOptions("Sure thing!", "No thanks.");
-                        return true;
-                    }
-                    case 6: {
-                        switch (optionIndex) {
-                            case 1: {
-                                player.getDialogueManager().showPlayerOneLineDialogue("Sure thing!", 591);
-                                player.getDialogueManager().setNextDialogueStep(7);
-                                return true;
-                            }
-                            case 2: {
-                                player.getDialogueManager().showPlayerOneLineDialogue("No thanks.", 591);
-                                player.getDialogueManager().finishDialogue();
-                                return true;
-                            }
-                        }
-                        break continueContextDialogueControlSwitch1;
-                    }
-                    case 7: {
-                        if (player.getInventoryManager().containsItemAmount(995, ServerSettings.clueMerchantPriceCoins)) {
-                            player.getDialogueManager().showNpcOneLineDialogue("There you go! Good luck with that!", 591);
-                            player.getInventoryManager().removeItem(new ItemStack(995, ServerSettings.clueMerchantPriceCoins));
-                            if (ServerSettings.clueMerchantClueLevel == 0) {
-                                dialogueId = TreasureTrailManager.randomClueItemForLevel(GameUtil.randomInt(3) + 1);
-                            } else {
-                                value1 = ServerSettings.clueMerchantClueLevel;
-                                if (value1 < 0) {
-                                    value1 = 1;
-                                } else if (value1 > 3) {
-                                    value1 = 3;
-                                }
-                                dialogueId = TreasureTrailManager.randomClueItemForLevel(value1);
-                            }
-                            player.getInventoryManager().addOrDropItem(new ItemStack(dialogueId, 1));
-                            player.getDialogueManager().finishDialogue();
-                        } else {
-                            player.getDialogueManager().showNpcOneLineDialogue("I said " + GameUtil.formatNumber((long)ServerSettings.clueMerchantPriceCoins) + " coins! You haven't got " + GameUtil.formatNumber((long)ServerSettings.clueMerchantPriceCoins) + " coins!", 614);
-                            player.getDialogueManager().finishDialogue();
-                        }
-                        return true;
-                    }
-                }
-                break;
-            }
             case 659: {
                 switch (player.getDialogueManager().getDialogueStep()) {
                     case 1: {
@@ -4113,15 +4040,14 @@ public class DialogueManager {
                 continueDialogueWithNpcIdControlSwitch2 : switch (player.getDialogueManager().getDialogueStep()) {
                     case 1: {
                         if (player.botEnabled) {
-                            player.getPacketSender().queueRelativeMovementStep(player.getPosition().getX() < 3268 ? 1 : -1, 0, true);
-                            player.getPacketSender().openDoubleDoorPair(2882, 2883, 3268, 3227, 3268, 3228, 0);
+                            AlKharidGateToll.tryPass(player);
                             break;
                         }
                         player.getDialogueManager().showPlayerOneLineDialogue("Can I come through this gate?", 591);
                         return true;
                     }
                     case 2: {
-                        if (player.getQuestState(11) == 1 || player.getQuestState(11) == 9) {
+                        if (AlKharidGateToll.hasFreePassage(player)) {
                             player.getDialogueManager().showNpcOneLineDialogue("You may pass for free, you are a friend of Al-Kharid.", 591);
                             player.getDialogueManager().setNextDialogueStep(19);
                         } else {
@@ -4139,10 +4065,7 @@ public class DialogueManager {
                     case 4: {
                         switch (optionIndex) {
                             case 1: {
-                                if (!player.getInventoryManager().containsItemAmount(995, 10)) break continueDialogueWithNpcIdControlSwitch2;
-                                player.getInventoryManager().removeItem(new ItemStack(995, 10));
-                                player.getPacketSender().queueRelativeMovementStep(player.getPosition().getX() < 3268 ? 1 : -1, 0, true);
-                                player.getPacketSender().openDoubleDoorPair(2882, 2883, 3268, 3227, 3268, 3228, 0);
+                                AlKharidGateToll.tryPass(player);
                                 break continueDialogueWithNpcIdControlSwitch2;
                             }
                             case 2: {
@@ -4164,10 +4087,7 @@ public class DialogueManager {
                     case 6: {
                         switch (optionIndex) {
                             case 1: {
-                                if (!player.getInventoryManager().containsItemAmount(995, 10)) break continueDialogueWithNpcIdControlSwitch2;
-                                player.getInventoryManager().removeItem(new ItemStack(995, 10));
-                                player.getPacketSender().queueRelativeMovementStep(player.getPosition().getX() < 3268 ? 1 : -1, 0, true);
-                                player.getPacketSender().openDoubleDoorPair(2882, 2883, 3268, 3227, 3268, 3228, 0);
+                                AlKharidGateToll.tryPass(player);
                                 break continueDialogueWithNpcIdControlSwitch2;
                             }
                             case 2: {
@@ -4183,8 +4103,7 @@ public class DialogueManager {
                         return true;
                     }
                     case 19: {
-                        player.getPacketSender().queueRelativeMovementStep(player.getPosition().getX() < 3268 ? 1 : -1, 0, true);
-                        player.getPacketSender().openDoubleDoorPair(2882, 2883, 3268, 3227, 3268, 3228, 0);
+                        AlKharidGateToll.tryPass(player);
                         break;
                     }
                     case 8: {
