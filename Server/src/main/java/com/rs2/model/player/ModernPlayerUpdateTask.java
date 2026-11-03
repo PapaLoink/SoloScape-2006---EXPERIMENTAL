@@ -5,6 +5,7 @@ import com.rs2.model.EntityUpdateState;
 import com.rs2.model.Position;
 import com.rs2.model.World;
 import com.rs2.model.combat.WeaponProfile;
+import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.ground.GroundItemManager;
 import com.rs2.model.item.ItemStack;
 import com.rs2.model.objects.ObjectManager;
@@ -209,8 +210,12 @@ public final class ModernPlayerUpdateTask {
             masks.writeShort(state.getFacePositionHalfY(), ByteOrder.LITTLE);
         }
         if ((mask & 0x8) != 0) {
-            masks.writeShort(state.getAnimationId(), ByteTransform.ADD, ByteOrder.LITTLE);
-            masks.writeByte(state.getAnimationDelay(), ByteTransform.NEGATE);
+            // Never animate a Castle Wars NPC morph with a human emote or
+            // combat sequence. Those frames deform the creature's model.
+            boolean transformed = CastleWarsManager.isWaitingRoomGodTransformation(player);
+            masks.writeShort(transformed ? -1 : state.getAnimationId(),
+                    ByteTransform.ADD, ByteOrder.LITTLE);
+            masks.writeByte(transformed ? 0 : state.getAnimationDelay(), ByteTransform.NEGATE);
         }
         if ((mask & 0x4) != 0) writePublicChat(player, masks);
         if ((mask & 0x400) != 0) {
@@ -300,16 +305,26 @@ public final class ModernPlayerUpdateTask {
         for (int color : player.getAppearanceColors()) {
             appearance.writeByte(color);
         }
-        appearance.writeShort(player.getStandAnimation());
-        // The second slot is a standing turn, not forward walking. Weapons
-        // without a separate turn sequence retain their idle pose while turning.
-        appearance.writeShort(player.getWalkAnimation() == WeaponProfile.FISTS.getMovementAnimations()[1]
-                ? 823 : player.getStandAnimation());
-        appearance.writeShort(player.getWalkAnimation());
-        appearance.writeShort(player.getWalkAnimation());
-        appearance.writeShort(player.getWalkAnimation());
-        appearance.writeShort(player.getWalkAnimation());
-        appearance.writeShort(player.getRunAnimation());
+        if (CastleWarsManager.isWaitingRoomGodTransformation(player)) {
+            // In the 443 appearance block these seven sequences belong to the
+            // player animation rig, NOT the NPC. Sending player idle/walk/run
+            // sequences here stretches sheep, rabbit and imp transformations.
+            // The legacy 377 encoder already disables these for god morphs.
+            for (int index = 0; index < 7; ++index) {
+                appearance.writeShort(-1);
+            }
+        } else {
+            appearance.writeShort(player.getStandAnimation());
+            // The second slot is a standing turn, not forward walking. Weapons
+            // without a separate turn sequence retain their idle pose while turning.
+            appearance.writeShort(player.getWalkAnimation() == WeaponProfile.FISTS.getMovementAnimations()[1]
+                    ? 823 : player.getStandAnimation());
+            appearance.writeShort(player.getWalkAnimation());
+            appearance.writeShort(player.getWalkAnimation());
+            appearance.writeShort(player.getWalkAnimation());
+            appearance.writeShort(player.getWalkAnimation());
+            appearance.writeShort(player.getRunAnimation());
+        }
         appearance.writeLong(player.getNameHash());
         appearance.writeByte(player.getCombatLevel());
         appearance.writeShort(0); // 0 makes the client display combat level instead of Skill
