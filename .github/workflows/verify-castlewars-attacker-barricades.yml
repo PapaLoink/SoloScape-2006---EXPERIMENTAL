@@ -1,0 +1,31 @@
+name: Verify Castle Wars attacker barricade handling
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotAi.java'
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotRoleAi.java'
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotBarricadeAi.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
+      - 'Server/src/test/java/com/rs2/model/gameplay/castlewars/CastleWarsAttackerBarricadeChecks.java'
+      - '.github/workflows/verify-castlewars-attacker-barricades.yml'
+  workflow_dispatch:
+jobs:
+  attacker-barricades:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and verify attacker tinderbox barricade handling
+        working-directory: Server
+        run: |
+          mkdir -p castle-wars-attacker-test-classes
+          find src/main/java -name '*.java' > /tmp/castle-wars-attacker-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d castle-wars-attacker-test-classes @/tmp/castle-wars-attacker-sources.txt
+          javac -encoding UTF-8 -cp 'castle-wars-attacker-test-classes:lib/*' -d castle-wars-attacker-test-classes src/test/java/com/rs2/model/gameplay/castlewars/CastleWarsAttackerBarricadeChecks.java
+          java -cp 'castle-wars-attacker-test-classes:lib/*' com.rs2.model.gameplay.castlewars.CastleWarsAttackerBarricadeChecks
