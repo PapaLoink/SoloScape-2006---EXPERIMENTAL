@@ -278,22 +278,22 @@ public final class ModernPlayerUpdateTask {
             appearance.writeShort(player.npcTransformationId);
         } else {
             ItemStack head = visibleEquipment(player, 0);
-        ItemStack body = visibleEquipment(player, 4);
-        int headType = head == null ? 0 : head.getDefinition().getEquipmentAppearanceType();
-        int bodyType = body == null ? 0 : body.getDefinition().getEquipmentAppearanceType();
-        int[] parts = player.getAppearanceParts();
-        writeAppearancePart(appearance, head, 0);
-        writeAppearancePart(appearance, visibleEquipment(player, 1), 0);
-        writeAppearancePart(appearance, visibleEquipment(player, 2), 0);
-        writeAppearancePart(appearance, visibleEquipment(player, 3), 0);
-        writeAppearancePart(appearance, body, 256 + parts[0]);
-        writeAppearancePart(appearance, visibleEquipment(player, 5), 0);
-        // Platebodies include sleeves; full helmets also replace hair and/or beard.
-        writeAppearancePart(appearance, null, bodyType == 1 ? 0 : 256 + parts[1]);
-        writeAppearancePart(appearance, visibleEquipment(player, 7), 256 + parts[2]);
-        writeAppearancePart(appearance, null, headType == 2 || headType == 3 ? 0 : 256 + parts[3]);
-        writeAppearancePart(appearance, visibleEquipment(player, 9), 256 + parts[4]);
-        writeAppearancePart(appearance, visibleEquipment(player, 10), 256 + parts[5]);
+            ItemStack body = visibleEquipment(player, 4);
+            int headType = head == null ? 0 : head.getDefinition().getEquipmentAppearanceType();
+            int bodyType = body == null ? 0 : body.getDefinition().getEquipmentAppearanceType();
+            int[] parts = player.getAppearanceParts();
+            writeAppearancePart(appearance, head, 0);
+            writeAppearancePart(appearance, visibleEquipment(player, 1), 0);
+            writeAppearancePart(appearance, visibleEquipment(player, 2), 0);
+            writeAppearancePart(appearance, visibleEquipment(player, 3), 0);
+            writeAppearancePart(appearance, body, 256 + parts[0]);
+            writeAppearancePart(appearance, visibleEquipment(player, 5), 0);
+            // Platebodies include sleeves; full helmets also replace hair and/or beard.
+            writeAppearancePart(appearance, null, bodyType == 1 ? 0 : 256 + parts[1]);
+            writeAppearancePart(appearance, visibleEquipment(player, 7), 256 + parts[2]);
+            writeAppearancePart(appearance, null, headType == 2 || headType == 3 ? 0 : 256 + parts[3]);
+            writeAppearancePart(appearance, visibleEquipment(player, 9), 256 + parts[4]);
+            writeAppearancePart(appearance, visibleEquipment(player, 10), 256 + parts[5]);
             writeAppearancePart(appearance, null,
                     player.getGender() == 0 && headType != 2 && headType != 4 ? 256 + parts[6] : 0);
         }
