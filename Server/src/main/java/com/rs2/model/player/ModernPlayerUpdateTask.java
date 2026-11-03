@@ -7,6 +7,7 @@ import com.rs2.model.World;
 import com.rs2.model.combat.WeaponProfile;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.ground.GroundItemManager;
+import com.rs2.model.npc.NpcDefinition;
 import com.rs2.model.item.ItemStack;
 import com.rs2.model.objects.ObjectManager;
 import com.rs2.net.packet.AccessMode;
@@ -306,12 +307,11 @@ public final class ModernPlayerUpdateTask {
             appearance.writeByte(color);
         }
         if (CastleWarsManager.isWaitingRoomGodTransformation(player)) {
-            // In the 443 appearance block these seven sequences belong to the
-            // player animation rig, NOT the NPC. Sending player idle/walk/run
-            // sequences here stretches sheep, rabbit and imp transformations.
-            // The legacy 377 encoder already disables these for god morphs.
-            for (int index = 0; index < 7; ++index) {
-                appearance.writeShort(-1);
+            // The morph model needs its own rig's idle/walk animations.
+            // Sending human animations stretches it, while sending seven -1s
+            // makes it T-pose and slide across the waiting room.
+            for (int sequence : castleWarsMorphMovementAnimations(player.npcTransformationId)) {
+                appearance.writeShort(sequence);
             }
         } else {
             appearance.writeShort(player.getStandAnimation());
@@ -329,6 +329,30 @@ public final class ModernPlayerUpdateTask {
         appearance.writeByte(player.getCombatLevel());
         appearance.writeShort(0); // 0 makes the client display combat level instead of Skill
         return appearance;
+    }
+
+    /**
+     * Seven revision 443 player appearance slots:
+     * idle, stand-turn, walk, walk-back, walk-left, walk-right, run.
+     * All sequences are taken from the matching 443 NPC definition.
+     */
+    static int[] castleWarsMorphMovementAnimations(int npcId) {
+        NpcDefinition npc = NpcDefinition.forId(npcId);
+        int idle = npc.getIdleAnimationId();
+        int walk = npc.getWalkAnimationId();
+        int turn = npc.getTurnAnimationId();
+        int back = npc.getWalkBackAnimationId();
+        int left = npc.getWalkLeftAnimationId();
+        int right = npc.getWalkRightAnimationId();
+        return new int[]{
+                idle,
+                turn >= 0 ? turn : idle,
+                walk,
+                back >= 0 ? back : walk,
+                left >= 0 ? left : walk,
+                right >= 0 ? right : walk,
+                walk // NPCs without a separate run sequence use their walk.
+        };
     }
 
     private static ItemStack visibleEquipment(Player player, int slot) {
