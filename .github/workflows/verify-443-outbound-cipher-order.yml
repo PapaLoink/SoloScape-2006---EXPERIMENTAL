@@ -1,0 +1,29 @@
+name: Verify revision 443 outbound packet ordering
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/net/packet/PacketWriter.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/test/java/com/rs2/net/packet/OutboundCipherOrderingChecks.java'
+      - '.github/workflows/verify-443-outbound-cipher-order.yml'
+  workflow_dispatch:
+jobs:
+  outbound-cipher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and verify ISAAC packet wire order
+        working-directory: Server
+        run: |
+          mkdir -p outbound-cipher-check-classes
+          find src/main/java -name '*.java' > /tmp/outbound-cipher-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d outbound-cipher-check-classes @/tmp/outbound-cipher-sources.txt
+          javac -encoding UTF-8 -cp 'outbound-cipher-check-classes:lib/*' -d outbound-cipher-check-classes src/test/java/com/rs2/net/packet/OutboundCipherOrderingChecks.java
+          java -cp 'outbound-cipher-check-classes:lib/*' com.rs2.net.packet.OutboundCipherOrderingChecks
