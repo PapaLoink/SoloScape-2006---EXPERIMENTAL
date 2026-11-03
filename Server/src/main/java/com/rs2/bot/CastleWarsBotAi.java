@@ -449,7 +449,10 @@ public final class CastleWarsBotAi {
 
         CastleWarsManager.Team destination = returningHome ? state.team : opposite(state.team);
         Position outside = CastleWarsManager.getBotMainDoorExteriorPosition(bot, destination);
-        if (!near(bot, outside, 0)) {
+        // Start the doorway state while approaching, not after waiting on
+        // the exact exterior tile. The shared door router still enforces
+        // adjacency for CLOSED doors and runs straight through OPEN ones.
+        if (!near(bot, outside, 2)) {
             walk(bot, state, outside);
             return;
         }
