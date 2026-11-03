@@ -44,11 +44,19 @@ public final class DoubleDoorHandler {
                 && isCastleWarsLobbyEntranceLeaf(objectId, x, y, plane);
     }
 
+    static boolean didOpenCastleWarsLobbyEntranceLeaf(
+            int originalObjectId, int visibleObjectId,
+            int originalX, int originalY, int plane, boolean initiallyOpen) {
+        return !initiallyOpen
+                && (originalObjectId == 1516 || originalObjectId == 1519)
+                && visibleObjectId == originalObjectId + 1
+                && isCastleWarsLobbyEntranceLeaf(originalObjectId, originalX, originalY, plane);
+    }
+
     private static void markCastleWarsLobbyEntranceOpened(DoubleDoorHandler door) {
-        if (!door.initiallyOpen
-                && isCastleWarsLobbyEntranceLeaf(
-                        door.originalObjectId, door.originalX, door.originalY, door.plane)
-                && door.currentObjectId == door.originalObjectId + 1) {
+        if (didOpenCastleWarsLobbyEntranceLeaf(
+                door.originalObjectId, door.currentObjectId,
+                door.originalX, door.originalY, door.plane, door.initiallyOpen)) {
             castleWarsLobbyEntranceOpened = true;
         }
     }
