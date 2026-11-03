@@ -1,0 +1,28 @@
+name: Verify Castle Wars own-flag hint
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/test/java/com/rs2/model/gameplay/castlewars/CastleWarsFlagHintChecks.java'
+      - '.github/workflows/verify-castlewars-own-flag-hint.yml'
+  workflow_dispatch:
+jobs:
+  flag-hint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and test defensive flag hints
+        working-directory: Server
+        run: |
+          mkdir -p castle-wars-hint-test-classes
+          find src/main/java -name '*.java' > /tmp/castle-wars-hint-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d castle-wars-hint-test-classes @/tmp/castle-wars-hint-sources.txt
+          javac -encoding UTF-8 -cp 'castle-wars-hint-test-classes:lib/*' -d castle-wars-hint-test-classes src/test/java/com/rs2/model/gameplay/castlewars/CastleWarsFlagHintChecks.java
+          java -cp 'castle-wars-hint-test-classes:lib/*' com.rs2.model.gameplay.castlewars.CastleWarsFlagHintChecks
