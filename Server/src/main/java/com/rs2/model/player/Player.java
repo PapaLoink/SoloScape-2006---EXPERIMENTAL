@@ -1896,11 +1896,16 @@ extends Entity {
     }
     public final void writePacketBuffer(ByteBuffer byteBuffer) {
         if (!this.socketChannel.isOpen()) {
+            PacketWriter.discardOutboundOpcodes(byteBuffer);
             return;
         }
-        byteBuffer.flip();
         try {
             synchronized (this) {
+                // Producer threads prepare packets concurrently. Encrypting
+                // ISAAC opcodes here guarantees cipher order matches the
+                // actual wire order, including packets generated during login.
+                PacketWriter.finalizeOutboundOpcodes(byteBuffer);
+                byteBuffer.flip();
                 if (this.outboundBuffer.position() == 0) {
                     this.socketChannel.write(byteBuffer);
                 }
