@@ -1,0 +1,31 @@
+name: Verify Castle Wars portal transformations
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/main/java/com/rs2/model/player/ModernPlayerUpdateTask.java'
+      - 'Server/src/test/java/com/rs2/model/player/CastleWarsPortalMorphChecks.java'
+      - 'Server/src/test/java/ArmourAppearanceChecks.java'
+      - '.github/workflows/verify-castlewars-portal-morph.yml'
+  workflow_dispatch:
+jobs:
+  portal-morph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and verify portal transformations
+        working-directory: Server
+        run: |
+          mkdir -p portal-morph-test-classes
+          find src/main/java -name '*.java' > /tmp/portal-morph-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d portal-morph-test-classes @/tmp/portal-morph-sources.txt
+          javac -encoding UTF-8 -cp 'portal-morph-test-classes:lib/*' -d portal-morph-test-classes             src/test/java/com/rs2/model/player/CastleWarsPortalMorphChecks.java             src/test/java/ArmourAppearanceChecks.java
+          java -cp 'portal-morph-test-classes:lib/*' com.rs2.model.player.CastleWarsPortalMorphChecks
+          java -cp 'portal-morph-test-classes:lib/*' ArmourAppearanceChecks
