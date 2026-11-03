@@ -1876,6 +1876,53 @@ public final class CastleWarsEngineeringManager {
     }
 
     public static boolean placeBarricade(Player player) {
+        return player != null && placeBarricadeAt(player, player.getPosition().copy());
+    }
+
+    /**
+     * Defender bots put barricades on an adjacent, preselected defensive tile.
+     * A bot must NOT stand inside its newly blocking object: doing so can trap
+     * it, and letting all defenders use their current tile causes pile-ups.
+     * Human placement continues to use the player's own tile as before.
+     */
+    public static boolean placeBarricadeForBot(Player bot, Position target) {
+        if (bot == null || !bot.isBot || target == null
+                || bot.getPosition().getPlane() != target.getPlane()
+                || GameUtil.getDistance(bot.getPosition(), target) != 1) {
+            return false;
+        }
+        CastleWarsManager.Team team = CastleWarsManager.getGameTeam(bot);
+        return isDefensiveBarricadeSiteAvailable(team, target)
+                && placeBarricadeAt(bot, target.copy());
+    }
+
+    /**
+     * Only use free tiles inside the defender's own castle. Never block an
+     * occupied tile, a doorway, an existing barricade or a staircase/object.
+     */
+    public static boolean isDefensiveBarricadeSiteAvailable(
+            CastleWarsManager.Team team, Position position) {
+        if (team == null || position == null
+                || (position.getPlane() != 0 && position.getPlane() != 3)
+                || CastleWarsManager.getCastleTeamAtPosition(position) != team
+                || CastleWarsManager.isGroundCastleExteriorTransitionTile(position)
+                || (WalkingCollisionMap.getTileFlags(position.getX(), position.getY(),
+                        position.getPlane()) & 0x1280100) != 0
+                || barricades.containsKey(key(position))
+                || ObjectManager.findDynamicObjectAt(
+                        position.getX(), position.getY(), position.getPlane()) != null) {
+            return false;
+        }
+        for (Player occupant : CastleWarsManager.getGamePlayersView()) {
+            if (occupant != null && !occupant.isDead()
+                    && position.equals(occupant.getPosition())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean placeBarricadeAt(Player player, Position position) {
         CastleWarsManager.Team team = CastleWarsManager.getGameTeam(player);
         if (team == null || player.getInventoryManager().getItemAmount(BARRICADE_ITEM_ID) <= 0) {
             return false;
@@ -1885,7 +1932,6 @@ public final class CastleWarsEngineeringManager {
             return false;
         }
 
-        Position position = player.getPosition().copy();
         String key = key(position);
         if (barricades.containsKey(key) || ObjectManager.findDynamicObjectAt(
                 position.getX(), position.getY(), position.getPlane()) != null) {
