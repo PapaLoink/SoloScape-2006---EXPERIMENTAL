@@ -845,11 +845,17 @@ extends TickTask {
             this.stop();
             return;
         }
+        // The Castle Wars entrance is permanently open after its first use.
+        // Ignore later clicks without replaying the opening sound.
+        boolean lobbyDoorAlreadyOpen = DoubleDoorHandler.isCastleWarsLobbyEntranceLockedOpen(
+                this.objectId, this.objectX, this.objectY, this.objectPlane);
         if (DoubleDoorHandler.handleDoubleDoor(this.objectId, this.objectX, this.objectY, this.objectPlane)) {
             if (GameplayTrace.enabled()) {
                 GameplayTrace.log("first-object double-door handled seq=" + this.actionSequence + " player=" + GameplayTrace.describe(this.player) + " objectId=" + this.objectId + " object=" + this.objectX + "," + this.objectY + "," + this.objectPlane);
             }
-            this.player.getPacketSender().sendSoundEffect(318, 1, 0);
+            if (!lobbyDoorAlreadyOpen) {
+                this.player.getPacketSender().sendSoundEffect(318, 1, 0);
+            }
             this.stop();
             return;
         }
