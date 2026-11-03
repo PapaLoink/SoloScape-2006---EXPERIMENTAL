@@ -341,6 +341,11 @@ public final class CastleWarsBotAi {
         }
 
         Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, castleTeam);
+        // Ground-castle routing uses a dedicated pathfinder, not walk().
+        // Check it too so a barricade at the door cannot trap flag runners.
+        if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)) {
+            return;
+        }
         CastleWarsManager.routeBotThroughGroundCastle(bot, castleTeam, false);
         if (!near(bot, exterior, 0)) {
             state.repathDelay = 0;
@@ -382,6 +387,9 @@ public final class CastleWarsBotAi {
         }
 
         Position inside = CastleWarsManager.getBotMainDoorInteriorPosition(bot, castleTeam);
+        if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, inside)) {
+            return;
+        }
         CastleWarsManager.routeBotThroughGroundCastle(bot, castleTeam, true);
         if (!near(bot, inside, 0)) {
             state.repathDelay = 0;
@@ -647,10 +655,14 @@ public final class CastleWarsBotAi {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle != null && botCastle != targetCastle) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
+            Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, botCastle);
+            return CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle == null && targetCastle != null) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
+            Position interior = CastleWarsManager.getBotMainDoorInteriorPosition(bot, targetCastle);
+            return CastleWarsBotBarricadeAi.handleBlockedRoute(bot, interior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
         }
         if (botPlane < targetPlane && botCastle != null && botCastle == targetCastle) {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, true);
@@ -860,10 +872,14 @@ public final class CastleWarsBotAi {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle != null && botCastle != targetCastle) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
+            Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, botCastle);
+            return CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle == null && targetCastle != null) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
+            Position interior = CastleWarsManager.getBotMainDoorInteriorPosition(bot, targetCastle);
+            return CastleWarsBotBarricadeAi.handleBlockedRoute(bot, interior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
         }
         if (botPlane < targetPlane && botCastle != null && botCastle == targetCastle) {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, true);
