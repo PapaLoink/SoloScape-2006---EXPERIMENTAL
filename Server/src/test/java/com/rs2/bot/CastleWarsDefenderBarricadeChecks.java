@@ -3,17 +3,14 @@ package com.rs2.bot;
 import com.rs2.model.Position;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
-import com.rs2.model.player.Player;
 import com.rs2.model.objects.ObjectDefinition;
-import com.rs2.util.path.WalkingCollisionMap;
+import com.rs2.model.player.Player;
 import com.rs2.util.GameUtil;
+import com.rs2.util.path.WalkingCollisionMap;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Verify dedicated defenders have non-overlapping, strategically ordered
- * barricade posts that don't seal main-gate lanes, stairways or flag stands.
- */
+/** Verify tactical Castle Wars bot barricade decisions with actual 443 clipping. */
 public final class CastleWarsDefenderBarricadeChecks {
     private CastleWarsDefenderBarricadeChecks() {
     }
@@ -21,77 +18,113 @@ public final class CastleWarsDefenderBarricadeChecks {
     public static void main(String[] args) throws Exception {
         ObjectDefinition.loadRevision443();
         WalkingCollisionMap.loadCollisionMaps();
-        check(CastleWarsManager.Team.SARADOMIN, new Position(2429, 3074, 3),
-                new Position(2426, 3088, 0), new Position(2427, 3088, 0));
-        check(CastleWarsManager.Team.ZAMORAK, new Position(2370, 3133, 3),
-                new Position(2372, 3119, 0), new Position(2373, 3119, 0));
+        checkTeam(CastleWarsManager.Team.SARADOMIN,
+                new Position(2426, 3081, 0),
+                new Position(2427, 3078, 3),
+                new Position(2429, 3074, 3),
+                new Position(2426, 3088, 0),
+                new Position(2423, 3081, 0),
+                new Position(2429, 3081, 0));
+        checkTeam(CastleWarsManager.Team.ZAMORAK,
+                new Position(2373, 3126, 0),
+                new Position(2372, 3130, 3),
+                new Position(2370, 3133, 3),
+                new Position(2372, 3119, 0),
+                new Position(2370, 3127, 0),
+                new Position(2377, 3127, 0));
 
-        // With only a few players, wall guards must not consume every bot:
-        // teams need both a dedicated defender and a flag runner.
         require(CastleWarsBotRoleAi.wallGuardCapacity(2) == 0,
-                "A two-bot team must reserve both its defender and flag runner");
+                "Two bots must include a defender and a flag runner");
         require(CastleWarsBotRoleAi.wallGuardCapacity(4) == 2,
-                "A four-bot team must not use all ranged players as wall guards");
+                "Small teams must reserve defence and attack roles");
         require(CastleWarsBotRoleAi.wallGuardCapacity(8) == 4,
-                "Larger teams can retain their four wall specialists");
+                "Large teams retain four wall specialists");
         require(CastleWarsBotRoleAi.specialistCapacity(2) == 1,
-                "Two remaining bots need one defender and one flag runner");
-        require(CastleWarsBotRoleAi.specialistCapacity(4) == 3,
-                "Four remaining bots should retain an attacking flag runner");
+                "Reserve a non-wall flag runner");
+        require(CastleWarsBotRoleAi.chooseDefenderBarricadeSite(
+                null, 0, 0, new Position(2426, 3081, 0), null, null) == null,
+                "Unassigned bots must not place Castle Wars barricades");
+        require(CastleWarsBotRoleAi.chooseDefenderBarricadeSite(
+                CastleWarsManager.Team.SARADOMIN, 2, 0,
+                new Position(2426, 3081, 0), null, null) == null,
+                "Only two defenders have assigned defensive posts");
 
-        require(CastleWarsBotRoleAi.getDefenderBarricadeSites(null, 0).length == 0,
-                "A defender without a team must not place barricades");
-        require(CastleWarsBotRoleAi.getDefenderBarricadeSites(
-                CastleWarsManager.Team.SARADOMIN, 2).length == 0,
-                "Only the two assigned defenders should get the planned posts");
-
-        // Normal players still use the usual on-self barricade placement API.
-        // The adjacent-target API is deliberately reserved for bots.
         Player human = new Player(null);
         require(!CastleWarsEngineeringManager.placeBarricadeForBot(
                 human, new Position(2425, 3085, 0)),
-                "Human players must not be allowed remote barricade placement");
-
-        System.out.println("Castle Wars defender strategic barricade checks passed");
+                "Humans must not remotely place barricades");
+        System.out.println("Castle Wars adaptive defender barricade checks passed");
         System.exit(0);
     }
 
-    private static void check(CastleWarsManager.Team team, Position flag,
-                              Position firstDoor, Position secondDoor) {
-        Set<String> all = new HashSet<String>();
-        for (int defender = 0; defender < 2; defender++) {
-            Position[] sites = CastleWarsBotRoleAi.getDefenderBarricadeSites(team, defender);
-            require(sites.length == 3, "Each defender needs two ground posts and one flag post");
-            for (int index = 0; index < sites.length; index++) {
-                Position site = sites[index];
-                require(site.getPlane() == (index < 2 ? 0 : 3),
-                        "Barricades must cover entrance before upper flag room");
-                require(CastleWarsManager.getCastleTeamAtPosition(site) == team,
-                        "Defender's barricade must stay within its team's castle");
-                require(!CastleWarsManager.isGroundCastleExteriorTransitionTile(site),
-                        "Do not block the castle's main-door transition");
-                require(!site.equals(firstDoor) && !site.equals(secondDoor),
-                        "Do not place a barricade on the main gate");
-                require((WalkingCollisionMap.getTileFlags(
-                        site.getX(), site.getY(), site.getPlane()) & 0x1280100) == 0,
-                        "Barricade location is blocked by map scenery: " + keyOf(site));
-                require(!site.equals(flag), "Do not place a barricade on the flag");
-                if (index == 2) {
-                    require(GameUtil.getDistance(site, flag) >= 2,
-                            "Keep space for players to steal or return the flag");
-                } else {
-                    require(GameUtil.getDistance(site, firstDoor) >= 2
-                                    && GameUtil.getDistance(site, firstDoor) <= 8,
-                            "Ground posts must defend the gate but leave its approach open");
-                }
-                String key = keyOf(site);
-                require(all.add(key), "Defenders must not compete for the same tile: " + key);
-            }
+    private static void checkTeam(CastleWarsManager.Team team,
+            Position ground, Position upper, Position flag,
+            Position gate, Position leftThreat, Position rightThreat) {
+        Set<String> used = new HashSet<String>();
+        // Defender 0: one ground gate flank and two different upstairs
+        // flag-approach lines. Defender 1: gate and inner ground choke.
+        Position a = choose(team, 0, 0, ground, null, used);
+        Position b = choose(team, 1, 0, ground, null, used);
+        Position c = choose(team, 1, 1, ground, null, used);
+        Position d = choose(team, 0, 1, upper, null, used);
+        Position e = choose(team, 0, 2, upper, null, used);
+
+        for (Position post : new Position[]{a, b, c, d, e}) {
+            require(CastleWarsManager.getCastleTeamAtPosition(post) == team,
+                    "Barricades must defend their own castle");
+            require(!CastleWarsEngineeringManager.isProtectedCastlePassage(team, post),
+                    "Barricade must never block a gate, stairway, or flag interaction");
+            require((WalkingCollisionMap.getTileFlags(
+                    post.getX(), post.getY(), post.getPlane()) & 0x1280100) == 0,
+                    "Barricade chosen on clipped tile " + key(post));
+            require(!post.equals(gate) && !post.equals(flag),
+                    "Do not block the large door or the flag stand");
         }
-        require(all.size() == 6, "Expected six distinct defensive barricade locations");
+        require(a.getPlane() == 0 && b.getPlane() == 0 && c.getPlane() == 0
+                        && d.getPlane() == 3 && e.getPlane() == 3,
+                "Defenders must spread barricades across the ground and flag floors");
+        require(GameUtil.getDistance(c, gate) > GameUtil.getDistance(a, gate),
+                "Inner fallback barricade must not cluster at the main door");
+        require(GameUtil.getDistance(d, flag) >= 3
+                        && GameUtil.getDistance(e, flag) >= 3,
+                "Keep usable space around the flag");
+        require(used.size() == 5, "Defenders should use five distinct initial sites");
+
+        // A threatened flank should move the next barricade in that direction,
+        // not blindly choose the same hard-coded tile every round.
+        Position left = choose(team, 1, 3, ground, leftThreat, null);
+        Position right = choose(team, 1, 3, ground, rightThreat, null);
+        require(GameUtil.getDistance(left, leftThreat)
+                        <= GameUtil.getDistance(right, leftThreat),
+                "Left-flank attack must influence placement");
+        require(GameUtil.getDistance(right, rightThreat)
+                        <= GameUtil.getDistance(left, rightThreat),
+                "Right-flank attack must influence placement");
+        require(!left.equals(right),
+                "Defenders should adapt when attackers switch the entrance flank");
+
+        Position upperReinforcement = choose(team, 0, 3, upper,
+                new Position(flag.getX() - (team == CastleWarsManager.Team.SARADOMIN ? 2 : -2),
+                        flag.getY() + (team == CastleWarsManager.Team.SARADOMIN ? 4 : -4),
+                        3), null);
+        require(upperReinforcement.getPlane() == 3,
+                "Flag-room attackers should trigger an upstairs reinforcement");
+        System.out.println(team + " placed initial positions " + used
+                + "; enemy pressure moves post " + key(left) + " to " + key(right));
     }
 
-    private static String keyOf(Position site) {
+    private static Position choose(CastleWarsManager.Team team, int defender,
+            int stage, Position bot, Position enemy, Set<String> consumed) {
+        Position result = CastleWarsBotRoleAi.chooseDefenderBarricadeSite(
+                team, defender, stage, bot, enemy, consumed);
+        require(result != null, "No usable " + team + " barricade position for stage " + stage);
+        if (consumed != null) {
+            require(consumed.add(key(result)), "Duplicate barricade position " + key(result));
+        }
+        return result;
+    }
+
+    private static String key(Position site) {
         return site.getX() + ":" + site.getY() + ":" + site.getPlane();
     }
 
