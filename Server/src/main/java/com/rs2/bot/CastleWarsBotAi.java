@@ -28,6 +28,7 @@ public final class CastleWarsBotAi {
 
     public static void clear(BotPlayer bot) {
         states.remove(bot);
+        CastleWarsBotBarricadeAi.clear(bot);
     }
 
     public static void process(BotPlayer bot) {
@@ -238,6 +239,13 @@ public final class CastleWarsBotAi {
             }
             CastleWarsEngineeringManager.giveSupply(bot,
                     CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID, 1);
+            // Flag runners need a reusable tinderbox to burn barricades
+            // that block the enemy castle entrance or the return route.
+            if (bot.getInventoryManager().getItemAmount(
+                    CastleWarsEngineeringManager.TINDERBOX_ITEM_ID) == 0) {
+                CastleWarsEngineeringManager.giveSupply(bot,
+                        CastleWarsEngineeringManager.TINDERBOX_ITEM_ID, 1);
+            }
             if (state.routeVariant == 2) {
                 CastleWarsEngineeringManager.giveSupply(bot,
                         CastleWarsEngineeringManager.CLIMBING_ROPE_ITEM_ID, 1);
@@ -1032,6 +1040,9 @@ public final class CastleWarsBotAi {
         if (near(bot, approach, 0)) {
             return true;
         }
+        if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, approach)) {
+            return false;
+        }
         if (state.repathDelay > 0) {
             --state.repathDelay;
             return false;
@@ -1058,6 +1069,9 @@ public final class CastleWarsBotAi {
             navigationTarget = steppingWaypoint;
         }
 
+        if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, navigationTarget)) {
+            return;
+        }
         if (state.repathDelay > 0) {
             --state.repathDelay;
             return;
