@@ -104,7 +104,8 @@ public final class CastleWarsBotRoleAi {
             return true;
         }
 
-        boolean prioritizeTraversal = isTraversalPhase(state.phase);
+        boolean prioritizeTraversal = isTraversalPhase(state.phase)
+                || (state.role == Role.CATAPULT && state.phase == Phase.CATAPULT_MOVE);
         // Spare defender barricades are deployed against the route enemies
         // ACTUALLY take. Do this before combat AI consumes the same tick.
         if (state.role == Role.DEFENDER && !prioritizeTraversal
@@ -197,6 +198,9 @@ public final class CastleWarsBotRoleAi {
                 break;
             case CATAPULT_MOVE:
                 processCatapult(bot, state);
+                break;
+            case CATAPULT_RESTOCK:
+                processCatapultRestock(bot, state);
                 break;
             case CATAPULT_ROAM:
                 processCatapultRoam(bot, state);
@@ -1269,17 +1273,22 @@ public final class CastleWarsBotRoleAi {
             }
         }
 
-        if (!CastleWarsEngineeringManager.isBattlementWalkwayTile(
-                bot.getPosition(), state.team)) {
-            state.wallAccessed = false;
-            state.repathDelay = 0;
-            return;
-        }
-
-        Position operatingPosition = state.team == CastleWarsManager.Team.SARADOMIN
-                ? new Position(2415, 3087, 0)
-                : new Position(2382, 3118, 0);
-        if (!near(bot, operatingPosition, 0)) {
+        // Being within operating distance is enough; the old strict
+        // battlement check discarded wall access just before reaching the
+        // catapult, making the bot circle back to the stairs indefinitely.
+        if (!canOperateCatapultFrom(bot.getPosition(), state.team)) {
+            if (!CastleWarsEngineeringManager.isBattlementWalkwayTile(
+                    bot.getPosition(), state.team)) {
+                state.wallAccessed = false;
+                state.repathDelay = 0;
+                return;
+            }
+            Position operatingPosition = findCatapultBotOperatingPosition(
+                    state.team, bot.getPosition());
+            if (operatingPosition == null) {
+                state.repathDelay = 0;
+                return;
+            }
             walk(bot, state, operatingPosition);
             return;
         }
@@ -1294,7 +1303,10 @@ public final class CastleWarsBotRoleAi {
 
         if (bot.getInventoryManager().getItemAmount(
                 CastleWarsEngineeringManager.ROCK_ITEM_ID) <= 0) {
-            state.phase = Phase.CATAPULT_ROAM;
+            // Stay at the siege weapon and fetch replacement rocks.
+            // The old behaviour abandoned the cannon for aimless field roaming.
+            state.phase = Phase.CATAPULT_RESTOCK;
+            state.repathDelay = 0;
             return;
         }
 
@@ -1304,6 +1316,81 @@ public final class CastleWarsBotRoleAi {
             }
             state.delayTicks = 4;
         }
+    }
+
+    /**
+     * The bot only fires after taking the wall stairs, but may stand on any
+     * legal tile within three squares of its catapult. An exact hard-coded
+     * tile is unreliable when scenery or other players obstruct it.
+     */
+    static boolean canOperateCatapultFrom(Position position, CastleWarsManager.Team team) {
+        if (position == null || team == null || position.getPlane() != 0
+                || CastleWarsManager.getCastleTeamAtPosition(position) != team
+                || (WalkingCollisionMap.getTileFlags(
+                        position.getX(), position.getY(), 0) & 0x1280100) != 0) {
+            return false;
+        }
+        Position catapult = team == CastleWarsManager.Team.SARADOMIN
+                ? CastleWarsEngineeringManager.SARADOMIN_CATAPULT
+                : CastleWarsEngineeringManager.ZAMORAK_CATAPULT;
+        return GameUtil.getDistance(position, catapult) <= 3;
+    }
+
+    static Position findCatapultBotOperatingPosition(
+            CastleWarsManager.Team team, Position origin) {
+        if (team == null || origin == null || origin.getPlane() != 0) {
+            return null;
+        }
+        Position catapult = team == CastleWarsManager.Team.SARADOMIN
+                ? CastleWarsEngineeringManager.SARADOMIN_CATAPULT
+                : CastleWarsEngineeringManager.ZAMORAK_CATAPULT;
+        Position preferred = team == CastleWarsManager.Team.SARADOMIN
+                ? new Position(2415, 3087, 0) : new Position(2382, 3118, 0);
+        Position best = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (int x = catapult.getX() - 3; x <= catapult.getX() + 3; ++x) {
+            for (int y = catapult.getY() - 3; y <= catapult.getY() + 3; ++y) {
+                Position candidate = new Position(x, y, 0);
+                if (!canOperateCatapultFrom(candidate, team)
+                        || !CastleWarsEngineeringManager.isBattlementWalkwayTile(
+                                candidate, team)) {
+                    continue;
+                }
+                int score = 5 * GameUtil.getDistance(candidate, preferred)
+                        + GameUtil.getDistance(candidate, origin);
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+        }
+        // A valid nearby tile may not be flagged as battlement because the
+        // 443 wall mesh extends beyond the original battlement-object marker.
+        if (best == null && canOperateCatapultFrom(preferred, team)) {
+            return preferred;
+        }
+        return best;
+    }
+
+    private static void processCatapultRestock(BotPlayer bot, RoleState state) {
+        Position supply = state.team == CastleWarsManager.Team.SARADOMIN
+                ? new Position(2426, 3075, 0) : new Position(2373, 3131, 0);
+        if (bot.getPosition().getPlane() != 0) {
+            state.phase = Phase.DESCEND_HOME;
+            state.repathDelay = 0;
+            return;
+        }
+        if (!near(bot, supply, 4)) {
+            // Return to the ground-floor supply area after depleting ammo.
+            walk(bot, state, supply);
+            return;
+        }
+        makeInventorySpace(bot, 7);
+        CastleWarsEngineeringManager.giveSupply(bot,
+                CastleWarsEngineeringManager.ROCK_ITEM_ID, 6);
+        state.wallAccessed = false;
+        state.phase = Phase.CATAPULT_MOVE;
+        state.repathDelay = 0;
     }
 
     private static void processCatapultRoam(BotPlayer bot, RoleState state) {
@@ -2291,7 +2378,12 @@ public final class CastleWarsBotRoleAi {
             return 0;
         }
         int defenderReserve = teamBotCount >= 5 ? 2 : 1;
-        return Math.min(4, Math.max(0, teamBotCount - defenderReserve - 1));
+        int catapultReserve = teamBotCount >= 5 ? 1 : 0;
+        // Leave two defenders, a catapult operator, and a flag runner when
+        // at least five bots are present; otherwise all specialists can be
+        // consumed by ranged wall guards and the catapult is never used.
+        return Math.min(4, Math.max(0, teamBotCount
+                - defenderReserve - catapultReserve - 1));
     }
 
     /** Leave at least one non-wall bot to run the enemy flag. */
@@ -2456,6 +2548,7 @@ public final class CastleWarsBotRoleAi {
         GROUND_DEFENCE,
         WALL_GUARD_PATROL,
         CATAPULT_MOVE,
+        CATAPULT_RESTOCK,
         CATAPULT_ROAM,
         MID_RUSH,
         MID_FIGHT,
