@@ -2246,8 +2246,22 @@ public final class CastleWarsManager {
             return false;
         }
 
+        // A passable main door requires no separate interaction pause or
+        // forced two-tile approach. Let the pathfinder cross it immediately.
+        if (CastleWarsEngineeringManager.isMainDoorPassable(castleTeam)) {
+            Position destination = enteringCastle ? interior : exterior;
+            if (samePosition(player.getPosition(), destination)) {
+                return true;
+            }
+            player.getMovementQueue().setRunning(true);
+            PathFinder.findPath(player, destination.getX(),
+                    destination.getY(), false, 0, 0);
+            player.getMovementQueue().clearMovementActions();
+            return true;
+        }
+
         if (enteringCastle) {
-            // Always reach the exact battlefield-side interaction tile first.
+            // Closed doors still require the exact interaction tile first.
             // Previously this was two/three tiles from the actual closed door,
             // so tryHandleMainDoorForBot() could never satisfy distance == 1
             // and melee bots simply stood in front of the castle.
