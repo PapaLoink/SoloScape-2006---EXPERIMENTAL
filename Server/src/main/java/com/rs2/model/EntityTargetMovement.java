@@ -255,15 +255,29 @@ public class EntityTargetMovement {
                 // Only permit adjacent melee if both ground tiles genuinely
                 // connect. Projectile-clipping near Castle Wars battlements
                 // may mark a reachable enemy as being on the wall.
-                return value2 <= 1 && entity.isWithinReach(entity2, value2)
-                        && GameUtil.hasClearPath(entity.getPosition(),
-                                entity2.getPosition(), true);
+                return entity.isWithinReach(entity2, value2)
+                        && hasWalkableAdjacentCastleMeleeReach(
+                                entity.getPosition(), entity2.getPosition(), value2);
             }
             return CastleWarsManager.canAttackAcrossCastleLevels(
                     (Player)entity, (Player)entity2, combatType)
                     && entity.isWithinReach(entity2, value2);
         }
         return canReachTarget(entity, entity2, value2);
+    }
+
+    /**
+     * A castle wall is never a melee shortcut. Only directly connected,
+     * orthogonally adjacent tiles can exchange hits, even if scenery marks
+     * one combatant as standing on a battlement.
+     */
+    public static boolean hasWalkableAdjacentCastleMeleeReach(
+            Position from, Position to, int attackRange) {
+        return from != null && to != null && attackRange == 1
+                && from.getPlane() == to.getPlane()
+                && Math.abs(from.getX() - to.getX())
+                    + Math.abs(from.getY() - to.getY()) == 1
+                && GameUtil.hasClearPath(from, to, true);
     }
 
     public void moveAwayFromOverlap() {
