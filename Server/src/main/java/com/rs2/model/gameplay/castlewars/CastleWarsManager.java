@@ -3500,7 +3500,7 @@ public final class CastleWarsManager {
         player.getPacketSender().sendInterfaceText(getFlagStatusText(Team.ZAMORAK), GAME_ZAMORAK_FLAG_TEXT_ID);
         player.getPacketSender().sendInterfaceText(getFlagStatusText(Team.SARADOMIN), GAME_SARADOMIN_FLAG_TEXT_ID);
         Team team = gamePlayers.get(player);
-        updateEnemyFlagHint(player, team);
+        updateOwnFlagHint(player, team);
         if (team != null) {
             Team enemyTeam = team == Team.SARADOMIN ? Team.ZAMORAK : Team.SARADOMIN;
             int ownConfigId = team == Team.ZAMORAK ? 377 : 378;
@@ -3554,19 +3554,22 @@ public final class CastleWarsManager {
         return config;
     }
 
-    private static void updateEnemyFlagHint(Player player, Team team) {
-        if (team == null) {
+    /**
+     * An in-game player needs an arrow to RECOVER their own stolen flag.
+     * The enemy flag being stolen does not trigger a defensive hint.
+     */
+    static Team getFlagHintTargetTeam(Team playerTeam) {
+        return playerTeam != null && !isFlagAtBase(playerTeam) ? playerTeam : null;
+    }
+
+    private static void updateOwnFlagHint(Player player, Team team) {
+        Team missingOwnFlag = getFlagHintTargetTeam(team);
+        if (missingOwnFlag == null) {
             clearFlagHint(player);
             return;
         }
 
-        Team enemyFlagTeam = team == Team.SARADOMIN ? Team.ZAMORAK : Team.SARADOMIN;
-        if (isFlagAtBase(enemyFlagTeam)) {
-            clearFlagHint(player);
-            return;
-        }
-
-        Position target = getFlagHintPosition(enemyFlagTeam);
+        Position target = getFlagHintPosition(missingOwnFlag);
         if (target == null) {
             clearFlagHint(player);
             return;
