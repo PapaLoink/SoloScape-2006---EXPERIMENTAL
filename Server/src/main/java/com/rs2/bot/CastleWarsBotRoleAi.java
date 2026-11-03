@@ -2063,8 +2063,32 @@ public final class CastleWarsBotRoleAi {
         return firstMeleeAttacker != null ? firstMeleeAttacker : firstAttacker;
     }
 
+    /**
+     * Don't allocate every ranged bot to the walls when teams are small.
+     * Reserve one flag runner and (when possible) two castle defenders.
+     */
+    static int wallGuardCapacity(int teamBotCount) {
+        if (teamBotCount < 3) {
+            return 0;
+        }
+        int defenderReserve = teamBotCount >= 5 ? 2 : 1;
+        return Math.min(4, Math.max(0, teamBotCount - defenderReserve - 1));
+    }
+
+    /** Leave at least one non-wall bot to run the enemy flag. */
+    static int specialistCapacity(int nonWallBotCount) {
+        return Math.min(9, Math.max(0, nonWallBotCount - 1));
+    }
+
     private static long[] getWallGuardNameHashes(CastleWarsManager.Team team) {
-        long[] hashes = createEmptyHashSelection(4);
+        int botCount = 0;
+        for (Player player : CastleWarsManager.getGamePlayersView()) {
+            if (player instanceof BotPlayer
+                    && CastleWarsManager.getGameTeam(player) == team) {
+                ++botCount;
+            }
+        }
+        long[] hashes = createEmptyHashSelection(wallGuardCapacity(botCount));
         for (Player player : CastleWarsManager.getGamePlayersView()) {
             if (!(player instanceof BotPlayer)
                     || CastleWarsManager.getGameTeam(player) != team) {
@@ -2081,7 +2105,15 @@ public final class CastleWarsBotRoleAi {
 
     private static long[] getSpecialistNonWallNameHashes(
             CastleWarsManager.Team team, long[] wallGuardHashes) {
-        long[] hashes = createEmptyHashSelection(9);
+        int nonWallBotCount = 0;
+        for (Player player : CastleWarsManager.getGamePlayersView()) {
+            if (player instanceof BotPlayer
+                    && CastleWarsManager.getGameTeam(player) == team
+                    && !containsNameHash(wallGuardHashes, player.getNameHash())) {
+                ++nonWallBotCount;
+            }
+        }
+        long[] hashes = createEmptyHashSelection(specialistCapacity(nonWallBotCount));
         for (Player player : CastleWarsManager.getGamePlayersView()) {
             if (!(player instanceof BotPlayer)
                     || CastleWarsManager.getGameTeam(player) != team) {
