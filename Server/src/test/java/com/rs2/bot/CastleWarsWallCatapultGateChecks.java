@@ -9,6 +9,9 @@ import com.rs2.util.GameUtil;
 import com.rs2.util.path.WalkingCollisionMap;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Castle Wars wall-side melee, gate throughput and catapult AI regressions. */
 public final class CastleWarsWallCatapultGateChecks {
@@ -54,6 +57,9 @@ public final class CastleWarsWallCatapultGateChecks {
                 "Selected post outside the allowed cannon firing range");
         require(GameUtil.getDistance(operating, catapult) <= 3,
                 "Catapult needs a post within three tiles of its object");
+        require(hasWalkableRoute(wallLanding, operating, team, catapult),
+                "Catapult post is not reachable from its wall-access stairway: "
+                        + operating);
         require(operating.getPlane() == 0
                         && CastleWarsManager.getCastleTeamAtPosition(operating) == team,
                 "Catapult bots must remain inside their own castle's upper walkway");
@@ -135,6 +141,47 @@ public final class CastleWarsWallCatapultGateChecks {
         } finally {
             lookup.set(null, old);
         }
+    }
+
+    /** Check real one-tile movement, including turns around wall scenery. */
+    private static boolean hasWalkableRoute(Position from, Position to,
+            CastleWarsManager.Team team, Position catapult) {
+        ArrayDeque<Position> pending = new ArrayDeque<Position>();
+        Set<String> visited = new HashSet<String>();
+        pending.add(from);
+        while (!pending.isEmpty()) {
+            Position current = pending.poll();
+            String key = current.getX() + ":" + current.getY();
+            if (!visited.add(key)) {
+                continue;
+            }
+            if (current.equals(to)) {
+                return true;
+            }
+            for (int dx = -1; dx <= 1; ++dx) {
+                for (int dy = -1; dy <= 1; ++dy) {
+                    if (dx == 0 && dy == 0) {
+                        continue;
+                    }
+                    int x = current.getX() + dx;
+                    int y = current.getY() + dy;
+                    Position next = new Position(x, y, 0);
+                    if (Math.abs(x - catapult.getX()) > 15
+                            || Math.abs(y - catapult.getY()) > 20
+                            || CastleWarsManager.getCastleTeamAtPosition(next) != team
+                            || (WalkingCollisionMap.getTileFlags(x, y, 0) & 0x1280100) != 0
+                            || !WalkingCollisionMap.canTravelBetween(
+                                    current.getX(), current.getY(), x, y, 0, 1, 1)) {
+                        continue;
+                    }
+                    String nextKey = x + ":" + y;
+                    if (!visited.contains(nextKey)) {
+                        pending.add(next);
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static void require(boolean condition, String message) {
