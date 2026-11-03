@@ -1380,8 +1380,24 @@ public final class CastleWarsBotRoleAi {
             state.repathDelay = 0;
             return;
         }
+        if (state.wallAccessed) {
+            Position wallLanding = state.team == CastleWarsManager.Team.SARADOMIN
+                    ? new Position(2417, 3077, 0)
+                    : new Position(2382, 3130, 0);
+            if (!near(bot, wallLanding, 0)) {
+                walk(bot, state, wallLanding);
+                return;
+            }
+            if (CastleWarsManager.moveBotThroughGroundCastleStairs(
+                    bot, state.team, false)) {
+                state.wallAccessed = false;
+                state.repathDelay = 0;
+            }
+            return;
+        }
         if (!near(bot, supply, 4)) {
-            // Return to the ground-floor supply area after depleting ammo.
+            // Return through the actual wall-access stairs to the supply room,
+            // rather than trying to path through the battlement collision.
             walk(bot, state, supply);
             return;
         }
