@@ -1906,8 +1906,8 @@ public final class CastleWarsEngineeringManager {
     }
 
     public static boolean isBarricadeObject(int objectId) {
-        return objectId == BARRICADE_OBJECT_SARADOMIN
-                || objectId == BARRICADE_OBJECT_ZAMORAK;
+        return objectId == BARRICADE_OBJECT_UNLIT
+                || objectId == BARRICADE_OBJECT_BURNING;
     }
 
     public static int getBarricadeHitpoints(Position position) {
