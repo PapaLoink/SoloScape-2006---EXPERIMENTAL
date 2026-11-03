@@ -1491,12 +1491,18 @@ public final class CastleWarsEngineeringManager {
         if (!CastleWarsManager.isInGame(player) || amount <= 0) {
             return 0;
         }
-        if (itemId != ROCK_ITEM_ID && itemId != EXPLOSIVE_POTION_ID
-                && itemId != BARRICADE_ITEM_ID && itemId != CLIMBING_ROPE_ITEM_ID
-                && itemId != BRONZE_PICKAXE_ID && itemId != TOOLKIT_ID) {
+        if (!isGameSupplyItemId(itemId)) {
             return 0;
         }
         return issueSupply(player, itemId, amount);
+    }
+
+    /** Tinderboxes are issued to attackers but remain reusable after ignition. */
+    static boolean isGameSupplyItemId(int itemId) {
+        return itemId == ROCK_ITEM_ID || itemId == EXPLOSIVE_POTION_ID
+                || itemId == BARRICADE_ITEM_ID || itemId == CLIMBING_ROPE_ITEM_ID
+                || itemId == BRONZE_PICKAXE_ID || itemId == TOOLKIT_ID
+                || itemId == TINDERBOX_ITEM_ID;
     }
 
     public static void cleanupPlayerSupplies(Player player) {
@@ -2040,6 +2046,60 @@ public final class CastleWarsEngineeringManager {
             }
         }
         return best == null ? null : best.copy();
+    }
+
+    /**
+     * Select an actual barricade in the bot's next two tiles of travel.
+     * Look at both teams' barricades: even a friendly barricade can trap a
+     * returning flag runner. Avoid igniting nearby but irrelevant structures.
+     */
+    public static Position findBarricadeBlockingBotRoute(Player bot, Position destination) {
+        if (bot == null || !bot.isBot || destination == null
+                || bot.getPosition().getPlane() != destination.getPlane()
+                || CastleWarsManager.getGameTeam(bot) == null) {
+            return null;
+        }
+        Position best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (BarricadeState barricade : barricades.values()) {
+            if (barricade.position.getPlane() != bot.getPosition().getPlane()
+                    || !isBarricadeAheadOnRoute(bot.getPosition(), destination,
+                            barricade.position)) {
+                continue;
+            }
+            int distance = GameUtil.getDistance(bot.getPosition(), barricade.position);
+            if (distance <= 2 && distance < bestDistance) {
+                bestDistance = distance;
+                best = barricade.position;
+            }
+        }
+        return best == null ? null : best.copy();
+    }
+
+    /** A two-tile-wide corridor in front of the bot towards its current goal. */
+    public static boolean isBarricadeAheadOnRoute(
+            Position from, Position destination, Position barricade) {
+        if (from == null || destination == null || barricade == null
+                || from.getPlane() != destination.getPlane()
+                || from.getPlane() != barricade.getPlane()) {
+            return false;
+        }
+        long dx = destination.getX() - from.getX();
+        long dy = destination.getY() - from.getY();
+        long bx = barricade.getX() - from.getX();
+        long by = barricade.getY() - from.getY();
+        long lengthSquared = dx * dx + dy * dy;
+        long forward = dx * bx + dy * by;
+        if (lengthSquared == 0 || forward <= 0 || forward > lengthSquared) {
+            return false;
+        }
+        long side = dx * by - dy * bx;
+        return side * side <= 4L * lengthSquared;
+    }
+
+    public static boolean isBarricadeBurning(Position position) {
+        BarricadeState barricade = position == null ? null : barricades.get(key(position));
+        return barricade != null && barricade.burning;
     }
 
     public static boolean igniteBarricade(Player player, Position position) {
