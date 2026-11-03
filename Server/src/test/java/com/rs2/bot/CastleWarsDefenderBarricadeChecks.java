@@ -4,6 +4,8 @@ import com.rs2.model.Position;
 import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.player.Player;
+import com.rs2.model.objects.ObjectDefinition;
+import com.rs2.util.path.WalkingCollisionMap;
 import com.rs2.util.GameUtil;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,7 +18,9 @@ public final class CastleWarsDefenderBarricadeChecks {
     private CastleWarsDefenderBarricadeChecks() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        ObjectDefinition.loadRevision443();
+        WalkingCollisionMap.loadCollisionMaps();
         check(CastleWarsManager.Team.SARADOMIN, new Position(2429, 3074, 3),
                 new Position(2426, 3088, 0), new Position(2427, 3088, 0));
         check(CastleWarsManager.Team.ZAMORAK, new Position(2370, 3133, 3),
@@ -68,6 +72,9 @@ public final class CastleWarsDefenderBarricadeChecks {
                         "Do not block the castle's main-door transition");
                 require(!site.equals(firstDoor) && !site.equals(secondDoor),
                         "Do not place a barricade on the main gate");
+                require((WalkingCollisionMap.getTileFlags(
+                        site.getX(), site.getY(), site.getPlane()) & 0x1280100) == 0,
+                        "Barricade location is blocked by map scenery: " + keyOf(site));
                 require(!site.equals(flag), "Do not place a barricade on the flag");
                 if (index == 2) {
                     require(GameUtil.getDistance(site, flag) >= 2,
@@ -77,11 +84,15 @@ public final class CastleWarsDefenderBarricadeChecks {
                                     && GameUtil.getDistance(site, firstDoor) <= 8,
                             "Ground posts must defend the gate but leave its approach open");
                 }
-                String key = site.getX() + ":" + site.getY() + ":" + site.getPlane();
+                String key = keyOf(site);
                 require(all.add(key), "Defenders must not compete for the same tile: " + key);
             }
         }
         require(all.size() == 6, "Expected six distinct defensive barricade locations");
+    }
+
+    private static String keyOf(Position site) {
+        return site.getX() + ":" + site.getY() + ":" + site.getPlane();
     }
 
     private static void require(boolean condition, String message) {
