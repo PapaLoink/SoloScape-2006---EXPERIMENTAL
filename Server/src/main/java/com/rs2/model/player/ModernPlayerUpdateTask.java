@@ -270,7 +270,14 @@ public final class ModernPlayerUpdateTask {
         appearance.writeByte(player.getGender());
         appearance.writeByte(player.getSkullIcon());
         appearance.writeByte(player.getPrayerHeadIcon());
-        ItemStack head = visibleEquipment(player, 0);
+        if (player.npcTransformationId > 0) {
+            // Revision 443 expects the 0xFFFF equipment sentinel followed by
+            // the NPC definition ID. This is used by Castle Wars god portals,
+            // monkey greegrees and other player transformations.
+            appearance.writeShort(65535);
+            appearance.writeShort(player.npcTransformationId);
+        } else {
+            ItemStack head = visibleEquipment(player, 0);
         ItemStack body = visibleEquipment(player, 4);
         int headType = head == null ? 0 : head.getDefinition().getEquipmentAppearanceType();
         int bodyType = body == null ? 0 : body.getDefinition().getEquipmentAppearanceType();
@@ -287,8 +294,9 @@ public final class ModernPlayerUpdateTask {
         writeAppearancePart(appearance, null, headType == 2 || headType == 3 ? 0 : 256 + parts[3]);
         writeAppearancePart(appearance, visibleEquipment(player, 9), 256 + parts[4]);
         writeAppearancePart(appearance, visibleEquipment(player, 10), 256 + parts[5]);
-        writeAppearancePart(appearance, null,
-                player.getGender() == 0 && headType != 2 && headType != 4 ? 256 + parts[6] : 0);
+            writeAppearancePart(appearance, null,
+                    player.getGender() == 0 && headType != 2 && headType != 4 ? 256 + parts[6] : 0);
+        }
         for (int color : player.getAppearanceColors()) {
             appearance.writeByte(color);
         }
