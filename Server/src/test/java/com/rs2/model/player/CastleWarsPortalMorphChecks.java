@@ -4,6 +4,7 @@ import com.rs2.ServerSettings;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.item.ItemDefinition;
 import com.rs2.model.item.ItemStack;
+import com.rs2.model.npc.NpcDefinition;
 import com.rs2.model.quest.QuestDefinition;
 import com.rs2.net.packet.PacketWriter;
 import com.rs2.net.packet.PacketBuffer;
@@ -26,6 +27,7 @@ public final class CastleWarsPortalMorphChecks {
         ServerSettings.clientBuild = 443;
         QuestDefinition.loadDefinitions();
         ItemDefinition.loadDefinitions();
+        NpcDefinition.loadDefinitions();
 
         Player player = new Player(null);
         require(ItemDefinition.forId(ZAMORAK_STAFF).getEquipmentSlot() == 3,
@@ -95,12 +97,25 @@ public final class CastleWarsPortalMorphChecks {
         for (int color : player.getAppearanceColors()) {
             require((buffer.get() & 255) == color, "Morph shifted appearance colours");
         }
-        // Human animation frames deform these NPC rigs. All seven movement
-        // animation slots must be disabled for sheep, rabbit and imp models.
+        // The seven movement slots must use this NPC's own cached sequences.
+        // All -1s would eliminate stretching but leave a T-pose and sliding.
+        int[] expected = ModernPlayerUpdateTask.castleWarsMorphMovementAnimations(expectedNpc);
+        require(expected.length == 7, "NPC morph should supply seven movement slots");
+        NpcDefinition npc = NpcDefinition.forId(expectedNpc);
+        require(npc.getIdleAnimationId() >= 0,
+                "NPC " + expectedNpc + " has no cache idle animation");
+        require(npc.getWalkAnimationId() >= 0,
+                "NPC " + expectedNpc + " has no cache walking animation");
+        require(expected[0] == npc.getIdleAnimationId()
+                        && expected[2] == npc.getWalkAnimationId()
+                        && expected[6] == npc.getWalkAnimationId(),
+                "NPC " + expectedNpc + " uses wrong idle/walk/run slots");
         for (int index = 0; index < 7; ++index) {
-            require((buffer.getShort() & 65535) == 65535,
-                    "Human animation leaked into NPC morph slot " + index);
+            require((buffer.getShort() & 65535) == (expected[index] & 65535),
+                    "NPC " + expectedNpc + " wrong movement animation slot " + index);
         }
+        System.out.println("Morph " + expectedNpc + " idle=" + expected[0]
+                + " walk=" + expected[2] + " sequences=" + java.util.Arrays.toString(expected));
         require(buffer.getLong() == player.getNameHash(), "Morph shifted username");
         require((buffer.get() & 255) == player.getCombatLevel(),
                 "Morph shifted combat level");
