@@ -638,7 +638,11 @@ public final class CastleWarsBotRoleAi {
                     if (distance < 2) {
                         continue;
                     }
-                    score += Math.abs(distance - 4) * 8;
+                    // The threatened X lane takes priority over a bot's
+                    // normal left/right post preference. Otherwise an enemy
+                    // switching gate flanks still gets the same barricade.
+                    score += Math.abs(x - enemyFocus.getX()) * 16
+                            + Math.abs(distance - 3) * 4;
                 }
                 if (score < bestScore) {
                     bestScore = score;
