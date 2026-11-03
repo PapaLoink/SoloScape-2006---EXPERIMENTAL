@@ -2132,6 +2132,17 @@ public final class CastleWarsManager {
         if (firstOnWall == secondOnWall) {
             return false;
         }
+        // A tile near battlement scenery can be flagged as a wall walkway
+        // even when both fighters are standing on the same accessible floor.
+        // Don't classify walk-connected adjacent opponents as being on
+        // different levels: that incorrectly disables ordinary melee PvP.
+        if (GameUtil.getDistance(firstPosition, secondPosition) <= 2
+                && WalkingCollisionMap.canTravelBetween(
+                        firstPosition.getX(), firstPosition.getY(),
+                        secondPosition.getX(), secondPosition.getY(),
+                        firstPosition.getPlane(), 1, 1)) {
+            return false;
+        }
 
         Position wallPosition = firstOnWall ? firstPosition : secondPosition;
         Position battlefieldPosition = firstOnWall ? secondPosition : firstPosition;
