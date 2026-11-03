@@ -998,6 +998,11 @@ public final class CastleWarsEngineeringManager {
         return getMainDoorState(team).mode == MainDoorMode.BROKEN;
     }
 
+    /** An open or destroyed door can be traversed without stopping to interact. */
+    public static boolean isMainDoorPassable(CastleWarsManager.Team team) {
+        return team != null && getMainDoorState(team).mode != MainDoorMode.CLOSED;
+    }
+
     public static boolean isSideDoorOpen(CastleWarsManager.Team team) {
         return (team == CastleWarsManager.Team.SARADOMIN
                 ? saradominSideDoor : zamorakSideDoor).open;
