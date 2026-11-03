@@ -7,7 +7,11 @@ import com.rs2.model.objects.ObjectDefinition;
 import com.rs2.model.player.Player;
 import com.rs2.util.GameUtil;
 import com.rs2.util.path.WalkingCollisionMap;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /** Verify tactical Castle Wars bot barricade decisions with actual 443 clipping. */
@@ -32,6 +36,14 @@ public final class CastleWarsDefenderBarricadeChecks {
                 new Position(2372, 3119, 0),
                 new Position(2370, 3127, 0),
                 new Position(2377, 3127, 0));
+
+        // Simulate the first barricade existing before choosing the next.
+        // This catches layouts that appear safe in isolation but leave no
+        // valid spots once the first defender blocks a corridor.
+        verifySequentialPlacement(CastleWarsManager.Team.SARADOMIN,
+                new Position(2426, 3081, 0), new Position(2427, 3078, 3));
+        verifySequentialPlacement(CastleWarsManager.Team.ZAMORAK,
+                new Position(2373, 3126, 0), new Position(2372, 3130, 3));
 
         require(CastleWarsBotRoleAi.wallGuardCapacity(2) == 0,
                 "Two bots must include a defender and a flag runner");
@@ -111,6 +123,57 @@ public final class CastleWarsDefenderBarricadeChecks {
                 "Flag-room attackers should trigger an upstairs reinforcement");
         System.out.println(team + " placed initial positions " + used
                 + "; enemy pressure moves post " + key(left) + " to " + key(right));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void verifySequentialPlacement(CastleWarsManager.Team team,
+            Position ground, Position upper) throws Exception {
+        Field activeField = CastleWarsEngineeringManager.class.getDeclaredField("barricades");
+        activeField.setAccessible(true);
+        Map<String, Object> active = (Map<String, Object>) activeField.get(null);
+        Map<String, Object> snapshot = new HashMap<String, Object>(active);
+        Class<?> stateType = Class.forName(
+                "com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager$BarricadeState");
+        Constructor<?> constructor = stateType.getDeclaredConstructor(
+                CastleWarsManager.Team.class, Position.class, int.class);
+        constructor.setAccessible(true);
+        try {
+            Position[] positions = new Position[]{
+                choose(team, 0, 0, ground, null, null),
+                null, null, null, null
+            };
+            addFakeBarricade(active, constructor, team, positions[0]);
+            positions[1] = choose(team, 1, 0, ground, null, null);
+            addFakeBarricade(active, constructor, team, positions[1]);
+            positions[2] = choose(team, 1, 1, ground, null, null);
+            addFakeBarricade(active, constructor, team, positions[2]);
+            positions[3] = choose(team, 0, 1, upper, null, null);
+            addFakeBarricade(active, constructor, team, positions[3]);
+            positions[4] = choose(team, 0, 2, upper, null, null);
+            addFakeBarricade(active, constructor, team, positions[4]);
+
+            for (int a = 0; a < positions.length; a++) {
+                for (int b = a + 1; b < positions.length; b++) {
+                    if (positions[a].getPlane() == positions[b].getPlane()) {
+                        require(GameUtil.getDistance(positions[a], positions[b]) >= 3,
+                                "Defenders must not cluster barricades: "
+                                        + key(positions[a]) + " and " + key(positions[b]));
+                    }
+                }
+            }
+            System.out.println(team + " simulated deployed posts: "
+                    + java.util.Arrays.toString(positions));
+        } finally {
+            active.clear();
+            active.putAll(snapshot);
+        }
+    }
+
+    private static void addFakeBarricade(Map<String, Object> active,
+            Constructor<?> constructor, CastleWarsManager.Team team,
+            Position position) throws Exception {
+        active.put(key(position), constructor.newInstance(team, position,
+                CastleWarsEngineeringManager.BARRICADE_OBJECT_UNLIT));
     }
 
     private static Position choose(CastleWarsManager.Team team, int defender,
