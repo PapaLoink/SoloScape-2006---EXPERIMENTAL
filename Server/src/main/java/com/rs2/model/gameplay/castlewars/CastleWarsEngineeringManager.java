@@ -46,8 +46,10 @@ public final class CastleWarsEngineeringManager {
     public static final int EMPTY_BUCKET_ITEM_ID = 1925;
     public static final int BUCKET_OF_WATER_ITEM_ID = 1929;
 
-    public static final int BARRICADE_OBJECT_SARADOMIN = 4421;
-    public static final int BARRICADE_OBJECT_ZAMORAK = 4422;
+    // 4421 is the unlit Castle Wars barricade; 4422 plays the burning animation.
+    // These are visual states, not Saradomin and Zamorak team-specific objects.
+    public static final int BARRICADE_OBJECT_UNLIT = 4421;
+    public static final int BARRICADE_OBJECT_BURNING = 4422;
     public static final int COLLAPSED_ROCK_OBJECT_ID = 4437;
     public static final int PARTIAL_ROCK_OBJECT_ID = 4438;
     public static final int CLEARED_ROCK_OBJECT_ID = 4439;
@@ -301,7 +303,7 @@ public final class CastleWarsEngineeringManager {
             return attachClimbingRope(player, objectId, objectX, objectY, objectPlane);
         }
 
-        if (objectId == BARRICADE_OBJECT_SARADOMIN || objectId == BARRICADE_OBJECT_ZAMORAK) {
+        if (objectId == BARRICADE_OBJECT_UNLIT || objectId == BARRICADE_OBJECT_BURNING) {
             Position barricadePosition = new Position(objectX, objectY, objectPlane);
             if (itemId == TINDERBOX_ITEM_ID) {
                 return igniteBarricade(player, barricadePosition);
@@ -330,7 +332,7 @@ public final class CastleWarsEngineeringManager {
         }
 
         if (itemId == EXPLOSIVE_POTION_ID) {
-            if (objectId == BARRICADE_OBJECT_SARADOMIN || objectId == BARRICADE_OBJECT_ZAMORAK) {
+            if (objectId == BARRICADE_OBJECT_UNLIT || objectId == BARRICADE_OBJECT_BURNING) {
                 return destroyBarricadeWithExplosive(player,
                         new Position(objectX, objectY, objectPlane));
             }
@@ -1890,8 +1892,7 @@ public final class CastleWarsEngineeringManager {
             return false;
         }
 
-        int objectId = team == CastleWarsManager.Team.SARADOMIN
-                ? BARRICADE_OBJECT_SARADOMIN : BARRICADE_OBJECT_ZAMORAK;
+        int objectId = barricadeVisualObjectId(false);
         player.getInventoryManager().removeItem(new ItemStack(BARRICADE_ITEM_ID, 1));
         new DynamicObject(objectId, position.getX(), position.getY(), position.getPlane(),
                 0, 10, ServerSettings.placeholderObjectId, 99999, false);
@@ -2010,6 +2011,7 @@ public final class CastleWarsEngineeringManager {
 
         state.burning = true;
         state.burnExpiresAt = System.currentTimeMillis() + BARRICADE_BURN_DURATION_MILLIS;
+        updateBarricadeAppearance(state);
         player.getUpdateState().setAnimation(733);
         player.getPacketSender().sendGameMessage("You set fire to the barricade.");
         return true;
@@ -2034,6 +2036,7 @@ public final class CastleWarsEngineeringManager {
         player.getInventoryManager().addItem(new ItemStack(EMPTY_BUCKET_ITEM_ID, 1));
         state.burning = false;
         state.burnExpiresAt = 0L;
+        updateBarricadeAppearance(state);
         player.getPacketSender().sendGameMessage("You extinguish the barricade.");
         return true;
     }
@@ -2070,6 +2073,23 @@ public final class CastleWarsEngineeringManager {
         for (BarricadeState state : burnedOut) {
             removeBarricade(state);
         }
+    }
+
+    // The client cache animates object 4422 with flames. Keep all freshly
+    // placed barricades on object 4421 regardless of the placing team.
+    static int barricadeVisualObjectId(boolean burning) {
+        return burning ? BARRICADE_OBJECT_BURNING : BARRICADE_OBJECT_UNLIT;
+    }
+
+    private static void updateBarricadeAppearance(BarricadeState state) {
+        Position position = state.position;
+        // Placement supplies collision explicitly, so swapping the visual object
+        // must not alter the barricade's walking or projectile blocking.
+        ObjectManager.getInstance().removeDynamicObjectAt(
+                position.getX(), position.getY(), position.getPlane(), 10);
+        new DynamicObject(barricadeVisualObjectId(state.burning),
+                position.getX(), position.getY(), position.getPlane(),
+                0, 10, ServerSettings.placeholderObjectId, 99999, false);
     }
 
     public static int getBarricadeCount(CastleWarsManager.Team team) {
