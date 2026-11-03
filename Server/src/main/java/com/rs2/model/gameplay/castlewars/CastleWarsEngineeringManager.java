@@ -1912,6 +1912,7 @@ public final class CastleWarsEngineeringManager {
                 || (position.getPlane() != 0 && position.getPlane() != 3)
                 || CastleWarsManager.getCastleTeamAtPosition(position) != team
                 || CastleWarsManager.isGroundCastleExteriorTransitionTile(position)
+                || isProtectedCastlePassage(team, position)
                 || (WalkingCollisionMap.getTileFlags(position.getX(), position.getY(),
                         position.getPlane()) & 0x1280100) != 0
                 || barricades.containsKey(key(position))
@@ -1922,6 +1923,53 @@ public final class CastleWarsEngineeringManager {
         for (Player occupant : CastleWarsManager.getGamePlayersView()) {
             if (occupant != null && !occupant.isDead()
                     && position.equals(occupant.getPosition())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Never allow bot barricades on the central double-door approach, the
+     * castle's stair access, or the flag's immediate interaction tiles.
+     * Bot placement is intentionally stricter than human placement.
+     */
+    public static boolean isProtectedCastlePassage(CastleWarsManager.Team team,
+                                                    Position position) {
+        if (team == null || position == null) {
+            return false;
+        }
+        int x = position.getX();
+        int y = position.getY();
+        int plane = position.getPlane();
+        if (plane == 0) {
+            return team == CastleWarsManager.Team.SARADOMIN
+                    ? (x >= 2425 && x <= 2428 && y >= 3082)
+                    || (x >= 2418 && x <= 2420 && y >= 3076 && y <= 3079)
+                    : (x >= 2371 && x <= 2374 && y <= 3125)
+                    || (x >= 2379 && x <= 2381 && y >= 3127 && y <= 3130);
+        }
+        if (plane == 3) {
+            Position flag = team == CastleWarsManager.Team.SARADOMIN
+                    ? new Position(2429, 3074, 3) : new Position(2370, 3133, 3);
+            Position stairs = team == CastleWarsManager.Team.SARADOMIN
+                    ? new Position(2425, 3074, 3) : new Position(2374, 3133, 3);
+            return GameUtil.getDistance(position, flag) <= 2
+                    || GameUtil.getDistance(position, stairs) <= 1;
+        }
+        return false;
+    }
+
+    /** Keep independent barricade lines spread out instead of stacking the gate. */
+    public static boolean isDefensiveBarricadeSeparated(
+            CastleWarsManager.Team team, Position position, int minimumDistance) {
+        if (team == null || position == null) {
+            return false;
+        }
+        for (BarricadeState barricade : barricades.values()) {
+            if (barricade.team == team
+                    && barricade.position.getPlane() == position.getPlane()
+                    && GameUtil.getDistance(position, barricade.position) < minimumDistance) {
                 return false;
             }
         }
