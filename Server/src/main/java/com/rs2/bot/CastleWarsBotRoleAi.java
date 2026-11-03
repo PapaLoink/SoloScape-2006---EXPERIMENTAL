@@ -163,6 +163,9 @@ public final class CastleWarsBotRoleAi {
             case GROUND_SUPPLY:
                 processGroundSupply(bot, state);
                 break;
+            case DEFENDER_DEPLOY_GROUND:
+                processDefenderGroundBarricades(bot, state);
+                break;
             case EXIT_HOME:
                 processGroundCastleExit(bot, state);
                 break;
@@ -365,10 +368,10 @@ public final class CastleWarsBotRoleAi {
         if (state.role == Role.UNDERGROUND) {
             state.phase = Phase.UNDERGROUND_DESCEND;
         } else if (state.role == Role.DEFENDER) {
-            // Defender barricades are deployed in the upper flag room.
-            // GROUND_DEFENCE never reaches processDefender(), so bots carried
-            // three barricades all game without placing any.
-            state.phase = Phase.DEFENDER_CLIMB;
+            // Defend the main entrance FIRST, then climb to the flag room.
+            // Previously bots spent the entire game trying the same upper
+            // flag-room tile and often placed no barricades at all.
+            state.phase = Phase.DEFENDER_DEPLOY_GROUND;
             state.repathDelay = 0;
         } else if (state.role == Role.WALL_GUARD) {
             state.phase = Phase.WALL_GUARD_PATROL;
@@ -544,33 +547,115 @@ public final class CastleWarsBotRoleAi {
         return best;
     }
 
-    private static void processDefender(BotPlayer bot, RoleState state) {
-        Position[] spots = state.team == CastleWarsManager.Team.SARADOMIN
+    /**
+     * Choose distinct, fixed defensive posts for each of the two dedicated
+     * defenders on a team. The first two placements cover the entrance flanks
+     * while leaving both main-gate lanes and stairs open for teammates. The
+     * third protects the top-floor flag approach without blocking the stand.
+     */
+    static Position[] getDefenderBarricadeSites(CastleWarsManager.Team team, int defenderIndex) {
+        if (team == null || defenderIndex < 0 || defenderIndex > 1) {
+            return new Position[0];
+        }
+        if (team == CastleWarsManager.Team.SARADOMIN) {
+            return defenderIndex == 0
+                    ? new Position[]{
+                        new Position(2425, 3085, 0),
+                        new Position(2428, 3083, 0),
+                        new Position(2427, 3076, 3)}
+                    : new Position[]{
+                        new Position(2428, 3085, 0),
+                        new Position(2425, 3083, 0),
+                        new Position(2426, 3076, 3)};
+        }
+        return defenderIndex == 0
                 ? new Position[]{
-                    new Position(2427, 3075, 3),
-                    new Position(2428, 3076, 3),
-                    new Position(2426, 3076, 3)}
+                    new Position(2374, 3122, 0),
+                    new Position(2371, 3123, 0),
+                    new Position(2372, 3131, 3)}
                 : new Position[]{
-                    new Position(2372, 3132, 3),
-                    new Position(2371, 3131, 3),
-                    new Position(2373, 3130, 3)};
+                    new Position(2371, 3122, 0),
+                    new Position(2374, 3124, 0),
+                    new Position(2373, 3131, 3)};
+    }
 
-        if (state.barricadesPlaced < spots.length
-                && bot.getInventoryManager().getItemAmount(
-                        CastleWarsEngineeringManager.BARRICADE_ITEM_ID) > 0
-                && CastleWarsEngineeringManager.getBarricadeCount(state.team) < 10) {
-            Position spot = spots[state.barricadesPlaced];
-            if (!near(bot, spot, 0)) {
-                walk(bot, state, spot);
-                return;
-            }
-            if (CastleWarsEngineeringManager.placeBarricade(bot)) {
-                ++state.barricadesPlaced;
+    private static void processDefenderGroundBarricades(BotPlayer bot, RoleState state) {
+        if (bot.getPosition().getPlane() != 0) {
+            state.phase = Phase.DESCEND_HOME;
+            state.repathDelay = 0;
+            return;
+        }
+
+        if (state.barricadesPlaced >= 2) {
+            state.phase = Phase.DEFENDER_CLIMB;
+            state.repathDelay = 0;
+            return;
+        }
+
+        Position[] sites = getDefenderBarricadeSites(state.team, state.defenderIndex);
+        deployDefenderBarricade(bot, state, sites[state.barricadesPlaced]);
+    }
+
+    /**
+     * Returns after scheduling travel or attempting a placement. Missing/blocked
+     * positions are skipped, so another defender's barricade or an unreachable
+     * tile can never stall the entire defensive AI state machine.
+     */
+    private static void deployDefenderBarricade(BotPlayer bot, RoleState state, Position site) {
+        if (bot.getInventoryManager().getItemAmount(
+                CastleWarsEngineeringManager.BARRICADE_ITEM_ID) <= 0
+                || CastleWarsEngineeringManager.getBarricadeCount(state.team) >= 10) {
+            state.barricadesPlaced = 3;
+            state.barricadeLastPosition = null;
+            return;
+        }
+        if (!CastleWarsEngineeringManager.isDefensiveBarricadeSiteAvailable(state.team, site)) {
+            advanceDefenderBarricadeSite(state);
+            return;
+        }
+
+        Position approach = CastleWarsManager.getNearestAdjacentInteractionTile(bot, site);
+        if (approach == null) {
+            advanceDefenderBarricadeSite(state);
+            return;
+        }
+        if (near(bot, approach, 0)) {
+            if (CastleWarsEngineeringManager.placeBarricadeForBot(bot, site)) {
                 CastleWarsBotChat.sayDefence(bot);
                 state.delayTicks = 2;
-                return;
             }
-            ++state.barricadesPlaced;
+            advanceDefenderBarricadeSite(state);
+            return;
+        }
+
+        if (state.barricadeLastPosition != null
+                && state.barricadeLastPosition.equals(bot.getPosition())) {
+            ++state.barricadeStuckTicks;
+        } else {
+            state.barricadeLastPosition = bot.getPosition().copy();
+            state.barricadeStuckTicks = 0;
+        }
+        if (state.barricadeStuckTicks >= 28) {
+            // Do not spend the whole round trying to path through a locked
+            // door or another barricade; deploy at the next defensive post.
+            advanceDefenderBarricadeSite(state);
+            return;
+        }
+        walk(bot, state, approach);
+    }
+
+    private static void advanceDefenderBarricadeSite(RoleState state) {
+        ++state.barricadesPlaced;
+        state.barricadeLastPosition = null;
+        state.barricadeStuckTicks = 0;
+        state.repathDelay = 0;
+    }
+
+    private static void processDefender(BotPlayer bot, RoleState state) {
+        if (state.barricadesPlaced < 3) {
+            Position[] sites = getDefenderBarricadeSites(state.team, state.defenderIndex);
+            deployDefenderBarricade(bot, state, sites[2]);
+            return;
         }
 
         CastleWarsManager.Team ownFlagTeam = state.team;
@@ -1460,6 +1545,7 @@ public final class CastleWarsBotRoleAi {
             case DESCEND_HOME:
             case EXIT_HOME:
             case DEFENDER_CLIMB:
+            case DEFENDER_DEPLOY_GROUND:
             case UNDERGROUND_DESCEND:
             case ENEMY_CLIMB:
             case ENEMY_DESCEND:
@@ -2040,6 +2126,12 @@ public final class CastleWarsBotRoleAi {
         return false;
     }
 
+    private static int getDefenderIndex(BotPlayer bot, CastleWarsManager.Team team) {
+        long[] wallGuards = getWallGuardNameHashes(team);
+        long[] specialistHashes = getSpecialistNonWallNameHashes(team, wallGuards);
+        return specialistHashes.length > 1 && specialistHashes[1] == bot.getNameHash() ? 1 : 0;
+    }
+
     private static Role assignRole(BotPlayer bot, CastleWarsManager.Team team) {
         long[] wallGuardHashes = getWallGuardNameHashes(team);
         if (containsNameHash(wallGuardHashes, bot.getNameHash())) {
@@ -2108,6 +2200,7 @@ public final class CastleWarsBotRoleAi {
         GROUND_SUPPLY,
         EXIT_HOME,
         DEFENDER_CLIMB,
+        DEFENDER_DEPLOY_GROUND,
         DEFEND_FLAG,
         GROUND_DEFENCE,
         WALL_GUARD_PATROL,
@@ -2139,6 +2232,9 @@ public final class CastleWarsBotRoleAi {
         private int undergroundStage;
         private int pendingCollapseRock;
         private int barricadesPlaced;
+        private final int defenderIndex;
+        private Position barricadeLastPosition;
+        private int barricadeStuckTicks;
         private Position defenderPatrolTarget;
         private int defenderPatrolTicks;
         private int defenderPatrolGeneration;
@@ -2156,6 +2252,7 @@ public final class CastleWarsBotRoleAi {
             this.team = team;
             this.primaryCombatStyle = primaryCombatStyle;
             this.role = assignRole(bot, team);
+            this.defenderIndex = this.role == Role.DEFENDER ? getDefenderIndex(bot, team) : 0;
             resetForSpawn();
         }
 
@@ -2172,6 +2269,8 @@ public final class CastleWarsBotRoleAi {
             this.undergroundStage = 0;
             this.pendingCollapseRock = -1;
             this.barricadesPlaced = 0;
+            this.barricadeLastPosition = null;
+            this.barricadeStuckTicks = 0;
             this.defenderPatrolTarget = null;
             this.defenderPatrolTicks = 4 + GameUtil.randomInt(8);
             this.defenderPatrolGeneration = GameUtil.randomInt(16);
