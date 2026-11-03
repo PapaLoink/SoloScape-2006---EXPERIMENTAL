@@ -27,6 +27,7 @@ public final class CastleWarsBotRoleAi {
 
     public static void clear(BotPlayer bot) {
         states.remove(bot);
+        CastleWarsBotBarricadeAi.clear(bot);
         if (saradominDedicatedFlagRunner == bot) {
             saradominDedicatedFlagRunner = null;
         }
@@ -134,7 +135,10 @@ public final class CastleWarsBotRoleAi {
             }
         }
 
-        Position enemyBarricade = CastleWarsEngineeringManager.findNearestEnemyBarricade(bot, 3);
+        // Underground attackers save explosive potions for collapsed rocks.
+        // They use their reusable tinderboxes on barricades obstructing a route.
+        Position enemyBarricade = state.role == Role.UNDERGROUND ? null
+                : CastleWarsEngineeringManager.findNearestEnemyBarricade(bot, 3);
         if (enemyBarricade != null
                 && bot.getInventoryManager().getItemAmount(
                         CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID) > 0) {
@@ -1558,7 +1562,7 @@ public final class CastleWarsBotRoleAi {
     }
 
     private static boolean stockUndergroundSupplies(BotPlayer bot) {
-        makeInventorySpace(bot, 7);
+        makeInventorySpace(bot, 8);
 
         int pickaxes = bot.getInventoryManager().getItemAmount(
                 CastleWarsEngineeringManager.BRONZE_PICKAXE_ID);
@@ -1579,11 +1583,18 @@ public final class CastleWarsBotRoleAi {
             CastleWarsEngineeringManager.giveSupply(bot,
                     CastleWarsEngineeringManager.BARRICADE_ITEM_ID, 1);
         }
+        if (bot.getInventoryManager().getItemAmount(
+                CastleWarsEngineeringManager.TINDERBOX_ITEM_ID) < 1) {
+            CastleWarsEngineeringManager.giveSupply(bot,
+                    CastleWarsEngineeringManager.TINDERBOX_ITEM_ID, 1);
+        }
 
         return bot.getInventoryManager().getItemAmount(
                 CastleWarsEngineeringManager.BRONZE_PICKAXE_ID) >= 1
                 && bot.getInventoryManager().getItemAmount(
-                CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID) >= 4;
+                CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID) >= 4
+                && bot.getInventoryManager().getItemAmount(
+                CastleWarsEngineeringManager.TINDERBOX_ITEM_ID) >= 1;
     }
 
     private static boolean shouldUseBandage(BotPlayer bot) {
@@ -1953,6 +1964,10 @@ public final class CastleWarsBotRoleAi {
         if (near(bot, approach, 0)) {
             return true;
         }
+        if (state.role == Role.UNDERGROUND
+                && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, approach)) {
+            return false;
+        }
         if (state.repathDelay > 0) {
             --state.repathDelay;
             return false;
@@ -1979,6 +1994,10 @@ public final class CastleWarsBotRoleAi {
             navigationTarget = steppingWaypoint;
         }
 
+        if (state.role == Role.UNDERGROUND
+                && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, navigationTarget)) {
+            return;
+        }
         if (state.repathDelay > 0) {
             --state.repathDelay;
             return;
