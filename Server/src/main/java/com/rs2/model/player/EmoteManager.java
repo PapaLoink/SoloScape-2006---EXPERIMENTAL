@@ -1,5 +1,6 @@
 package com.rs2.model.player;
 
+import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.player.Player;
 
 public final class EmoteManager {
@@ -16,6 +17,11 @@ public final class EmoteManager {
         while (index < 31) {
             int[] integerValues2 = integerValues[index];
             if (buttonId == integerValues2[0]) {
+                // Consume only emote buttons. Other interface buttons must
+                // remain usable while waiting in the Castle Wars caves.
+                if (CastleWarsManager.isWaitingRoomGodTransformation(this.player)) {
+                    return true;
+                }
                 int value = integerValues2[1];
                 EmoteManager emoteManager = this;
                 emoteManager.player.getUpdateState().setAnimation(value, 0);
