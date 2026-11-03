@@ -251,6 +251,14 @@ public class EntityTargetMovement {
         if (entity.isPlayer() && entity2.isPlayer()
                 && CastleWarsManager.isCastleWallCrossLevelPair(
                         (Player)entity, (Player)entity2)) {
+            if (combatType == CombatType.MELEE) {
+                // Only permit adjacent melee if both ground tiles genuinely
+                // connect. Projectile-clipping near Castle Wars battlements
+                // may mark a reachable enemy as being on the wall.
+                return value2 <= 1 && entity.isWithinReach(entity2, value2)
+                        && GameUtil.hasClearPath(entity.getPosition(),
+                                entity2.getPosition(), true);
+            }
             return CastleWarsManager.canAttackAcrossCastleLevels(
                     (Player)entity, (Player)entity2, combatType)
                     && entity.isWithinReach(entity2, value2);
