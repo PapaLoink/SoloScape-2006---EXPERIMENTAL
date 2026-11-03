@@ -1,0 +1,29 @@
+name: Verify Castle Wars defender barricades
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotRoleAi.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
+      - 'Server/src/test/java/com/rs2/bot/CastleWarsDefenderBarricadeChecks.java'
+      - '.github/workflows/verify-castlewars-defender-barricades.yml'
+  workflow_dispatch:
+jobs:
+  defender-barricades:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and verify strategic barricade sites
+        working-directory: Server
+        run: |
+          mkdir -p defender-barricade-test-classes
+          find src/main/java -name '*.java' > /tmp/castle-wars-defender-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d defender-barricade-test-classes @/tmp/castle-wars-defender-sources.txt
+          javac -encoding UTF-8 -cp 'defender-barricade-test-classes:lib/*' -d defender-barricade-test-classes src/test/java/com/rs2/bot/CastleWarsDefenderBarricadeChecks.java
+          java -cp 'defender-barricade-test-classes:lib/*' com.rs2.bot.CastleWarsDefenderBarricadeChecks
