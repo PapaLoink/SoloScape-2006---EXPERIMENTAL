@@ -51,6 +51,15 @@ public final class NpcDefinition {
     private int maxHit = 0;
     private int size = 1;
     private int attackDelay = 4;
+    // Revision 443 NPC idle and movement sequences. Keeping these IDs is
+    // essential for rendering player-to-NPC transformations without a T-pose
+    // or incompatible human animations.
+    private int idleAnimationId = -1;
+    private int walkAnimationId = -1;
+    private int turnAnimationId = -1;
+    private int walkBackAnimationId = -1;
+    private int walkLeftAnimationId = -1;
+    private int walkRightAnimationId = -1;
     private int attackAnimationId = 422;
     private int blockAnimationId = 404;
     private int deathAnimationId = 2304;
@@ -578,15 +587,20 @@ public final class NpcDefinition {
     private static void decodeRevision443(NpcDefinition definition, byte[] data)
             throws IOException {
         ConfigReader reader = new ConfigReader(data);
-        int idleAnimationId = -1;
-        int walkAnimationId = -1;
+        definition.idleAnimationId = -1;
+        definition.walkAnimationId = -1;
+        definition.turnAnimationId = -1;
+        definition.walkBackAnimationId = -1;
+        definition.walkLeftAnimationId = -1;
+        definition.walkRightAnimationId = -1;
         while (reader.position() < reader.length()) {
             int opcode = reader.readUnsignedByte();
             if (opcode == 0) {
                 if (reader.position() != reader.length()) {
                     throw new IOException("Trailing bytes in 443 NPC " + definition.id);
                 }
-                int modelAnimationId = idleAnimationId >= 0 ? idleAnimationId : walkAnimationId;
+                int modelAnimationId = definition.idleAnimationId >= 0
+                        ? definition.idleAnimationId : definition.walkAnimationId;
                 definition.attackAnimationId = NpcAnimations.resolve(
                         modelAnimationId, definition.attackAnimationId, 0);
                 definition.blockAnimationId = NpcAnimations.resolve(
@@ -606,15 +620,22 @@ public final class NpcDefinition {
                 definition.size = reader.readUnsignedByte();
                 if (definition.id == 1431 || definition.id == 1432) definition.size = 1;
             } else if (opcode == 13) {
-                idleAnimationId = reader.readUnsignedShort();
+                definition.idleAnimationId = normaliseSequence(reader.readUnsignedShort());
             } else if (opcode == 14) {
-                walkAnimationId = reader.readUnsignedShort();
+                definition.walkAnimationId = normaliseSequence(reader.readUnsignedShort());
+            } else if (opcode == 15) {
+                definition.turnAnimationId = normaliseSequence(reader.readUnsignedShort());
+            } else if (opcode == 16) {
+                // Auxiliary turn sequence; unused by player-morph movement.
+                reader.readUnsignedShort();
             } else if (opcode == 90 || opcode == 91
                     || opcode == 92 || opcode == 97 || opcode == 98 || opcode == 103) {
                 reader.readUnsignedShort();
             } else if (opcode == 17) {
-                walkAnimationId = reader.readUnsignedShort();
-                reader.skip(6);
+                definition.walkAnimationId = normaliseSequence(reader.readUnsignedShort());
+                definition.walkBackAnimationId = normaliseSequence(reader.readUnsignedShort());
+                definition.walkLeftAnimationId = normaliseSequence(reader.readUnsignedShort());
+                definition.walkRightAnimationId = normaliseSequence(reader.readUnsignedShort());
             } else if (opcode >= 30 && opcode < 35) {
                 String action = reader.readString();
                 if (!"hidden".equalsIgnoreCase(action)) {
@@ -658,6 +679,35 @@ public final class NpcDefinition {
             }
         }
         throw new IOException("Unterminated 443 NPC " + definition.id);
+    }
+
+    private static int normaliseSequence(int sequenceId) {
+        return sequenceId == 65535 ? -1 : sequenceId;
+    }
+
+    /** NPC-specific movement sequences used for Castle Wars player morphs. */
+    public int getIdleAnimationId() {
+        return idleAnimationId;
+    }
+
+    public int getWalkAnimationId() {
+        return walkAnimationId;
+    }
+
+    public int getTurnAnimationId() {
+        return turnAnimationId;
+    }
+
+    public int getWalkBackAnimationId() {
+        return walkBackAnimationId;
+    }
+
+    public int getWalkLeftAnimationId() {
+        return walkLeftAnimationId;
+    }
+
+    public int getWalkRightAnimationId() {
+        return walkRightAnimationId;
     }
 
     public static NpcDefinition forId(int value2) {
