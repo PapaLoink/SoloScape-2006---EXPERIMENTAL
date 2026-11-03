@@ -22,6 +22,19 @@ public final class CastleWarsDefenderBarricadeChecks {
         check(CastleWarsManager.Team.ZAMORAK, new Position(2370, 3133, 3),
                 new Position(2372, 3119, 0), new Position(2373, 3119, 0));
 
+        // With only a few players, wall guards must not consume every bot:
+        // teams need both a dedicated defender and a flag runner.
+        require(CastleWarsBotRoleAi.wallGuardCapacity(2) == 0,
+                "A two-bot team must reserve both its defender and flag runner");
+        require(CastleWarsBotRoleAi.wallGuardCapacity(4) == 2,
+                "A four-bot team must not use all ranged players as wall guards");
+        require(CastleWarsBotRoleAi.wallGuardCapacity(8) == 4,
+                "Larger teams can retain their four wall specialists");
+        require(CastleWarsBotRoleAi.specialistCapacity(2) == 1,
+                "Two remaining bots need one defender and one flag runner");
+        require(CastleWarsBotRoleAi.specialistCapacity(4) == 3,
+                "Four remaining bots should retain an attacking flag runner");
+
         require(CastleWarsBotRoleAi.getDefenderBarricadeSites(null, 0).length == 0,
                 "A defender without a team must not place barricades");
         require(CastleWarsBotRoleAi.getDefenderBarricadeSites(
