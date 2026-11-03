@@ -1,0 +1,33 @@
+name: Verify Castle Wars walls catapults and gates
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/EntityTargetMovement.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotAi.java'
+      - 'Server/src/main/java/com/rs2/bot/CastleWarsBotRoleAi.java'
+      - 'Server/src/test/java/com/rs2/bot/CastleWarsWallCatapultGateChecks.java'
+      - '.github/workflows/verify-castlewars-wall-catapult-gate.yml'
+  workflow_dispatch:
+jobs:
+  castlewars-wall-catapult-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and validate wall melee, gate and cannon
+        working-directory: Server
+        run: |
+          mkdir -p wall-catapult-gate-classes
+          find src/main/java -name '*.java' > /tmp/castle-wars-wall-catapult-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d wall-catapult-gate-classes @/tmp/castle-wars-wall-catapult-sources.txt
+          javac -encoding UTF-8 -cp 'wall-catapult-gate-classes:lib/*' -d wall-catapult-gate-classes src/test/java/com/rs2/bot/CastleWarsWallCatapultGateChecks.java src/test/java/CastleWarsMainDoorInteractionChecks.java
+          java -cp 'wall-catapult-gate-classes:lib/*' com.rs2.bot.CastleWarsWallCatapultGateChecks
+          java -cp 'wall-catapult-gate-classes:lib/*' CastleWarsMainDoorInteractionChecks
