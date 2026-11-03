@@ -12,6 +12,9 @@ import java.util.List;
 
 public final class DoubleDoorHandler {
     private static List doorStates = new ArrayList();
+    // The Castle Wars lobby entrance can only be opened once per world reset.
+    // Keep this latch across games; a server restart resets the static field.
+    private static boolean castleWarsLobbyEntranceOpened;
     private int currentObjectId;
     private int originalObjectId;
     private boolean initiallyOpen;
@@ -24,6 +27,31 @@ public final class DoubleDoorHandler {
     private int originalOrientation;
     private static int[] initiallyOpenObjectIds = new int[]{1520, 1517, 11625, 11624};
     private static int[] wideOffsetObjectIds = new int[]{1551, 1553, 1598, 1599, 2261, 2262, 2438, 2439, 2050, 2051, 3015, 3016, 3198, 3197, 3725, 3726, 7049, 7050, 8810, 8811, 12816, 12817, 12986, 12987};
+
+    // 1516/1519 are the closed lobby entrance leaves; 1517/1520 are
+    // their open models. Constrain this exception to Castle Wars so other
+    // double doors sharing these IDs retain their normal toggle behaviour.
+    public static boolean isCastleWarsLobbyEntranceLeaf(int objectId, int x, int y, int plane) {
+        return plane == 0
+                && x >= 2430 && x <= 2452 && y >= 3078 && y <= 3104
+                && (objectId == 1516 || objectId == 1517
+                || objectId == 1519 || objectId == 1520);
+    }
+
+    public static boolean isCastleWarsLobbyEntranceLockedOpen(
+            int objectId, int x, int y, int plane) {
+        return castleWarsLobbyEntranceOpened
+                && isCastleWarsLobbyEntranceLeaf(objectId, x, y, plane);
+    }
+
+    private static void markCastleWarsLobbyEntranceOpened(DoubleDoorHandler door) {
+        if (!door.initiallyOpen
+                && isCastleWarsLobbyEntranceLeaf(
+                        door.originalObjectId, door.originalX, door.originalY, door.plane)
+                && door.currentObjectId == door.originalObjectId + 1) {
+            castleWarsLobbyEntranceOpened = true;
+        }
+    }
 
     private static DoubleDoorHandler getOrCreateDoubleDoorState(int state, int value22, int value32) {
         Object value;
@@ -58,6 +86,12 @@ public final class DoubleDoorHandler {
         }
         if (value6 == 2882 || value6 == 2883 || value6 == 1589 || value6 == 1590 || value6 == 2155 && value22 == 2592 && value32 == 9490 || value6 == 2154 && value22 == 2593 && value32 == 9490) {
             return false;
+        }
+        // The open lobby doors cannot be closed again until the world restarts.
+        // Consume clicks here rather than allowing a generic door handler to
+        // toggle the open objects back to their original positions.
+        if (isCastleWarsLobbyEntranceLockedOpen(value6, value22, value32, value42)) {
+            return true;
         }
         value5 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32, value42);
         if (value5 == null) {
@@ -330,6 +364,7 @@ public final class DoubleDoorHandler {
         }
         doubleDoorHandler.currentOrientation = newOrientation;
         new DynamicObject(value, value2, value3, value4, newOrientation, 0, ServerSettings.placeholderObjectId, 999999999);
+        markCastleWarsLobbyEntranceOpened(doubleDoorHandler);
     }
 
     private static void toggleSecondaryDoorLeaf(DoubleDoorHandler doubleDoorHandler) {
@@ -447,6 +482,7 @@ public final class DoubleDoorHandler {
         }
         doubleDoorHandler.currentOrientation = index;
         new DynamicObject(value, value2, value3, value4, index, 0, ServerSettings.placeholderObjectId, 999999999);
+        markCastleWarsLobbyEntranceOpened(doubleDoorHandler);
     }
 
     private static boolean isInitiallyOpenObjectId(int objectId) {
