@@ -6,11 +6,35 @@ import com.rs2.net.packet.ByteOrder;
 import com.rs2.net.packet.ByteTransform;
 import com.rs2.net.packet.PacketBuffer;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class PacketWriter
 extends PacketBuffer {
     private ByteBuffer buffer;
     private int lengthPlaceholderPosition = 0;
+
+    /**
+     * Packet construction can happen on multiple threads. ISAAC must be
+     * advanced in the SAME order as the packets are written to each socket,
+     * not when each producer builds its packet. An identity map associates
+     * unfinished headers with their precise ByteBuffer until network enqueue.
+     */
+    private static final Map<ByteBuffer, List<PendingOpcode>> pendingOpcodes =
+            new IdentityHashMap<ByteBuffer, List<PendingOpcode>>();
+    private final List<PendingOpcode> opcodeOffsets = new ArrayList<PendingOpcode>(1);
+
+    private static final class PendingOpcode {
+        final int offset;
+        final IsaacCipher cipher;
+
+        PendingOpcode(int offset, IsaacCipher cipher) {
+            this.offset = offset;
+            this.cipher = cipher;
+        }
+    }
 
     private PacketWriter(int value2) {
         this.buffer = ByteBuffer.allocate(value2);
@@ -52,7 +76,36 @@ extends PacketBuffer {
     }
 
     public final void writeOpcode(IsaacCipher isaacCipher, int opcode) {
-        this.writeByte(opcode + isaacCipher.nextInt());
+        // Delay ISAAC advancement until Player.writePacketBuffer() holds the
+        // player's network-write lock. Otherwise a second thread can enqueue
+        // its packet before this one, producing random T1 protocol errors.
+        this.opcodeOffsets.add(new PendingOpcode(this.buffer.position(), isaacCipher));
+        this.writeByte(opcode);
+    }
+
+    /**
+     * Encrypt headers under the per-player network-write lock. Each packet
+     * gets exactly the next ISAAC value in actual socket transmission order.
+     */
+    public static void finalizeOutboundOpcodes(ByteBuffer packet) {
+        List<PendingOpcode> offsets;
+        synchronized (pendingOpcodes) {
+            offsets = pendingOpcodes.remove(packet);
+        }
+        if (offsets == null) {
+            return; // Login responses and other unciphered raw buffers.
+        }
+        for (PendingOpcode opcode : offsets) {
+            int plaintext = packet.get(opcode.offset) & 0xFF;
+            packet.put(opcode.offset, (byte) (plaintext + opcode.cipher.nextInt()));
+        }
+    }
+
+    /** Release pending metadata when a socket closes before its packet is sent. */
+    public static void discardOutboundOpcodes(ByteBuffer packet) {
+        synchronized (pendingOpcodes) {
+            pendingOpcodes.remove(packet);
+        }
     }
 
     public final void startVariableBytePacket(IsaacCipher isaacCipher, int packetId) {
@@ -288,6 +341,12 @@ extends PacketBuffer {
     }
 
     public final ByteBuffer getBuffer() {
+        if (!this.opcodeOffsets.isEmpty()) {
+            synchronized (pendingOpcodes) {
+                pendingOpcodes.put(this.buffer, new ArrayList<PendingOpcode>(this.opcodeOffsets));
+            }
+            this.opcodeOffsets.clear();
+        }
         return this.buffer;
     }
 
