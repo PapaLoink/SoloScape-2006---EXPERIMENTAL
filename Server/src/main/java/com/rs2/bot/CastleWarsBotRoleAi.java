@@ -393,6 +393,10 @@ public final class CastleWarsBotRoleAi {
 
     private static void processGroundCastleExit(BotPlayer bot, RoleState state) {
         Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, state.team);
+        if (state.role == Role.UNDERGROUND
+                && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)) {
+            return;
+        }
         CastleWarsManager.routeBotThroughGroundCastle(bot, state.team, false);
         if (!near(bot, exterior, 0)) {
             state.repathDelay = 0;
@@ -1676,10 +1680,16 @@ public final class CastleWarsBotRoleAi {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle != null && botCastle != targetCastle) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
+            Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, botCastle);
+            return state.role == Role.UNDERGROUND
+                    && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, botCastle, false);
         }
         if (botPlane == 0 && botCastle == null && targetCastle != null) {
-            return CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
+            Position interior = CastleWarsManager.getBotMainDoorInteriorPosition(bot, targetCastle);
+            return state.role == Role.UNDERGROUND
+                    && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, interior)
+                    || CastleWarsManager.routeBotThroughGroundCastle(bot, targetCastle, true);
         }
         if (botPlane < targetPlane && botCastle != null && botCastle == targetCastle) {
             return CastleWarsManager.routeBotOneCastleLevel(bot, botCastle, true);
