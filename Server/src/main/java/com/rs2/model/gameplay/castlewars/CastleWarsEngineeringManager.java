@@ -1631,6 +1631,7 @@ public final class CastleWarsEngineeringManager {
         player.getMovementQueue().clear();
         player.getUpdateState().setAnimation(828);
         player.moveTo(rope.destination.copy());
+        CastleWarsManager.setPlayerOnBattlements(player, true);
         player.getMovementQueue().clearMovementActions();
         if (!player.isBot) {
             player.getPacketSender().resetCamera();
