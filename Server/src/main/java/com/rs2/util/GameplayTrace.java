@@ -1,6 +1,5 @@
 package com.rs2.util;
 
-import com.rs2.ServerSettings;
 import com.rs2.model.Entity;
 import com.rs2.model.Position;
 import com.rs2.model.npc.Npc;
@@ -12,7 +11,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public final class GameplayTrace {
+    // General launcher Debug Mode is for interactive diagnostics, NOT an
+    // opt-in to high-volume combat/packet traces (especially Castle Wars).
     private static final boolean TRACE_PROPERTY_ENABLED = Boolean.getBoolean("prs.traceGameplay");
+    private static final boolean TRACE_CONSOLE_ENABLED = Boolean.getBoolean("prs.traceConsole");
     private static final String FILTER = System.getProperty("prs.traceFilter", "");
     private static final Object LOCK = new Object();
 
@@ -20,16 +22,18 @@ public final class GameplayTrace {
     }
 
     public static boolean enabled() {
-        // The launcher exposes Debug Mode as a runtime setting. Let it enable
-        // click diagnostics without requiring JVM arguments or a restart.
-        return TRACE_PROPERTY_ENABLED || ServerSettings.debugModeEnabled;
+        // Trace only when explicitly requested. Debug Mode must not implicitly
+        // enable thousands of combat-cycle and packet-dispatch logs per second.
+        return TRACE_PROPERTY_ENABLED;
     }
 
     public static void log(String message) {
         if (!enabled()) {
             return;
         }
-        write(message, ServerSettings.debugModeEnabled);
+        // Explicit gameplay traces still go to qa-output/gameplay-trace.log.
+        // Console output requires a separate explicit switch.
+        write(message, TRACE_CONSOLE_ENABLED);
     }
 
     public static void logInteraction(Player player, String message) {
@@ -37,7 +41,8 @@ public final class GameplayTrace {
         if (!enabled() && !playerDebugEnabled) {
             return;
         }
-        write(message, ServerSettings.debugModeEnabled || playerDebugEnabled);
+        // Keep manual per-player interaction diagnostics working in console.
+        write(message, TRACE_CONSOLE_ENABLED || playerDebugEnabled);
     }
 
     private static void write(String message, boolean printToTerminal) {
