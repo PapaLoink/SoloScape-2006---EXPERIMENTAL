@@ -10,6 +10,8 @@ public final class CastleWarsCatapultWidgetCacheChecks {
             throw new AssertionError("Missing native 443 catapult group 54");
         }
         System.out.println("Catapult group 54 (" + group.size() + " children)");
+        // Keep an explicit bounds dump: the target marker may be a layered widget.
+        System.out.println("Inspecting coordinate digits and map-marker layering");
         for (Map.Entry<Integer, Interfaces.Component> entry : group.entrySet()) {
             Interfaces.Component c = entry.getValue();
             StringBuilder strings = new StringBuilder();
