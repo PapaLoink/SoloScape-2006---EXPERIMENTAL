@@ -1,4 +1,6 @@
 import com.rs2.cache.js5.Interfaces;
+import com.rs2.cache.js5.Js5CacheStore;
+import java.io.File;
 import java.util.Map;
 
 /** Inspect the stock revision-443 Castle Wars catapult aiming interface. */
@@ -10,6 +12,16 @@ public final class CastleWarsCatapultWidgetCacheChecks {
             throw new AssertionError("Missing native 443 catapult group 54");
         }
         System.out.println("Catapult group 54 (" + group.size() + " children)");
+        // All ten glyphs must actually be present in the native model archive.
+        try (Js5CacheStore cache = new Js5CacheStore(new File("cache"))) {
+            for (int digit = 0; digit <= 9; digit++) {
+                int modelId = 4863 + digit;
+                Map<Integer, byte[]> model = cache.readFiles(7, modelId);
+                if (model.isEmpty())
+                    throw new AssertionError("Missing native numeral model " + modelId);
+                System.out.println("Native catapult numeral " + digit + " model=" + modelId);
+            }
+        }
         // Keep an explicit bounds dump: the target marker may be a layered widget.
         System.out.println("Inspecting coordinate digits and map-marker layering");
         for (Map.Entry<Integer, Interfaces.Component> entry : group.entrySet()) {
