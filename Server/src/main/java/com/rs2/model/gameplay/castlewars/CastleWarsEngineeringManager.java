@@ -1871,7 +1871,26 @@ public final class CastleWarsEngineeringManager {
                 }
             }
         }
-        return false;
+        // Some revision-443 Castle Wars map variants do not index the wall
+        // scenery as named battlement objects. In those maps the walkable wall
+        // rim must still count for ranged/magic targeting and guard patrols.
+        // Keep this fallback confined to the two arena-facing wall stretches
+        // of each castle, not the entire castle or its ground-floor rooms.
+        return isKnownCastleWarsBattlementRim(position, team);
+    }
+
+    private static boolean isKnownCastleWarsBattlementRim(Position position,
+                                                           CastleWarsManager.Team team) {
+        int x = position.getX();
+        int y = position.getY();
+        if (team == CastleWarsManager.Team.SARADOMIN) {
+            // West wall (rope landing 2417,3077) and north wall (catapult).
+            return (x >= 2415 && x <= 2419 && y >= 3074 && y <= 3088)
+                    || (x >= 2415 && x <= 2425 && y >= 3084 && y <= 3088);
+        }
+        // East wall (rope landing 2382,3130) and south wall (catapult).
+        return (x >= 2380 && x <= 2384 && y >= 3118 && y <= 3133)
+                || (x >= 2376 && x <= 2384 && y >= 3118 && y <= 3122);
     }
 
     public static Position findNearestClimbableBattlement(Player player,
