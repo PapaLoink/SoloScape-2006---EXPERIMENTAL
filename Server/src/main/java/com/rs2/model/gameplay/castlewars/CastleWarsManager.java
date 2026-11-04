@@ -1,5 +1,6 @@
 package com.rs2.model.gameplay.castlewars;
 
+import com.rs2.ServerSettings;
 import com.rs2.bot.combat.BotCombatHelper;
 import com.rs2.model.Position;
 import com.rs2.model.EntityTargetMovement;
@@ -262,6 +263,11 @@ public final class CastleWarsManager {
     private static final int GAME_ZAMORAK_SCORE_TEXT_ID = 11345;
     private static final int GAME_SARADOMIN_SCORE_TEXT_ID = 11346;
     private static final int GAME_TIMER_TEXT_ID = 11353;
+    // Native revision-443 HUD 59:8 is at (442,318), 68x11. Move only this
+    // countdown text up to y=23, alongside the top score row. Keep its native
+    // right-hand x=442 position and preserve the layout on legacy 377.
+    static final int GAME_TIMER_443_OFFSET_X = 0;
+    static final int GAME_TIMER_443_OFFSET_Y = 23 - 318;
     private static final int GAME_ZAMORAK_FLAG_TEXT_ID = 11349;
     private static final int GAME_SARADOMIN_FLAG_TEXT_ID = 11350;
     private static final int GAME_MAIN_GATE_TEXT_ID = 11352;
@@ -3518,6 +3524,12 @@ public final class CastleWarsManager {
 
     private static void updateGameInterface(Player player, long now) {
         player.getPacketSender().showWalkableInterface(GAME_INTERFACE_ID);
+        if (ServerSettings.clientBuild == 443) {
+            // Reapply after the native walkable HUD is displayed (including
+            // match start, reconnect, and any subsequent HUD refresh).
+            player.getPacketSender().sendInterfacePosition(
+                    GAME_TIMER_TEXT_ID, GAME_TIMER_443_OFFSET_X, GAME_TIMER_443_OFFSET_Y);
+        }
         player.getPacketSender().sendConfig(380, countdownMinutes(Math.max(0L, gameEndMillis - now)));
         player.getPacketSender().sendInterfaceText("Zamorak = " + zamorakScore, GAME_ZAMORAK_SCORE_TEXT_ID);
         player.getPacketSender().sendInterfaceText(saradominScore + " = Saradomin", GAME_SARADOMIN_SCORE_TEXT_ID);
