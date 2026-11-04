@@ -1,6 +1,10 @@
 import com.rs2.model.Position;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.player.Player;
+import com.rs2.model.objects.LoadedWorldObject;
+import com.rs2.model.objects.ObjectDefinition;
+import com.rs2.model.objects.WorldObjectRegionIndex;
+import com.rs2.util.path.WalkingCollisionMap;
 import java.lang.reflect.Field;
 import java.util.Map;
 
@@ -8,6 +12,20 @@ import java.util.Map;
 public final class CastleWarsEnergyBarrierReturnChecks {
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
+        ObjectDefinition.loadRevision443();
+        WalkingCollisionMap.loadCollisionMaps();
+        for (LoadedWorldObject loaded : (java.util.Collection<LoadedWorldObject>)
+                WorldObjectRegionIndex.getOrCreateRegionBucket(new Position(2426, 3080, 1))
+                        .getLoadedObjects()) {
+            int id = loaded.getWorldObject().getObjectId();
+            if (id == CastleWarsManager.SARADOMIN_ENERGY_BARRIER_ID
+                    || id == CastleWarsManager.ZAMORAK_ENERGY_BARRIER_ID) {
+                System.out.println("CASTLE_WARS_BARRIER_MAP id=" + id
+                        + " position=" + loaded.getPosition()
+                        + " type=" + loaded.getType()
+                        + " orientation=" + loaded.getOrientation());
+            }
+        }
         Field field = CastleWarsManager.class.getDeclaredField("gamePlayers");
         field.setAccessible(true);
         Map<Player, CastleWarsManager.Team> teams =
