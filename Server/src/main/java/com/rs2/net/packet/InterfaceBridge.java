@@ -87,6 +87,8 @@ public final class InterfaceBridge {
         mappings.put(197, 380);   // Wilderness level overlay
         mappings.put(201, 389);   // duel-area overlay
         mappings.put(4535, 24);   // Barrows overlay
+        mappings.put(837, 49);   // Native 443 two-page book: Castle Wars manual
+        mappings.put(11333, 55); // Native Castle Wars seasonal wins scoreboard
         mappings.put(11169, 54); // Native revision-443 Castle Wars catapult controls
         mappings.put(6673, 57);  // Castle Wars waiting room overlay
         mappings.put(11344, 59); // Castle Wars in-game status overlay
@@ -148,6 +150,28 @@ public final class InterfaceBridge {
         put(mappings, 19707, 54, 149); // Y ones overlay to clear
         // Child 161 is the red X (model 4856); 159/160 are fixed site icons.
         put(mappings, 19708, 54, 161); // Movable aiming crosshair
+
+        // Castle Wars manual: native group 49 has 22 text lines, a book
+        // heading, page numbers, and fully interactive prev/next/close buttons.
+        put(mappings, 903, 49, 38);       // book title
+        putRange(mappings, 843, 49, 87, 22); // left lines 1..11, right 12..22
+        put(mappings, 14165, 49, 109);    // left page number
+        put(mappings, 14166, 49, 110);    // right page number
+        put(mappings, 839, 49, 83);       // previous page
+        put(mappings, 841, 49, 85);       // next page
+        put(mappings, 10162, 49, 112);    // book close
+
+        // Seasonal Castle Wars scoreboard: native group 55 (chatbox panel).
+        put(mappings, 11334, 55, 0);     // title
+        put(mappings, 11335, 55, 1);     // Saradomin seasonal victories
+        put(mappings, 11336, 55, 2);     // Zamorak seasonal victories
+        put(mappings, 19730, 55, 10);    // native scoreboard close
+
+        // In the Castle Wars vacancy dialogue, place native decorative sword
+        // sprites (228:6/7) immediately beside the long title. Restore their
+        // default offsets when that dialogue closes.
+        put(mappings, 19731, 228, 6);    // vacancy title left sword
+        put(mappings, 19732, 228, 7);    // vacancy title right sword
 
         // Native Castle Wars HUD (group 59): stock text components.
         // Score and flag icons are driven by varps 377/378 instead.
