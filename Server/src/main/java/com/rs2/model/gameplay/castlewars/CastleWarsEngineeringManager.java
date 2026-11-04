@@ -499,7 +499,7 @@ public final class CastleWarsEngineeringManager {
         if (buttonId == CATAPULT_FIRE_BUTTON_ID) {
             // Top arrows control the vertical axis; bottom arrows control
             // the horizontal axis. Use the same mapping as the red X.
-            Position selectedTarget = resolveCatapultAimTarget(team, aim.y, aim.x);
+            Position selectedTarget = resolvePlayerCatapultAimTarget(aim);
             Position impactTarget = scatterCatapultTarget(selectedTarget);
             if (!fireCatapultAt(player, impactTarget)) {
                 if (player.getInventoryManager().getItemAmount(ROCK_ITEM_ID) <= 0) {
@@ -556,12 +556,26 @@ public final class CastleWarsEngineeringManager {
             // At 00,00 the X remains beside the player's own catapult.
             player.getPacketSender().sendInterfacePosition(
                     CATAPULT_443_TARGET_CROSS,
-                    catapultMarkerOffsetX(aim.team, aim.y),
-                    catapultMarkerOffsetY(aim.team, aim.x));
+                    catapultAimCrossOffsetX(aim),
+                    catapultAimCrossOffsetY(aim));
             return;
         }
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.x), CATAPULT_AIM_X_TEXT_ID);
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.y), CATAPULT_AIM_Y_TEXT_ID);
+    }
+
+    // Isolate the axis mapping so the map preview and impact physics cannot
+    // silently diverge when the catapult controls are changed again.
+    private static int catapultAimCrossOffsetX(CatapultAim aim) {
+        return catapultMarkerOffsetX(aim.team, aim.y);
+    }
+
+    private static int catapultAimCrossOffsetY(CatapultAim aim) {
+        return catapultMarkerOffsetY(aim.team, aim.x);
+    }
+
+    private static Position resolvePlayerCatapultAimTarget(CatapultAim aim) {
+        return resolveCatapultAimTarget(aim.team, aim.y, aim.x);
     }
 
     private static int catapultMarkerOffsetX(CastleWarsManager.Team team, int aimX) {
