@@ -6,6 +6,8 @@ on:
       - 'Server/src/main/java/com/rs2/net/packet/InterfaceBridge.java'
       - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
       - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/test/java/CastleWarsHudPositionChecks.java'
       - 'Server/src/main/java/com/rs2/net/packet/handler/InterfaceActionPacketHandler.java'
       - 'Server/src/test/java/CastleWarsCatapult443Checks.java'
       - 'Server/src/test/java/CastleWarsCatapultWidgetCacheChecks.java'
@@ -18,6 +20,8 @@ on:
       - 'Server/src/main/java/com/rs2/net/packet/InterfaceBridge.java'
       - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
       - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/test/java/CastleWarsHudPositionChecks.java'
       - 'Server/src/main/java/com/rs2/net/packet/handler/InterfaceActionPacketHandler.java'
       - 'Server/src/test/java/CastleWarsCatapult443Checks.java'
       - 'Server/src/test/java/CastleWarsCatapultWidgetCacheChecks.java'
@@ -45,6 +49,11 @@ jobs:
             src/main/java/com/rs2/cache/js5/Interfaces.java \
             src/test/java/CastleWarsCatapultWidgetCacheChecks.java
           java -cp 'catapult-test-classes:lib/*' CastleWarsCatapultWidgetCacheChecks
+      - name: Verify native Castle Wars match timer widget geometry
+        working-directory: Server
+        run: |
+          javac -cp 'catapult-test-classes:lib/*' -d catapult-test-classes src/test/java/CastleWarsHudPositionChecks.java
+          java -cp 'catapult-test-classes:lib/*' CastleWarsHudPositionChecks
       - name: Compile server and verify native catapult actions
         working-directory: Server
         run: |
