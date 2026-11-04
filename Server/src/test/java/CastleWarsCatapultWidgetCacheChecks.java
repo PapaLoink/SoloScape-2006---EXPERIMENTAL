@@ -47,6 +47,16 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                         scriptsText.append(j == 0 ? "" : ",").append(b.getShort() & 0xffff);
                     scriptsText.append("}");
                 }
+                if (c.type == 4 && (c.childId == 88 || c.childId == 157)) {
+                    int horizontal = b.get() & 255;
+                    int vertical = b.get() & 255;
+                    int line = b.get() & 255;
+                    int fontId = b.getShort() & 65535;
+                    int shadow = b.get() & 255;
+                    System.out.println("   text/details: align=" + horizontal + "," + vertical
+                            + " line=" + line + " font=" + fontId
+                            + " shadow=" + shadow);
+                }
                 if (c.type == 6) {
                     StringBuilder models = new StringBuilder();
                     int modelId = b.getShort() & 0xffff;
