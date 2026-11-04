@@ -1,0 +1,43 @@
+name: Verify Castle Wars mixed bot load
+on:
+  push:
+    branches:
+      - Audit/Castlewars
+    paths:
+      - 'Server/src/main/java/com/rs2/bot/**'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/**'
+      - 'Server/src/main/java/com/rs2/model/MovementQueue.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
+      - 'Server/src/main/java/com/rs2/model/World.java'
+      - 'Server/src/main/java/com/rs2/util/GameplayTrace.java'
+      - 'Server/src/test/java/com/rs2/bot/CastleWarsMixedLoadChecks.java'
+      - '.github/workflows/verify-castlewars-mixed-load.yml'
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/bot/**'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/**'
+      - 'Server/src/test/java/com/rs2/bot/CastleWarsMixedLoadChecks.java'
+      - '.github/workflows/verify-castlewars-mixed-load.yml'
+  workflow_dispatch:
+
+jobs:
+  castlewars-mixed-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile Castle Wars server stress harness
+        working-directory: Server
+        run: |
+          mkdir -p castlewars-load-classes
+          find src/main/java -name '*.java' > /tmp/castlewars-load-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d castlewars-load-classes @/tmp/castlewars-load-sources.txt
+          javac -encoding UTF-8 -cp 'castlewars-load-classes:lib/*' -d castlewars-load-classes src/test/java/com/rs2/bot/CastleWarsMixedLoadChecks.java
+      - name: Simulate bot decisions, human-style movement, console and tick budget
+        working-directory: Server
+        run: |
+          java -Xmx1024m -Dprs.traceGameplay=false -Dprs.traceConsole=false -cp 'castlewars-load-classes:lib/*' com.rs2.bot.CastleWarsMixedLoadChecks
