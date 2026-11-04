@@ -1,179 +1,144 @@
-import com.rs2.cache.InterfaceDefinition;
 import com.rs2.model.EntityTargetMovement;
 import com.rs2.model.Position;
 import com.rs2.model.combat.CombatType;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
-import com.rs2.model.objects.ObjectDefinition;
 import com.rs2.model.player.Player;
 import com.rs2.model.skill.magic.SpellDefinition;
-import com.rs2.util.GameUtil;
-import com.rs2.util.path.WalkingCollisionMap;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-/** Regression checks for ranged and magic attacks against Castle Wars battlements. */
+/** Regression: Castle Wars battlements and the lower ground share map plane 0. */
 public final class CastleWarsBattlementRangedCombatChecks {
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
-        ObjectDefinition.loadRevision443();
-        WalkingCollisionMap.loadCollisionMaps();
-
         Field field = CastleWarsManager.class.getDeclaredField("gamePlayers");
         field.setAccessible(true);
         Map<Player, CastleWarsManager.Team> teams =
                 (Map<Player, CastleWarsManager.Team>) field.get(null);
-        Player wallPlayer = new Player(null);
-        Player groundPlayer = new Player(null);
-        wallPlayer.isBot = true;
+
+        Player climber = new Player(null);
+        Player defender = new Player(null);
+        climber.isBot = true;
         try {
-            checkInsideCastle(CastleWarsManager.Team.SARADOMIN,
-                    CastleWarsManager.Team.ZAMORAK, wallPlayer, groundPlayer, teams);
-            checkInsideCastle(CastleWarsManager.Team.ZAMORAK,
-                    CastleWarsManager.Team.SARADOMIN, wallPlayer, groundPlayer, teams);
+            checkCastle(CastleWarsManager.Team.SARADOMIN,
+                    CastleWarsManager.Team.ZAMORAK, climber, defender, teams,
+                    new Position(2416, 3074, 0), new Position(2417, 3077, 0),
+                    new Position(2424, 3077, 0));
+            checkCastle(CastleWarsManager.Team.ZAMORAK,
+                    CastleWarsManager.Team.SARADOMIN, climber, defender, teams,
+                    new Position(2383, 3133, 0), new Position(2382, 3130, 0),
+                    new Position(2375, 3130, 0));
             checkOuterEdgeOffset();
             System.out.println("Castle Wars battlement ranged and magic combat checks passed");
         } finally {
-            teams.remove(wallPlayer);
-            teams.remove(groundPlayer);
+            teams.remove(climber);
+            teams.remove(defender);
         }
     }
 
-    private static void checkInsideCastle(CastleWarsManager.Team castleTeam,
-                                          CastleWarsManager.Team enemyTeam,
-                                          Player wall, Player ground,
-                                          Map<Player, CastleWarsManager.Team> teams) {
-        Position[] pair = findWallAndInsideGround(castleTeam);
-        require(pair != null, "No valid wall/inner ground fixture for " + castleTeam);
-        wall.setPosition(pair[0]);
-        ground.setPosition(pair[1]);
-        wall.botEnabled = true;
-        wall.botPrimaryCombatStyle = 1;
-        wall.botActiveCombatStyle = 1;
-        ground.botEnabled = false;
-        teams.put(wall, enemyTeam); // Opponent climbed the castle wall.
-        teams.put(ground, castleTeam);
+    private static void checkCastle(CastleWarsManager.Team castleTeam,
+                                    CastleWarsManager.Team climbingTeam,
+                                    Player climber, Player defender,
+                                    Map<Player, CastleWarsManager.Team> teams,
+                                    Position stairBase, Position wallLanding,
+                                    Position groundPosition) {
+        teams.put(climber, climbingTeam);
+        teams.put(defender, castleTeam);
+        climber.setPosition(stairBase.copy());
+        climber.castleWarsOnBattlements = false;
+        defender.setPosition(groundPosition.copy());
+        defender.castleWarsOnBattlements = false;
 
-        require(CastleWarsManager.getCastleTeamAtPosition(ground.getPosition())
-                == castleTeam, "Fixture must put the defender inside its own castle");
-        require(CastleWarsManager.isCastleWallCrossLevelPair(wall, ground),
-                "A rope climber must be targetable from inside the same castle");
-        require(CastleWarsManager.isCastleWallCrossLevelPair(ground, wall),
-                "The wall/ground distinction must work in both attack directions");
+        // Actual same-plane stair traversal is authoritative even if the
+        // 443 server's battlement scenery object index is not populated.
+        require(CastleWarsManager.moveBotThroughGroundCastleStairs(
+                        climber, castleTeam, true), "Could not climb wall stairs");
+        require(wallLanding.equals(climber.getPosition()),
+                "Wall stair landing must be the raised walkway");
+        require(climber.castleWarsOnBattlements,
+                "Climbing wall stairs must mark the player as elevated");
+        require(CastleWarsManager.getCastleTeamAtPosition(defender.getPosition())
+                        == castleTeam,
+                "Defender fixture must stand on ground inside the same castle");
+
+        require(CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
+                "Rope/stair climber must be targetable from the ground inside castle");
+        require(CastleWarsManager.isCastleWallCrossLevelPair(defender, climber),
+                "Height-aware target selection must work in either direction");
+
         for (CombatType type : new CombatType[]{CombatType.RANGED, CombatType.MAGIC}) {
-            require(CastleWarsManager.canAttackAcrossCastleLevels(ground, wall, type),
-                    "Ground defender must " + type + " a climber on the wall");
-            require(CastleWarsManager.canAttackAcrossCastleLevels(wall, ground, type),
-                    "Wall climber must " + type + " the defender below");
-            require(EntityTargetMovement.canReachTarget(ground, wall, 10, type),
+            require(CastleWarsManager.canAttackAcrossCastleLevels(defender, climber, type),
+                    "Ground defender must attack wall climber with " + type);
+            require(CastleWarsManager.canAttackAcrossCastleLevels(climber, defender, type),
+                    "Climber must attack ground defender with " + type);
+            require(EntityTargetMovement.canReachTarget(defender, climber, 10, type),
                     "Ground defender's " + type + " attack must reach wall");
-            require(EntityTargetMovement.canReachTarget(wall, ground, 10, type),
-                    "Wall climber's " + type + " attack must reach ground");
+            require(EntityTargetMovement.canReachTarget(climber, defender, 10, type),
+                    "Climber's " + type + " attack must reach ground");
         }
-        require(CastleWarsManager.hasBotCombatLineOfSight(wall, ground),
-                "A ranged wall bot must recognise a defender below as visible");
-        ground.setQueuedCombatSpell(SpellDefinition.WIND_STRIKE);
+
+        climber.botEnabled = true;
+        climber.botPrimaryCombatStyle = 1;
+        climber.botActiveCombatStyle = 1;
+        require(CastleWarsManager.hasBotCombatLineOfSight(climber, defender),
+                "Ranged wall bot must see ground defender even through scenery");
+
+        defender.setQueuedCombatSpell(SpellDefinition.WIND_STRIKE);
         try {
-            require(EntityTargetMovement.canReachTarget(ground, wall, 10),
-                    "A human casting magic must not try to path through the battlement");
+            require(EntityTargetMovement.canReachTarget(defender, climber, 10),
+                    "A human casting magic must not try to chase through the wall");
         } finally {
-            ground.setQueuedCombatSpell(null);
+            defender.setQueuedCombatSpell(null);
         }
-
         require(!CastleWarsManager.canAttackAcrossCastleLevels(
-                        ground, wall, CombatType.MELEE),
-                "Ranged fix must not allow melee through battlements");
+                        defender, climber, CombatType.MELEE),
+                "Melee must not go through a battlement");
         require(!EntityTargetMovement.canReachTarget(
-                        ground, wall, 1, CombatType.MELEE),
-                "Melee still needs a physically adjacent walkable tile");
-        teams.put(ground, enemyTeam);
-        require(!CastleWarsManager.isCastleWallCrossLevelPair(wall, ground),
-                "Teammates must not qualify for wall-versus-ground PvP");
-        teams.put(ground, castleTeam);
-        ground.setPosition(new Position(pair[1].getX(), pair[1].getY(), 1));
-        require(!CastleWarsManager.isCastleWallCrossLevelPair(wall, ground),
-                "Wall override must not permit attacking between actual map planes");
-    }
+                        defender, climber, 1, CombatType.MELEE),
+                "Ground defender must not melee a distant wall climber");
 
-    private static Position[] findWallAndInsideGround(CastleWarsManager.Team team) {
-        int minX = team == CastleWarsManager.Team.SARADOMIN ? 2412 : 2368;
-        int maxX = team == CastleWarsManager.Team.SARADOMIN ? 2431 : 2387;
-        int minY = team == CastleWarsManager.Team.SARADOMIN ? 3072 : 3117;
-        int maxY = team == CastleWarsManager.Team.SARADOMIN ? 3089 : 3135;
-        for (int x = minX; x <= maxX; ++x) {
-            for (int y = minY; y <= maxY; ++y) {
-                Position wall = new Position(x, y, 0);
-                if (!CastleWarsManager.isCastleBattlementFiringPosition(wall)) {
-                    continue;
-                }
-                for (int dx = -8; dx <= 8; ++dx) {
-                    for (int dy = -8; dy <= 8; ++dy) {
-                        Position ground = new Position(x + dx, y + dy, 0);
-                        int distance = GameUtil.getDistance(wall, ground);
-                        if (distance < 3 || distance > 8
-                                || CastleWarsManager.getCastleTeamAtPosition(ground) != team
-                                || CastleWarsManager.isCastleBattlementFiringPosition(ground)
-                                || (WalkingCollisionMap.getTileFlags(
-                                        ground.getX(), ground.getY(), 0) & 0x1280100) != 0) {
-                            continue;
-                        }
-                        return new Position[]{wall, ground};
-                    }
-                }
-            }
-        }
-        debugFixture(team);
-        return null;
-    }
+        teams.put(defender, climbingTeam);
+        require(!CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
+                "Teammates must not be treated as battlement PvP opponents");
+        teams.put(defender, castleTeam);
 
-    private static void debugFixture(CastleWarsManager.Team team) {
-        Position landing = team == CastleWarsManager.Team.SARADOMIN
-                ? new Position(2417, 3077, 0) : new Position(2382, 3130, 0);
-        int firing = 0;
-        int insideGround = 0;
-        for (int x = landing.getX() - 10; x <= landing.getX() + 10; ++x) {
-            for (int y = landing.getY() - 10; y <= landing.getY() + 10; ++y) {
-                Position candidate = new Position(x, y, 0);
-                if (CastleWarsManager.isCastleBattlementFiringPosition(candidate)) {
-                    ++firing;
-                } else if (CastleWarsManager.getCastleTeamAtPosition(candidate) == team
-                        && (WalkingCollisionMap.getTileFlags(x, y, 0) & 0x1280100) == 0) {
-                    ++insideGround;
-                }
-            }
-        }
-        System.err.println("Battlement fixture " + team + " landing=" + landing
-                + " firing=" + firing + " inner-ground=" + insideGround
-                + " landing-flags=" + WalkingCollisionMap.getTileFlags(
-                        landing.getX(), landing.getY(), 0));
-        int printed = 0;
-        for (Object entry : com.rs2.model.objects.WorldObjectRegionIndex
-                .getOrCreateRegionBucket(landing).getLoadedObjects()) {
-            com.rs2.model.objects.LoadedWorldObject object =
-                    (com.rs2.model.objects.LoadedWorldObject) entry;
-            if (Math.abs(object.getPosition().getX() - landing.getX()) <= 4
-                    && Math.abs(object.getPosition().getY() - landing.getY()) <= 4
-                    && printed++ < 35) {
-                System.err.println("Nearby castle loc id="
-                        + object.getWorldObject().getObjectId()
-                        + " at " + object.getPosition());
-            }
-        }
+        defender.setPosition(new Position(groundPosition.getX(),
+                groundPosition.getY(), 1));
+        require(!CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
+                "Wall override must not permit combat across different map planes");
+        defender.setPosition(groundPosition.copy());
+
+        require(CastleWarsManager.moveBotThroughGroundCastleStairs(
+                        climber, castleTeam, false), "Could not descend wall stairs");
+        require(stairBase.equals(climber.getPosition()),
+                "Descending wall stairs must return to ground");
+        require(!climber.castleWarsOnBattlements,
+                "Descending must clear the elevated wall state");
+        require(!CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
+                "After descending the attacker must not be treated as on the wall");
+
+        climber.castleWarsOnBattlements = true;
+        climber.setPosition(new Position(stairBase.getX(), stairBase.getY(), 1));
+        require(!CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
+                "Stale battlement state must never bypass a real plane difference");
+        climber.castleWarsOnBattlements = false;
+        climber.botEnabled = false;
     }
 
     private static void checkOuterEdgeOffset() throws Exception {
-        Method method = CastleWarsManager.class.getDeclaredMethod(
+        Method facing = CastleWarsManager.class.getDeclaredMethod(
                 "isFacingOutFromBattlement", Position.class, Position.class);
-        method.setAccessible(true);
-        require((Boolean) method.invoke(null,
+        facing.setAccessible(true);
+        require((Boolean) facing.invoke(null,
                         new Position(2417, 3077, 0), new Position(2411, 3077, 0)),
-                "Saradomin west wall must face outward even when two tiles inset");
-        require((Boolean) method.invoke(null,
+                "Saradomin wall must face outward from an inset walkway");
+        require((Boolean) facing.invoke(null,
                         new Position(2382, 3130, 0), new Position(2389, 3130, 0)),
-                "Zamorak east wall must face outward even when two tiles inset");
-        require(!(Boolean) method.invoke(null,
+                "Zamorak wall must face outward from an inset walkway");
+        require(!(Boolean) facing.invoke(null,
                         new Position(2417, 3077, 0), new Position(2426, 3077, 0)),
-                "An inset west battlement must not claim to face across the keep");
+                "An inward target is not outside the west wall");
     }
 
     private static void require(boolean condition, String message) {
