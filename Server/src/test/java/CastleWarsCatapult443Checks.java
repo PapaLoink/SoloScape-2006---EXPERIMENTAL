@@ -43,6 +43,16 @@ public final class CastleWarsCatapult443Checks {
         }
         require(InterfaceBridge.translate(19708) == (GROUP << 16 | 161),
                 "The movable red X must use native group 54 child 161");
+        // Regression: changing these values back to background widgets
+        // recreates blank/malformed numbers even though packet routing passes.
+        String[] digits = {"X_TENS", "X_ONES", "Y_TENS", "Y_ONES"};
+        for (int i = 0; i < digits.length; i++) {
+            Field component = CastleWarsEngineeringManager.class.getDeclaredField(
+                    "CATAPULT_443_" + digits[i] + "_COMPONENT_ID");
+            component.setAccessible(true);
+            require(component.getInt(null) == 19704 + i,
+                    "Digit " + digits[i] + " must update a foreground numeral, not a backing model");
+        }
 
         java.lang.reflect.Method markerX = CastleWarsEngineeringManager.class
                 .getDeclaredMethod("catapultMarkerOffsetX", int.class);
