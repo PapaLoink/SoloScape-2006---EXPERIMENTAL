@@ -146,12 +146,7 @@ public final class CastleWarsCatapult443Checks {
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before,
                     "Operating the catapult must not automatically spend a rock");
 
-            require(aimCoordinate(player, "x") == 0 && aimCoordinate(player, "y") == 0,
-                    "The native 443 catapult must start at 00,00 beside its own base");
-            nativeWidgetSelect(player, 150); // up
-            nativeWidgetButton(player, 152); // right
-            require(aimCoordinate(player, "x") == 1 && aimCoordinate(player, "y") == 1,
-                    "Revision-443 native aim arrows did not update target coordinates");
+            assertArrowAxesMatchMapAndImpact(player, CastleWarsManager.Team.SARADOMIN);
             require(player.getInventoryManager().getItemAmount(
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before,
                     "Aiming must not consume ammunition");
@@ -193,6 +188,16 @@ public final class CastleWarsCatapult443Checks {
                     "Legacy aim-up control was not accepted");
             require(aimCoordinate(player, "x") == 1,
                     "Legacy aim-up control did not update the target");
+
+            // Zamorak's catapult faces the opposite direction. The same
+            // up/down versus left/right control separation must still hold.
+            ServerSettings.clientBuild = 443;
+            teams.put(player, CastleWarsManager.Team.ZAMORAK);
+            player.setPosition(new Position(2384, 3117, 0));
+            require(CastleWarsEngineeringManager.operateCatapult(player,
+                    CastleWarsEngineeringManager.ZAMORAK_CATAPULT_ID),
+                    "Operating Zamorak's 443 catapult failed");
+            assertArrowAxesMatchMapAndImpact(player, CastleWarsManager.Team.ZAMORAK);
         } finally {
             ServerSettings.clientBuild = 443;
             teams.remove(player);
@@ -204,13 +209,71 @@ public final class CastleWarsCatapult443Checks {
         System.out.println("Castle Wars native 443 manual aim, fire and widget routing OK");
     }
 
-    private static int aimCoordinate(Player player, String axis) throws Exception {
+    private static void assertArrowAxesMatchMapAndImpact(
+            Player player, CastleWarsManager.Team team) throws Exception {
+        require(aimCoordinate(player, "x") == 0 && aimCoordinate(player, "y") == 0,
+                "Native catapult must begin at 00,00 for " + team);
+        int startX = aimCrossOffset(player, "catapultAimCrossOffsetX");
+        int startY = aimCrossOffset(player, "catapultAimCrossOffsetY");
+        Position startTarget = aimTarget(player);
+
+        nativeWidgetSelect(player, 150); // top up (top number)
+        require(aimCoordinate(player, "x") == 1 && aimCoordinate(player, "y") == 0,
+                "Top arrow must change only the top numeral");
+        int verticalX = aimCrossOffset(player, "catapultAimCrossOffsetX");
+        int verticalY = aimCrossOffset(player, "catapultAimCrossOffsetY");
+        Position verticalTarget = aimTarget(player);
+        require(verticalX == startX && verticalY != startY,
+                "Top up arrow must move X vertically only for " + team);
+        require(verticalTarget.getX() == startTarget.getX()
+                        && verticalTarget.getY() != startTarget.getY(),
+                "Top up arrow must change impact world Y, not world X");
+
+        nativeWidgetButton(player, 152); // bottom right (bottom number)
+        require(aimCoordinate(player, "x") == 1 && aimCoordinate(player, "y") == 1,
+                "Bottom arrow must change only the bottom numeral");
+        int horizontalX = aimCrossOffset(player, "catapultAimCrossOffsetX");
+        int horizontalY = aimCrossOffset(player, "catapultAimCrossOffsetY");
+        Position horizontalTarget = aimTarget(player);
+        require(horizontalX != verticalX && horizontalY == verticalY,
+                "Bottom right arrow must move X horizontally only for " + team);
+        require(horizontalTarget.getX() != verticalTarget.getX()
+                        && horizontalTarget.getY() == verticalTarget.getY(),
+                "Bottom right arrow must change impact world X, not world Y");
+        int expectedDirection = team == CastleWarsManager.Team.ZAMORAK ? 1 : -1;
+        require((verticalY - startY) * expectedDirection > 0
+                        && (horizontalX - verticalX) * expectedDirection > 0,
+                "Catapult cursor must travel from each team's base toward the centre");
+    }
+
+    private static Object activeAim(Player player) throws Exception {
         Field stateField = CastleWarsEngineeringManager.class.getDeclaredField("catapultAims");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<Player, ?> states = (Map<Player, ?>) stateField.get(null);
         Object aim = states.get(player);
         require(aim != null, "No active manual catapult aim");
+        return aim;
+    }
+
+    private static int aimCrossOffset(Player player, String methodName) throws Exception {
+        Object aim = activeAim(player);
+        java.lang.reflect.Method method = CastleWarsEngineeringManager.class
+                .getDeclaredMethod(methodName, aim.getClass());
+        method.setAccessible(true);
+        return ((Integer) method.invoke(null, aim)).intValue();
+    }
+
+    private static Position aimTarget(Player player) throws Exception {
+        Object aim = activeAim(player);
+        java.lang.reflect.Method method = CastleWarsEngineeringManager.class
+                .getDeclaredMethod("resolvePlayerCatapultAimTarget", aim.getClass());
+        method.setAccessible(true);
+        return (Position) method.invoke(null, aim);
+    }
+
+    private static int aimCoordinate(Player player, String axis) throws Exception {
+        Object aim = activeAim(player);
         Field field = aim.getClass().getDeclaredField(axis);
         field.setAccessible(true);
         return field.getInt(aim);
