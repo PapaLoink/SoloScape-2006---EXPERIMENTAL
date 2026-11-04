@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'Server/src/main/java/com/rs2/net/packet/PacketWriter.java'
+      - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
       - 'Server/src/main/java/com/rs2/model/player/Player.java'
       - 'Server/src/test/java/com/rs2/net/packet/OutboundCipherOrderingChecks.java'
       - '.github/workflows/verify-443-outbound-cipher-order.yml'
