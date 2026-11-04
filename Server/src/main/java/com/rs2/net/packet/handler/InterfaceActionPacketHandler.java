@@ -289,6 +289,27 @@ public final class InterfaceActionPacketHandler implements PacketHandler {
                 }
                 return;
             }
+            // The Castle Wars book's page arrows (native 49:83/85) are
+            // action-type-6 widgets, delivered as WIDGET_SELECT. Ordinary
+            // INTERFACE_BUTTON routing does not see these packets.
+            if ((packedWidgetId >>> 16) == 49
+                    && player.getOpenInterfaceId() == 837) {
+                int manualButton = InterfaceBridge.toLegacyComponent(packedWidgetId);
+                if (manualButton == 839 || manualButton == 841 || manualButton == 10162) {
+                    buttonHandler.handleButton(player, manualButton);
+                }
+                return;
+            }
+            // Allow the native scoreboard close control through either packet
+            // family, guarded by the actually open scoreboard chatbox.
+            if ((packedWidgetId >>> 16) == 55
+                    && player.getOpenInterfaceId() == 11333) {
+                int scoreboardButton = InterfaceBridge.toLegacyComponent(packedWidgetId);
+                if (scoreboardButton == 19730) {
+                    buttonHandler.handleButton(player, scoreboardButton);
+                }
+                return;
+            }
             // Native fletching selection widgets are action-type-6 controls.
             // Each of the 1/2/3-item chatbox groups has four actions per item.
             if (com.rs2.model.skill.fletching.logs.LogFletchingMenu.handleNativeWidget(
