@@ -243,6 +243,12 @@ public final class CastleWarsMixedLoadChecks {
     private static void register(Player player, CastleWarsManager.Team team, int offset)
             throws Exception {
         player.setClientBuild(443);
+        // Real player login populates combat bonuses from equipment. Synthetic
+        // combatants must initialise these indices as well or a fight between
+        // simulated bots will unbox a null combat bonus.
+        for (int bonus = 0; bonus < 32; ++bonus) {
+            player.setCombatBonus(bonus, 0);
+        }
         // Closed socket discards outgoing packets without network effects;
         // this measures server decisions, not actual client packet latency.
         socket.set(player, SocketChannel.open());
