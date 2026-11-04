@@ -42,7 +42,7 @@ public final class CastleWarsNativePanelProbe {
             System.out.println("GROUP-PROBE "+group+" children="+widgets.size());
             if (group == 49 || group == 55 || group == 228 || group == 264 || group == 275 || group == 391 || group == 61 || group == 73) {
                 for (Interfaces.Component c : widgets.values()) {
-                    if (c.childId >= 90) break;
+                    if (c.childId >= 90 && group != 49) break;
                     System.out.println("CHILD " + group + ":" + c.childId + " type="+c.type+
                         " xy="+c.x+","+c.y+" wh="+c.width+"x"+c.height+
                         " parent="+c.parentId+" action="+c.actionType +
