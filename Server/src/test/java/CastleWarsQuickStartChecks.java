@@ -4,6 +4,7 @@ import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager.Team;
 import com.rs2.model.objects.ObjectDefinition;
 import com.rs2.model.player.Player;
+import com.rs2.util.path.ProjectileCollisionMap;
 import com.rs2.util.path.WalkingCollisionMap;
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -14,6 +15,7 @@ public final class CastleWarsQuickStartChecks {
     public static void main(String[] args) throws Exception {
         ObjectDefinition.loadRevision443();
         WalkingCollisionMap.loadCollisionMaps();
+        ProjectileCollisionMap.loadCollisionMaps();
 
         Field waitingField = CastleWarsManager.class.getDeclaredField("waitingPlayers");
         waitingField.setAccessible(true);
