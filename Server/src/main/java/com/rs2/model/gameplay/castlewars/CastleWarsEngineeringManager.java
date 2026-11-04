@@ -96,20 +96,17 @@ public final class CastleWarsEngineeringManager {
     private static final int CATAPULT_AIM_LEFT_BUTTON_ID = 11324;
     private static final int CATAPULT_FIRE_BUTTON_ID = 11329;
     private static final int CATAPULT_MAX_AIM = 30;
-    // Native 443 group 54: coordinate widgets are type-6 models, not text.
-    // Cache digit models 4857..4866 represent 0..9.
-    private static final int CATAPULT_443_ZERO_DIGIT_MODEL_ID = 4857;
-    private static final int CATAPULT_443_X_TENS_COMPONENT_ID = 19700;
-    private static final int CATAPULT_443_X_ONES_COMPONENT_ID = 19701;
-    private static final int CATAPULT_443_Y_TENS_COMPONENT_ID = 19702;
-    private static final int CATAPULT_443_Y_ONES_COMPONENT_ID = 19703;
-    // The stock 443 cache also draws four unconditional models directly on
-    // top of the four changing coordinate digits (group 54 children 146..149).
-    // Clear them while the native aim interface is open.
-    private static final int CATAPULT_443_OVERLAY_X_TENS = 19704;
-    private static final int CATAPULT_443_OVERLAY_X_ONES = 19705;
-    private static final int CATAPULT_443_OVERLAY_Y_TENS = 19706;
-    private static final int CATAPULT_443_OVERLAY_Y_ONES = 19707;
+    // Native 443 group 54 draws two model layers per coordinate digit.
+    // Base widgets 116/117/132/133 have the common backing model 4857;
+    // foreground widgets 146/147/148/149 contain the visible numerals
+    // (stock models 4864/4865/4866/4867 form the initial 1/2/3/4 display).
+    // The prior implementation replaced the backing model and cleared the
+    // foreground, leaving empty/garbled digits. Update the foreground only.
+    private static final int CATAPULT_443_ZERO_DIGIT_MODEL_ID = 4863;
+    private static final int CATAPULT_443_X_TENS_COMPONENT_ID = 19704;
+    private static final int CATAPULT_443_X_ONES_COMPONENT_ID = 19705;
+    private static final int CATAPULT_443_Y_TENS_COMPONENT_ID = 19706;
+    private static final int CATAPULT_443_Y_ONES_COMPONENT_ID = 19707;
     // Native group 54 child 161 is the red X (model 4856), while children
     // 159/160 are the fixed catapult-site symbols (both model 4853).
     // Only move the red X; moving a catapult-site symbol leaves the X behind.
@@ -527,15 +524,10 @@ public final class CastleWarsEngineeringManager {
 
     private static void refreshCatapultAimInterface(Player player, CatapultAim aim) {
         if (ServerSettings.clientBuild == 443) {
-            // Group 54 draws decorative model widgets 146..149 over the four
-            // actual digit models (116,117,132,133). Remove that extra layer:
-            // otherwise the changing digits appear as overlapping icons.
-            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_X_TENS, -1);
-            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_X_ONES, -1);
-            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_Y_TENS, -1);
-            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_Y_ONES, -1);
-            // The native 443 panel draws separate tens/ones 3D digit models.
-            // Legacy sendInterfaceText() does not update these widgets.
+            // The base models (54:116/117/132/133) are the digit backing,
+            // not the changing numbers. Keep them untouched, and replace only
+            // the four visible numeral models (54:146..149).
+            // Legacy sendInterfaceText() cannot update native model widgets.
             player.getPacketSender().sendInterfaceModelId(
                     CATAPULT_443_X_TENS_COMPONENT_ID, catapultDigitModelId(aim.x / 10));
             player.getPacketSender().sendInterfaceModelId(
