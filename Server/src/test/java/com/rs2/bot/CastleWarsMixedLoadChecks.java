@@ -54,6 +54,9 @@ public final class CastleWarsMixedLoadChecks {
         System.setProperty("prs.traceGameplay", "false");
         System.setProperty("prs.traceConsole", "false");
         ServerSettings.clientBuild = 443;
+        // General Debug Mode must not re-enable gameplay/packet trace spam.
+        // Only the explicit prs.traceGameplay property may enable it.
+        ServerSettings.debugModeEnabled = true;
         ObjectDefinition.loadRevision443();
         WalkingCollisionMap.loadCollisionMaps();
         ProjectileCollisionMap.loadCollisionMaps();
@@ -175,6 +178,7 @@ public final class CastleWarsMixedLoadChecks {
             long[] sorted = durations.clone();
             Arrays.sort(sorted);
             long p95 = sorted[(int)(TICKS * 0.95) - 1];
+            long p99 = sorted[(int)(TICKS * 0.99) - 1];
             long max = sorted[TICKS - 1];
             long total = 0;
             for (long value : durations) total += value;
@@ -182,6 +186,7 @@ public final class CastleWarsMixedLoadChecks {
                     + " avgMs=" + String.format(java.util.Locale.ROOT, "%.3f",
                         total / (double)TICKS / 1_000_000.0)
                     + " p95Ms=" + String.format(java.util.Locale.ROOT, "%.3f", p95 / 1_000_000.0)
+                    + " p99Ms=" + String.format(java.util.Locale.ROOT, "%.3f", p99 / 1_000_000.0)
                     + " maxMs=" + String.format(java.util.Locale.ROOT, "%.3f", max / 1_000_000.0)
                     + " movingBotsSara=" + activeSara + " movingBotsZam=" + activeZam
                     + " movingHumanFixtures=" + movedHumans + " maxQueuedStallTicks=" + maxStall
