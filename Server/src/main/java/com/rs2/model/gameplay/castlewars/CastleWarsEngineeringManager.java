@@ -111,7 +111,16 @@ public final class CastleWarsEngineeringManager {
     // 159/160 are the fixed catapult-site symbols (both model 4853).
     // Only move the red X; moving a catapult-site symbol leaves the X behind.
     private static final int CATAPULT_443_TARGET_CROSS = 19708;
-    private static final int CATAPULT_443_MARKER_PIXELS_PER_STEP = 3;
+    // Group 54 native map positions (top-left of each 32x32 model widget).
+    // The Saradomin catapult is the lower-right marker (54:159), while
+    // Zamorak's is upper-left (54:160). The red X (54:161) has its own
+    // cached origin. Position packets add offsets to that original origin.
+    private static final int CATAPULT_443_ZAMORAK_MAP_X = 73;
+    private static final int CATAPULT_443_ZAMORAK_MAP_Y = 101;
+    private static final int CATAPULT_443_SARADOMIN_MAP_X = 201;
+    private static final int CATAPULT_443_SARADOMIN_MAP_Y = 223;
+    private static final int CATAPULT_443_CROSS_CACHE_X = 93;
+    private static final int CATAPULT_443_CROSS_CACHE_Y = 122;
     private static final int CATAPULT_AIM_SCALE = 2;
     private static final int CATAPULT_MISS_RADIUS = 1;
 
@@ -536,24 +545,44 @@ public final class CastleWarsEngineeringManager {
                     CATAPULT_443_Y_TENS_COMPONENT_ID, catapultDigitModelId(aim.y / 10));
             player.getPacketSender().sendInterfaceModelId(
                     CATAPULT_443_Y_ONES_COMPONENT_ID, catapultDigitModelId(aim.y % 10));
-            // The crosshair is a single movable model child (54:161), shared
-            // by both teams; the two map-side catapult symbols are fixed.
-            // Widget position packets use signed offsets relative to cache XY.
+            // Match the original 00,00 default beside the operator's own
+            // catapult. Project the X's movement toward the opposing side,
+            // using the same X/Y axes as resolveCatapultAimTarget(). Keep
+            // both fixed catapult-site icons in place.
             player.getPacketSender().sendInterfacePosition(
                     CATAPULT_443_TARGET_CROSS,
-                    catapultMarkerOffsetX(aim.y), catapultMarkerOffsetY(aim.x));
+                    catapultMarkerOffsetX(aim.team, aim.x),
+                    catapultMarkerOffsetY(aim.team, aim.y));
             return;
         }
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.x), CATAPULT_AIM_X_TEXT_ID);
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.y), CATAPULT_AIM_Y_TEXT_ID);
     }
 
-    private static int catapultMarkerOffsetX(int horizontalAim) {
-        return (horizontalAim - CATAPULT_MAX_AIM / 2) * CATAPULT_443_MARKER_PIXELS_PER_STEP;
+    private static int catapultMarkerOffsetX(CastleWarsManager.Team team, int aimX) {
+        // The server's target starts one tile in front of the catapult, then
+        // advances one world tile per CATAPULT_AIM_SCALE coordinate steps.
+        // Use fractional progress so the red X moves on EVERY arrow click,
+        // even when the eventual impact tile is rounded to an integer.
+        float worldTiles = 1.0f + aimX / (float) CATAPULT_AIM_SCALE;
+        float pixelsPerTile = (CATAPULT_443_SARADOMIN_MAP_X - CATAPULT_443_ZAMORAK_MAP_X)
+                / (float) (SARADOMIN_CATAPULT.getX() - ZAMORAK_CATAPULT.getX());
+        int pixels = Math.round(worldTiles * pixelsPerTile);
+        int mapX = team == CastleWarsManager.Team.SARADOMIN
+                ? CATAPULT_443_SARADOMIN_MAP_X - pixels
+                : CATAPULT_443_ZAMORAK_MAP_X + pixels;
+        return mapX - CATAPULT_443_CROSS_CACHE_X;
     }
 
-    private static int catapultMarkerOffsetY(int verticalAim) {
-        return (CATAPULT_MAX_AIM / 2 - verticalAim) * CATAPULT_443_MARKER_PIXELS_PER_STEP;
+    private static int catapultMarkerOffsetY(CastleWarsManager.Team team, int aimY) {
+        float worldTiles = 1.0f + aimY / (float) CATAPULT_AIM_SCALE;
+        float pixelsPerTile = (CATAPULT_443_SARADOMIN_MAP_Y - CATAPULT_443_ZAMORAK_MAP_Y)
+                / (float) (ZAMORAK_CATAPULT.getY() - SARADOMIN_CATAPULT.getY());
+        int pixels = Math.round(worldTiles * pixelsPerTile);
+        int mapY = team == CastleWarsManager.Team.SARADOMIN
+                ? CATAPULT_443_SARADOMIN_MAP_Y - pixels
+                : CATAPULT_443_ZAMORAK_MAP_Y + pixels;
+        return mapY - CATAPULT_443_CROSS_CACHE_Y;
     }
 
     private static int catapultDigitModelId(int digit) {
@@ -3044,10 +3073,10 @@ public final class CastleWarsEngineeringManager {
 
         private CatapultAim(CastleWarsManager.Team team) {
             this.team = team;
-            // Start in the middle of the 0..30 aiming range so every arrow
-            // immediately has room to move in both directions.
-            this.x = CATAPULT_MAX_AIM / 2;
-            this.y = CATAPULT_MAX_AIM / 2;
+            // The original controls start at 00,00 beside YOUR catapult,
+            // not at the map centre or at the opposing team's base.
+            this.x = 0;
+            this.y = 0;
         }
     }
 
