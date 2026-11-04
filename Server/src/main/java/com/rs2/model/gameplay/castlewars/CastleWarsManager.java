@@ -409,6 +409,7 @@ public final class CastleWarsManager {
         replacementOffers.remove(player);
         replacementOfferCooldowns.remove(player);
         clearWaitingRoomGodTransformation(player);
+        setPlayerOnBattlements(player, false);
         Team team = gamePlayers.remove(player);
         if (team != null) {
             rememberDisconnectedParticipant(player, team, System.currentTimeMillis());
@@ -2147,6 +2148,12 @@ public final class CastleWarsManager {
         return null;
     }
 
+    public static void setPlayerOnBattlements(Player player, boolean onBattlements) {
+        if (player != null) {
+            player.castleWarsOnBattlements = onBattlements;
+        }
+    }
+
     public static boolean isCastleBattlementFiringPosition(Position position) {
         Team team = getCastleTeamAtPosition(position);
         return team != null
@@ -2195,8 +2202,17 @@ public final class CastleWarsManager {
             return false;
         }
 
-        boolean firstOnWall = isCastleBattlementFiringPosition(firstPosition);
-        boolean secondOnWall = isCastleBattlementFiringPosition(secondPosition);
+        // The 2006 castle wall and the ground below it both use plane 0.
+        // Prefer traversal state from real stairs/ropes: cache battlement
+        // scenery may be missing from the server's world-object index.
+        boolean firstOnWall = first.castleWarsOnBattlements
+                && isCastleBattlementPosition(firstPosition);
+        boolean secondOnWall = second.castleWarsOnBattlements
+                && isCastleBattlementPosition(secondPosition);
+        if (!firstOnWall && !secondOnWall) {
+            firstOnWall = isCastleBattlementFiringPosition(firstPosition);
+            secondOnWall = isCastleBattlementFiringPosition(secondPosition);
+        }
         if (firstOnWall == secondOnWall) {
             return false;
         }
@@ -2595,8 +2611,23 @@ public final class CastleWarsManager {
 
     private static void moveThroughCastleWarsStairs(Player player, Position destination) {
         resetOwnFlagIfEnteringCastle(player, destination);
-        boolean planeChange = player.getPosition().getPlane() != destination.getPlane();
+        Position origin = player.getPosition().copy();
+        boolean planeChange = origin.getPlane() != destination.getPlane();
         player.moveTo(destination);
+        // The ground-to-battlement stairways look like same-plane movement to
+        // the server. Record the actual height transition for projectile PvP.
+        if ((samePosition(origin, new Position(2416, 3074, 0))
+                    && samePosition(destination, new Position(2417, 3077, 0)))
+                || (samePosition(origin, new Position(2383, 3133, 0))
+                    && samePosition(destination, new Position(2382, 3130, 0)))) {
+            setPlayerOnBattlements(player, true);
+        } else if ((samePosition(origin, new Position(2417, 3077, 0))
+                    && samePosition(destination, new Position(2416, 3074, 0)))
+                || (samePosition(origin, new Position(2382, 3130, 0))
+                    && samePosition(destination, new Position(2383, 3133, 0)))
+                || planeChange) {
+            setPlayerOnBattlements(player, false);
+        }
         if (planeChange && !player.isBot) {
             // Same-region height changes can leave the client using stale
             // staircase occlusion until the camera is moved manually.
@@ -2809,6 +2840,7 @@ public final class CastleWarsManager {
     }
 
     public static void moveToLobby(Player player) {
+        setPlayerOnBattlements(player, false);
         player.moveTo(new Position(
             CASTLE_WARS_LOBBY.getX() - 2 + GameUtil.randomInt(5),
             CASTLE_WARS_LOBBY.getY() - 2 + GameUtil.randomInt(5),
@@ -3291,6 +3323,7 @@ public final class CastleWarsManager {
         if (player == null || team == null || isInGame(player)) {
             return;
         }
+        setPlayerOnBattlements(player, false);
         player.getMovementQueue().reset();
         player.resetInteractionState();
         player.resetCombatState();
@@ -3305,6 +3338,7 @@ public final class CastleWarsManager {
         if (player == null || team == null || isInGame(player)) {
             return;
         }
+        setPlayerOnBattlements(player, false);
         player.getMovementQueue().reset();
         player.resetInteractionState();
         player.resetCombatState();
@@ -3316,6 +3350,7 @@ public final class CastleWarsManager {
     }
 
     private static void moveToTeamSpawn(Player player, Team team) {
+        setPlayerOnBattlements(player, false);
         if (team == Team.SARADOMIN) {
             player.moveTo(new Position(2424 + GameUtil.randomInt(5), 3075 + GameUtil.randomInt(4), 1));
         } else {
