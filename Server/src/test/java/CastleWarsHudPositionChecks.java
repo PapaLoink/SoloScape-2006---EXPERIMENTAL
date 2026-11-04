@@ -32,14 +32,11 @@ public final class CastleWarsHudPositionChecks {
         yOffset.setAccessible(true);
         int targetX = timer.x + xOffset.getInt(null);
         int targetY = timer.y + yOffset.getInt(null);
-        Interfaces.Component score = group.get(1); // Saradomin score in top row
-        if (score == null || targetY != score.y
-                || targetX < score.x + score.width
-                || targetX + timer.width > 512) {
-            throw new AssertionError("Match timer must sit top-right on score row with no overlap");
+        if (targetX != 442 || targetY != 318) {
+            throw new AssertionError("Match timer must stay at its original bottom-right position");
         }
-        System.out.println("Castle Wars timer moved from (" + timer.x + "," + timer.y
-                + ") to (" + targetX + "," + targetY + ")");
+        System.out.println("Castle Wars timer restored to native bottom-right ("
+                + targetX + "," + targetY + ")");
         System.out.println("Castle Wars match timer native position check passed");
     }
 }
