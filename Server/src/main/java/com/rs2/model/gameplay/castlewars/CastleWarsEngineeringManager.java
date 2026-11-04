@@ -103,6 +103,17 @@ public final class CastleWarsEngineeringManager {
     private static final int CATAPULT_443_X_ONES_COMPONENT_ID = 19701;
     private static final int CATAPULT_443_Y_TENS_COMPONENT_ID = 19702;
     private static final int CATAPULT_443_Y_ONES_COMPONENT_ID = 19703;
+    // The stock 443 cache also draws four unconditional models directly on
+    // top of the four changing coordinate digits (group 54 children 146..149).
+    // Clear them while the native aim interface is open.
+    private static final int CATAPULT_443_OVERLAY_X_TENS = 19704;
+    private static final int CATAPULT_443_OVERLAY_X_ONES = 19705;
+    private static final int CATAPULT_443_OVERLAY_Y_TENS = 19706;
+    private static final int CATAPULT_443_OVERLAY_Y_ONES = 19707;
+    // The two catapult-side map markers are native group 54 model widgets.
+    private static final int CATAPULT_443_SARADOMIN_TARGET_MARKER = 19708;
+    private static final int CATAPULT_443_ZAMORAK_TARGET_MARKER = 19709;
+    private static final int CATAPULT_443_MARKER_PIXELS_PER_STEP = 3;
     private static final int CATAPULT_AIM_SCALE = 2;
     private static final int CATAPULT_MISS_RADIUS = 1;
 
@@ -515,6 +526,13 @@ public final class CastleWarsEngineeringManager {
 
     private static void refreshCatapultAimInterface(Player player, CatapultAim aim) {
         if (ServerSettings.clientBuild == 443) {
+            // Group 54 draws decorative model widgets 146..149 over the four
+            // actual digit models (116,117,132,133). Remove that extra layer:
+            // otherwise the changing digits appear as overlapping icons.
+            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_X_TENS, -1);
+            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_X_ONES, -1);
+            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_Y_TENS, -1);
+            player.getPacketSender().sendInterfaceModelId(CATAPULT_443_OVERLAY_Y_ONES, -1);
             // The native 443 panel draws separate tens/ones 3D digit models.
             // Legacy sendInterfaceText() does not update these widgets.
             player.getPacketSender().sendInterfaceModelId(
@@ -525,10 +543,26 @@ public final class CastleWarsEngineeringManager {
                     CATAPULT_443_Y_TENS_COMPONENT_ID, catapultDigitModelId(aim.y / 10));
             player.getPacketSender().sendInterfaceModelId(
                     CATAPULT_443_Y_ONES_COMPONENT_ID, catapultDigitModelId(aim.y % 10));
+            // Group 54's map target is a model widget, not a minimap hint.
+            // Move only the enemy-side marker; the opposite side stays fixed.
+            // Widget position packets use signed offsets relative to cache XY.
+            player.getPacketSender().sendInterfacePosition(
+                    aim.team == CastleWarsManager.Team.SARADOMIN
+                            ? CATAPULT_443_SARADOMIN_TARGET_MARKER
+                            : CATAPULT_443_ZAMORAK_TARGET_MARKER,
+                    catapultMarkerOffsetX(aim.y), catapultMarkerOffsetY(aim.x));
             return;
         }
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.x), CATAPULT_AIM_X_TEXT_ID);
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.y), CATAPULT_AIM_Y_TEXT_ID);
+    }
+
+    private static int catapultMarkerOffsetX(int horizontalAim) {
+        return (horizontalAim - CATAPULT_MAX_AIM / 2) * CATAPULT_443_MARKER_PIXELS_PER_STEP;
+    }
+
+    private static int catapultMarkerOffsetY(int verticalAim) {
+        return (CATAPULT_MAX_AIM / 2 - verticalAim) * CATAPULT_443_MARKER_PIXELS_PER_STEP;
     }
 
     private static int catapultDigitModelId(int digit) {
