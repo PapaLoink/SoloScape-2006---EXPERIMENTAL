@@ -55,20 +55,38 @@ public final class CastleWarsCatapult443Checks {
         }
 
         java.lang.reflect.Method markerX = CastleWarsEngineeringManager.class
-                .getDeclaredMethod("catapultMarkerOffsetX", int.class);
+                .getDeclaredMethod("catapultMarkerOffsetX", CastleWarsManager.Team.class, int.class);
         java.lang.reflect.Method markerY = CastleWarsEngineeringManager.class
-                .getDeclaredMethod("catapultMarkerOffsetY", int.class);
+                .getDeclaredMethod("catapultMarkerOffsetY", CastleWarsManager.Team.class, int.class);
         markerX.setAccessible(true);
         markerY.setAccessible(true);
-        require((Integer) markerX.invoke(null, 15) == 0
-                && (Integer) markerY.invoke(null, 15) == 0,
-                "Initial aiming target must use the native cache marker origin");
-        require((Integer) markerX.invoke(null, 16) > 0
-                && (Integer) markerY.invoke(null, 16) < 0,
-                "Right/up arrow clicks must move the target right/up on the map");
-        require((Integer) markerX.invoke(null, 0) < 0
-                && (Integer) markerY.invoke(null, 30) < 0,
-                "Map offsets must permit the whole 0..30 coordinate range");
+
+        // Stock group 54 shows Saradomin's catapult at (201,223),
+        // Zamorak's at (73,101), and the red-X widget at (93,122).
+        // Like the OSRS 00,00 screenshot, the X starts ONE TILE ahead of
+        // the operator's own catapult, not at the opposing team or centre.
+        int saradominX = (Integer) markerX.invoke(null, CastleWarsManager.Team.SARADOMIN, 0);
+        int saradominY = (Integer) markerY.invoke(null, CastleWarsManager.Team.SARADOMIN, 0);
+        int zamorakX = (Integer) markerX.invoke(null, CastleWarsManager.Team.ZAMORAK, 0);
+        int zamorakY = (Integer) markerY.invoke(null, CastleWarsManager.Team.ZAMORAK, 0);
+        require(saradominX + 93 == 197 && saradominY + 122 == 219,
+                "00,00 must start the Saradomin red X beside its south-east catapult");
+        require(zamorakX + 93 == 77 && zamorakY + 122 == 105,
+                "00,00 must start the Zamorak red X beside its north-west catapult");
+
+        // Increasing X/Y aims towards the middle from either team's base.
+        // Every button press must move the map marker (no every-other-click freeze).
+        require((Integer) markerX.invoke(null, CastleWarsManager.Team.SARADOMIN, 1) < saradominX
+                && (Integer) markerY.invoke(null, CastleWarsManager.Team.SARADOMIN, 1) < saradominY,
+                "Saradomin arrows must move the X north-west away from its own catapult");
+        require((Integer) markerX.invoke(null, CastleWarsManager.Team.ZAMORAK, 1) > zamorakX
+                && (Integer) markerY.invoke(null, CastleWarsManager.Team.ZAMORAK, 1) > zamorakY,
+                "Zamorak arrows must move the X south-east away from its own catapult");
+        require((Integer) markerX.invoke(null, CastleWarsManager.Team.SARADOMIN, 30) < saradominX
+                && (Integer) markerY.invoke(null, CastleWarsManager.Team.SARADOMIN, 30) < saradominY
+                && (Integer) markerX.invoke(null, CastleWarsManager.Team.ZAMORAK, 30) > zamorakX
+                && (Integer) markerY.invoke(null, CastleWarsManager.Team.ZAMORAK, 30) > zamorakY,
+                "30,30 target must move both teams' markers inward from their own catapult");
 
         // Group 54 leaves base model 4857 unchanged at 116/117/132/133.
         // The foreground models are 4863..4872 for numeral values 0..9;
@@ -128,11 +146,11 @@ public final class CastleWarsCatapult443Checks {
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before,
                     "Operating the catapult must not automatically spend a rock");
 
-            require(aimCoordinate(player, "x") == 15 && aimCoordinate(player, "y") == 15,
-                    "The initial aim was not centered");
+            require(aimCoordinate(player, "x") == 0 && aimCoordinate(player, "y") == 0,
+                    "The native 443 catapult must start at 00,00 beside its own base");
             nativeWidgetSelect(player, 150); // up
             nativeWidgetButton(player, 152); // right
-            require(aimCoordinate(player, "x") == 16 && aimCoordinate(player, "y") == 16,
+            require(aimCoordinate(player, "x") == 1 && aimCoordinate(player, "y") == 1,
                     "Revision-443 native aim arrows did not update target coordinates");
             require(player.getInventoryManager().getItemAmount(
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before,
@@ -166,14 +184,14 @@ public final class CastleWarsCatapult443Checks {
                     "Operating the legacy catapult failed");
             require(player.getOpenInterfaceId() == ROOT,
                     "Legacy catapult must also open the aiming interface");
-            require(aimCoordinate(player, "x") == 15 && aimCoordinate(player, "y") == 15,
-                    "Legacy catapult aim was not centered");
+            require(aimCoordinate(player, "x") == 0 && aimCoordinate(player, "y") == 0,
+                    "Legacy catapult aim must also start at 00,00");
             require(player.getInventoryManager().getItemAmount(
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before - 1,
                     "Opening the legacy aiming interface consumed a rock");
             require(CastleWarsEngineeringManager.handleCatapultButton(player, 11321),
                     "Legacy aim-up control was not accepted");
-            require(aimCoordinate(player, "x") == 16,
+            require(aimCoordinate(player, "x") == 1,
                     "Legacy aim-up control did not update the target");
         } finally {
             ServerSettings.clientBuild = 443;
