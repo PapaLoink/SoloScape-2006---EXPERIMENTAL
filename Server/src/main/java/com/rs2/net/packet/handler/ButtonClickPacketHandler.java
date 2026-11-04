@@ -62,6 +62,10 @@ implements PacketHandler {
         // before the generic direct-parent interface guard discards the click.
         if (CastleWarsEngineeringManager.handleCatapultButton(player, buttonId)) return;
         if (CastleWarsManager.handleCastleWarsManualButton(player, buttonId)) return;
+        // Native group 55's scoreboard close (443 virtual button 19730)
+        // is not part of the legacy hierarchy, so handle it before the
+        // generic direct-parent interface-open guard.
+        if (CastleWarsManager.handleScoreboardCloseButton(player, buttonId)) return;
 
         // Revision 443 character design is native group 269 while the legacy
         // server tracks the coexisting Tutorial Island chatbox (6179) as the
