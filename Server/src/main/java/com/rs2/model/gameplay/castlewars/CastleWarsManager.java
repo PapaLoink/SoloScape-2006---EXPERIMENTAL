@@ -2796,6 +2796,8 @@ public final class CastleWarsManager {
             if (player.activeBookPageIndex > 0) {
                 --player.activeBookPageIndex;
                 renderCastleWarsManual(player);
+            } else {
+                acknowledgeCastleWarsManualBoundaryClick(player);
             }
             return true;
         }
@@ -2804,11 +2806,25 @@ public final class CastleWarsManager {
             if (player.activeBookPageIndex + 1 < CASTLE_WARS_MANUAL_PAGES.length) {
                 ++player.activeBookPageIndex;
                 renderCastleWarsManual(player);
+            } else {
+                acknowledgeCastleWarsManualBoundaryClick(player);
             }
             return true;
         }
 
         return false;
+    }
+
+    private static void acknowledgeCastleWarsManualBoundaryClick(Player player) {
+        // A native revision-443 action-type-6 book arrow sets the client's
+        // pending-widget lock even if the page cannot move further. Without
+        // an interface-open response, all subsequent arrows remain disabled
+        // until the player closes and reopens the manual.
+        // Reopen the same book (opcode 160) to release that lock, but don't
+        // resend the unchanged page content. Legacy clients need no ACK.
+        if (ServerSettings.clientBuild == 443) {
+            player.getPacketSender().showInterface(CASTLE_WARS_MANUAL_INTERFACE_ID);
+        }
     }
 
     private static void renderCastleWarsManual(Player player) {
