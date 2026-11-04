@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - 'Server/src/main/java/com/rs2/net/packet/PacketWriter.java'
+      - 'Server/src/main/java/com/rs2/util/GameplayTrace.java'
+      - 'Server/src/test/java/GameplayTraceNoiseChecks.java'
       - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
       - 'Server/src/main/java/com/rs2/model/player/Player.java'
       - 'Server/src/test/java/com/rs2/net/packet/OutboundCipherOrderingChecks.java'
@@ -28,3 +30,8 @@ jobs:
           javac -encoding UTF-8 -cp 'lib/*' -d outbound-cipher-check-classes @/tmp/outbound-cipher-sources.txt
           javac -encoding UTF-8 -cp 'outbound-cipher-check-classes:lib/*' -d outbound-cipher-check-classes src/test/java/com/rs2/net/packet/OutboundCipherOrderingChecks.java
           java -cp 'outbound-cipher-check-classes:lib/*' com.rs2.net.packet.OutboundCipherOrderingChecks
+      - name: Verify general Debug Mode does not spam combat/packet trace
+        working-directory: Server
+        run: |
+          javac -encoding UTF-8 -cp 'outbound-cipher-check-classes:lib/*' -d outbound-cipher-check-classes src/test/java/GameplayTraceNoiseChecks.java
+          java -Dprs.traceGameplay=false -Dprs.traceConsole=false -cp 'outbound-cipher-check-classes:lib/*' GameplayTraceNoiseChecks
