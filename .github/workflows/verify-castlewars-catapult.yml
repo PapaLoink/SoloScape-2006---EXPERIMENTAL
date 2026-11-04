@@ -53,6 +53,12 @@ jobs:
             src/main/java/com/rs2/cache/js5/Interfaces.java \
             src/test/java/CastleWarsCatapultWidgetCacheChecks.java
           java -cp 'catapult-test-classes:lib/*' CastleWarsCatapultWidgetCacheChecks
+      - name: Inspect 443 native book click packet generation
+        run: |
+          echo '--- native client book click handlers ---'
+          grep -Rn -C 3 'Bzip2Block.method1035' Client/src | head -n 130 || true
+          echo '--- explicit native book/group 49 handlers ---'
+          grep -Rn -C 2 -E 'Previous Page|Next Page|group == 49|groupId == 49|packedWidgetId.*49' Client/src | head -n 140 || true
       - name: Compile server and verify native catapult actions
         working-directory: Server
         run: |
