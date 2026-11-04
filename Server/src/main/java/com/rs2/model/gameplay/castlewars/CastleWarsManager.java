@@ -1735,8 +1735,11 @@ public final class CastleWarsManager {
         }
         Position position = player.getPosition();
         if (objectId == SARADOMIN_ENERGY_BARRIER_ID) {
-            if (objectX == 2426 && objectY == 3080) {
-                return new Position(2426, position.getY() <= 3080 ? 3079 : 3081, 1);
+            // The north barrier's clicked object Y can differ by client map
+            // revision. The two actual crossing tiles are (2426,3080) and
+            // (2426,3081), so use the barrier's X and the player's side.
+            if (objectX == 2426) {
+                return new Position(2426, position.getY() <= 3080 ? 3080 : 3081, 1);
             }
             if (objectX == 2422 && objectY == 3076) {
                 return new Position(position.getX() >= 2423 ? 2423 : 2422, 3076, 1);
@@ -1764,10 +1767,24 @@ public final class CastleWarsManager {
         }
 
         Position position = player.getPosition();
+        if (position.getPlane() != 1) {
+            player.getPacketSender().sendGameMessage("You cannot pass the barrier from here.");
+            return;
+        }
         if (barrierTeam == Team.SARADOMIN) {
-            if (objectX == 2426 && objectY == 3080) {
-                int y = position.getY() <= 3080 ? 3081 : 3080;
-                player.moveTo(new Position(2426, y, 1));
+            if (objectX == 2426) {
+                // North energy barrier: step between its two actual walkable
+                // faces, regardless of the clicked object tile's Y value.
+                if (position.getX() == 2426 && position.getY() == 3080) {
+                    player.moveTo(new Position(2426, 3081, 1));
+                    return;
+                }
+                if (position.getX() == 2426 && position.getY() == 3081) {
+                    player.moveTo(new Position(2426, 3080, 1));
+                    return;
+                }
+                player.getPacketSender().sendGameMessage(
+                        "Move next to the north barrier to pass through.");
                 return;
             }
             if (objectX == 2422 && objectY == 3076) {
