@@ -36,10 +36,10 @@ public final class CastleWarsCatapult443Checks {
         for (int i = 0; i < 4; i++) {
             require(InterfaceBridge.translate(19700 + i)
                             == (GROUP << 16 | new int[]{116, 117, 132, 133}[i]),
-                    "Wrong native digit model mapping " + i);
+                    "Wrong native static digit background mapping " + i);
             require(InterfaceBridge.translate(19704 + i)
                             == (GROUP << 16 | 146 + i),
-                    "Wrong native digit overlay model mapping " + i);
+                    "Wrong native foreground numeral mapping " + i);
         }
         require(InterfaceBridge.translate(19708) == (GROUP << 16 | 161),
                 "The movable red X must use native group 54 child 161");
@@ -60,13 +60,14 @@ public final class CastleWarsCatapult443Checks {
                 && (Integer) markerY.invoke(null, 30) < 0,
                 "Map offsets must permit the whole 0..30 coordinate range");
 
-        // Group 54 renders the two coordinates with model IDs 4857..4866
-        // for digits 0..9, not with legacy text widget updates.
+        // Group 54 leaves base model 4857 unchanged at 116/117/132/133.
+        // The foreground models are 4863..4872 for numeral values 0..9;
+        // the original cache shows 4864..4867 ('1'..'4') at 146..149.
         java.lang.reflect.Method digitModel = CastleWarsEngineeringManager.class
                 .getDeclaredMethod("catapultDigitModelId", int.class);
         digitModel.setAccessible(true);
         for (int digit = 0; digit <= 9; digit++) {
-            require((Integer) digitModel.invoke(null, digit) == 4857 + digit,
+            require((Integer) digitModel.invoke(null, digit) == 4863 + digit,
                     "Incorrect native catapult digit model " + digit);
         }
 
