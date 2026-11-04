@@ -1177,7 +1177,10 @@ public final class PacketSender {
                     + this.player.getPosition().getY() + " center=" + centerX + ","
                     + centerY + " local=" + this.player.localX + ","
                     + this.player.localY + " plane=" + this.player.getPosition().getPlane());
-            this.player.writePacketBuffer(region.getBuffer());
+            // The native 443 login reader treats the first game packet as
+            // a variable-short region rebuild. Flush any Castle Wars reconnect
+            // notifications only AFTER this packet has reached the wire.
+            this.player.writeInitial443Region(region.getBuffer());
             return this;
         }
         PacketWriter packetWriter = PacketBuffer.allocateWriter(5);
