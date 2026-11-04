@@ -2164,10 +2164,22 @@ public final class CastleWarsManager {
         int y = wallPosition.getY();
         int targetX = battlefieldPosition.getX();
         int targetY = battlefieldPosition.getY();
-        return getCastleTeamAtPosition(new Position(x - 1, y, 0)) != team && targetX < x
-                || getCastleTeamAtPosition(new Position(x + 1, y, 0)) != team && targetX > x
-                || getCastleTeamAtPosition(new Position(x, y - 1, 0)) != team && targetY < y
-                || getCastleTeamAtPosition(new Position(x, y + 1, 0)) != team && targetY > y;
+        // Battlement walkways can sit up to two tiles inside the castle
+        // footprint. Requiring the very next tile to be outside made ranged
+        // defenders standing on the wall invisible to ground-level opponents.
+        for (int offset = 1; offset <= 3; ++offset) {
+            if ((targetX < x && getCastleTeamAtPosition(
+                    new Position(x - offset, y, 0)) != team)
+                    || (targetX > x && getCastleTeamAtPosition(
+                    new Position(x + offset, y, 0)) != team)
+                    || (targetY < y && getCastleTeamAtPosition(
+                    new Position(x, y - offset, 0)) != team)
+                    || (targetY > y && getCastleTeamAtPosition(
+                    new Position(x, y + offset, 0)) != team)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean isCastleWallCrossLevelPair(Player first, Player second) {
@@ -2203,8 +2215,13 @@ public final class CastleWarsManager {
         Position wallPosition = firstOnWall ? firstPosition : secondPosition;
         Position battlefieldPosition = firstOnWall ? secondPosition : firstPosition;
         Team wallTeam = getCastleTeamAtPosition(wallPosition);
-        if (getCastleTeamAtPosition(battlefieldPosition) == wallTeam
-                || !isFacingOutFromBattlement(wallPosition, battlefieldPosition)) {
+        Team groundTeam = getCastleTeamAtPosition(battlefieldPosition);
+        // An opponent on the lower floor *inside* the same castle footprint
+        // can still shoot a rope climber on its battlements. Only require an
+        // outward-facing wall edge for targets outside that castle. The
+        // walk-connected check above preserves ordinary same-level melee.
+        if (groundTeam != wallTeam
+                && !isFacingOutFromBattlement(wallPosition, battlefieldPosition)) {
             return false;
         }
         return GameUtil.getDistance(wallPosition, battlefieldPosition) <= 15;
