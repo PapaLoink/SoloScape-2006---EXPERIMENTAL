@@ -164,6 +164,16 @@ public final class CastleWarsCatapult443Checks {
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before,
                     "Rejecting automatic targeting must not consume a rock");
 
+            // At the new authentic 00,00 start the target is directly beside
+            // the catapult. Move well clear of the disconnected Player fixture
+            // before firing, otherwise splash damage queues a combat hit onto
+            // an entity without a live network/session in this test.
+            for (int step = 1; step < 20; ++step) {
+                nativeWidgetSelect(player, 150); // up
+                nativeWidgetButton(player, 152); // right
+            }
+            require(aimCoordinate(player, "x") == 20 && aimCoordinate(player, "y") == 20,
+                    "Cannot aim safely away from the catapult before firing");
             nativeWidgetButton(player, 158); // Fire at the selected coordinates
             require(player.getInventoryManager().getItemAmount(
                     CastleWarsEngineeringManager.ROCK_ITEM_ID) == before - 1,
