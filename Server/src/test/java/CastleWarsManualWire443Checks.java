@@ -60,14 +60,15 @@ public final class CastleWarsManualWire443Checks {
                     if (count < 0) break;
                     Parsed candidate = parse(Arrays.copyOf(received.array(), received.position()));
                     if (candidate != null && candidate.openCount == 3
-                            && candidate.textCount == 75 && candidate.closeCount == 1) {
+                            && candidate.textCount == 75 && candidate.colourCount == 6
+                            && candidate.closeCount == 1) {
                         parsed = candidate;
                         break;
                     }
                     if (count == 0) Thread.yield();
                 }
                 require(parsed != null,
-                        "Book open/Next/Previous must send 3 interface-open frames, 75 text updates, and close");
+                        "Book open/Next/Previous must send 3 interface-open frames, 75 text updates, 6 heading colours, and close");
                 require(parsed.firstLineHeadings.size() == 3,
                         "Book must update the first line of every spread");
                 require("Objective".equals(parsed.firstLineHeadings.get(0))
@@ -106,6 +107,16 @@ public final class CastleWarsManualWire443Checks {
                 }
                 wire.position(payloadStart + length);
                 parsed.textCount++;
+            } else if (opcode == 3) {
+                // Native 443 widget-text-colour packet: packed component ID,
+                // then 16-bit RGB555. Both page headings get their own colour
+                // packet instead of rendering a literal HTML/377 colour tag.
+                if (wire.remaining() < 6) return null;
+                wire.position(wire.position() + 4);
+                int colour = wire.order(ByteOrder.LITTLE_ENDIAN).getShort() & 65535;
+                wire.order(ByteOrder.BIG_ENDIAN);
+                require(colour == 0x4000, "Castle Wars manual section headings must use dark red");
+                parsed.colourCount++;
             } else if (opcode == 178) {
                 parsed.closeCount++;
             } else {
@@ -131,6 +142,7 @@ public final class CastleWarsManualWire443Checks {
     private static final class Parsed {
         int openCount;
         int textCount;
+        int colourCount;
         int closeCount;
         final List<String> firstLineHeadings = new ArrayList<String>();
     }
