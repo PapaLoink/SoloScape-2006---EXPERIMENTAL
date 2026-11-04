@@ -497,7 +497,9 @@ public final class CastleWarsEngineeringManager {
         }
 
         if (buttonId == CATAPULT_FIRE_BUTTON_ID) {
-            Position selectedTarget = resolveCatapultAimTarget(team, aim.x, aim.y);
+            // Top arrows control the vertical axis; bottom arrows control
+            // the horizontal axis. Use the same mapping as the red X.
+            Position selectedTarget = resolveCatapultAimTarget(team, aim.y, aim.x);
             Position impactTarget = scatterCatapultTarget(selectedTarget);
             if (!fireCatapultAt(player, impactTarget)) {
                 if (player.getInventoryManager().getItemAmount(ROCK_ITEM_ID) <= 0) {
@@ -511,6 +513,8 @@ public final class CastleWarsEngineeringManager {
             return true;
         }
 
+        // Top controls adjust the map's vertical axis; bottom controls
+        // adjust its horizontal axis. The numeric slots retain native order.
         boolean changed = false;
         if (buttonId == catapultAimUpButtonId && aim.x < CATAPULT_MAX_AIM) {
             ++aim.x;
@@ -545,14 +549,15 @@ public final class CastleWarsEngineeringManager {
                     CATAPULT_443_Y_TENS_COMPONENT_ID, catapultDigitModelId(aim.y / 10));
             player.getPacketSender().sendInterfaceModelId(
                     CATAPULT_443_Y_ONES_COMPONENT_ID, catapultDigitModelId(aim.y % 10));
-            // Match the original 00,00 default beside the operator's own
-            // catapult. Project the X's movement toward the opposing side,
-            // using the same X/Y axes as resolveCatapultAimTarget(). Keep
-            // both fixed catapult-site icons in place.
+            // The top up/down number is the vertical aiming coordinate
+            // (aim.x), and the bottom left/right number is the horizontal
+            // coordinate (aim.y). Do not swap these when moving the cross:
+            // they must agree with the actual impact target on both teams.
+            // At 00,00 the X remains beside the player's own catapult.
             player.getPacketSender().sendInterfacePosition(
                     CATAPULT_443_TARGET_CROSS,
-                    catapultMarkerOffsetX(aim.team, aim.x),
-                    catapultMarkerOffsetY(aim.team, aim.y));
+                    catapultMarkerOffsetX(aim.team, aim.y),
+                    catapultMarkerOffsetY(aim.team, aim.x));
             return;
         }
         player.getPacketSender().sendInterfaceText(twoDigitAimValue(aim.x), CATAPULT_AIM_X_TEXT_ID);
