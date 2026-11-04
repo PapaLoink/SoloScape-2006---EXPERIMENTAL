@@ -4,6 +4,8 @@ on:
     paths:
       - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
       - 'Server/src/main/java/com/rs2/net/packet/InterfaceBridge.java'
+      - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
       - 'Server/src/main/java/com/rs2/net/packet/handler/InterfaceActionPacketHandler.java'
       - 'Server/src/test/java/CastleWarsCatapult443Checks.java'
       - 'Server/src/test/java/CastleWarsCatapultWidgetCacheChecks.java'
@@ -14,6 +16,8 @@ on:
     paths:
       - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
       - 'Server/src/main/java/com/rs2/net/packet/InterfaceBridge.java'
+      - 'Server/src/main/java/com/rs2/net/packet/PacketSender.java'
+      - 'Server/src/main/java/com/rs2/model/player/Player.java'
       - 'Server/src/main/java/com/rs2/net/packet/handler/InterfaceActionPacketHandler.java'
       - 'Server/src/test/java/CastleWarsCatapult443Checks.java'
       - 'Server/src/test/java/CastleWarsCatapultWidgetCacheChecks.java'
@@ -28,16 +32,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '8'
-      - name: Diagnose revision 443 first frame and forbidden packet 64
-        run: |
-          echo '--- Opcode 64 direct sender candidates ---'
-          grep -RnE 'writeOpcode.*64|startVariable.*64|OPCODE.*64|packetId.*64' Server/src/main/java | head -n 100 || true
-          echo '--- First frame client reads ---'
-          grep -RnF 'gameSocket.read(' Client/src | head -n 70 || true
-          echo '--- Client incoming size initialization ---'
-          grep -RnF 'incomingSizes[' Client/src | head -n 40 || true
-          echo '--- 443 server outgoing cipher setup ---'
-          grep -RnF -e 'setOutboundCipher' -e 'finalizeOutboundOpcodes' Server/src/main/java/com/rs2/net/ModernLoginProtocol.java Server/src/main/java/com/rs2/model/player/Player.java Server/src/main/java/com/rs2/net/packet/PacketWriter.java | head -n 70 || true
       - name: Inspect native catapult widget group 54
         working-directory: Server
         run: |
