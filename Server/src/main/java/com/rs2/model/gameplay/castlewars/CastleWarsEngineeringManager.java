@@ -110,9 +110,10 @@ public final class CastleWarsEngineeringManager {
     private static final int CATAPULT_443_OVERLAY_X_ONES = 19705;
     private static final int CATAPULT_443_OVERLAY_Y_TENS = 19706;
     private static final int CATAPULT_443_OVERLAY_Y_ONES = 19707;
-    // The two catapult-side map markers are native group 54 model widgets.
-    private static final int CATAPULT_443_SARADOMIN_TARGET_MARKER = 19708;
-    private static final int CATAPULT_443_ZAMORAK_TARGET_MARKER = 19709;
+    // Native group 54 child 161 is the red X (model 4856), while children
+    // 159/160 are the fixed catapult-site symbols (both model 4853).
+    // Only move the red X; moving a catapult-site symbol leaves the X behind.
+    private static final int CATAPULT_443_TARGET_CROSS = 19708;
     private static final int CATAPULT_443_MARKER_PIXELS_PER_STEP = 3;
     private static final int CATAPULT_AIM_SCALE = 2;
     private static final int CATAPULT_MISS_RADIUS = 1;
@@ -543,13 +544,11 @@ public final class CastleWarsEngineeringManager {
                     CATAPULT_443_Y_TENS_COMPONENT_ID, catapultDigitModelId(aim.y / 10));
             player.getPacketSender().sendInterfaceModelId(
                     CATAPULT_443_Y_ONES_COMPONENT_ID, catapultDigitModelId(aim.y % 10));
-            // Group 54's map target is a model widget, not a minimap hint.
-            // Move only the enemy-side marker; the opposite side stays fixed.
+            // The crosshair is a single movable model child (54:161), shared
+            // by both teams; the two map-side catapult symbols are fixed.
             // Widget position packets use signed offsets relative to cache XY.
             player.getPacketSender().sendInterfacePosition(
-                    aim.team == CastleWarsManager.Team.SARADOMIN
-                            ? CATAPULT_443_SARADOMIN_TARGET_MARKER
-                            : CATAPULT_443_ZAMORAK_TARGET_MARKER,
+                    CATAPULT_443_TARGET_CROSS,
                     catapultMarkerOffsetX(aim.y), catapultMarkerOffsetY(aim.x));
             return;
         }
