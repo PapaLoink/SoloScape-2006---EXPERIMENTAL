@@ -20,6 +20,10 @@ public final class CastleWarsBattlementRangedCombatChecks {
 
         Player climber = new Player(null);
         Player defender = new Player(null);
+        // Uninitialized test players have size zero; combat reach uses
+        // bounding rectangles and must receive normal one-tile player sizes.
+        climber.setSize(1);
+        defender.setSize(1);
         climber.isBot = true;
         // Real player entities have a one-tile hitbox; an uninitialised test
         // Player defaults to size zero and fails the Rectangle reach check.
