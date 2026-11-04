@@ -1689,6 +1689,35 @@ public final class CastleWarsManager {
                 : "You take " + amount + " bandages.");
     }
 
+    /**
+     * Energy barriers are wall objects. Normal object reach checks can select an
+     * approach across the wall, leaving players unable to click back into their
+     * team's spawn room. Route each side to its own walkable interaction tile.
+     */
+    public static Position getEnergyBarrierInteractionApproach(Player player, int objectId,
+                                                                int objectX, int objectY) {
+        if (player == null || player.getPosition().getPlane() != 1) {
+            return null;
+        }
+        Position position = player.getPosition();
+        if (objectId == SARADOMIN_ENERGY_BARRIER_ID) {
+            if (objectX == 2426 && objectY == 3080) {
+                return new Position(2426, position.getY() <= 3080 ? 3079 : 3081, 1);
+            }
+            if (objectX == 2422 && objectY == 3076) {
+                return new Position(position.getX() >= 2423 ? 2423 : 2422, 3076, 1);
+            }
+        } else if (objectId == ZAMORAK_ENERGY_BARRIER_ID) {
+            if (objectX == 2373 && objectY == 3126) {
+                return new Position(2373, position.getY() >= 3127 ? 3127 : 3126, 1);
+            }
+            if (objectX == 2377 && objectY == 3131) {
+                return new Position(position.getX() <= 2376 ? 2376 : 2377, 3131, 1);
+            }
+        }
+        return null;
+    }
+
     private static void passEnergyBarrier(Player player, Team barrierTeam, int objectX, int objectY) {
         Team playerTeam = gamePlayers.get(player);
         if (playerTeam == null) {
