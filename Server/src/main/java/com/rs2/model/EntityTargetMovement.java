@@ -217,10 +217,18 @@ public class EntityTargetMovement {
     }
 
     public static boolean canReachTarget(Entity entity, Entity entity2, int value2) {
-        if (entity.isPlayer() && entity2.isPlayer()
-                && CastleWarsManager.canBotAttackAcrossCastleLevels(
-                        (Player)entity, (Player)entity2)) {
-            return entity.isWithinReach(entity2, value2);
+        if (entity.isPlayer() && entity2.isPlayer()) {
+            Player attacker = (Player) entity;
+            Player target = (Player) entity2;
+            // The combat cycle already uses the attack-type-aware overload,
+            // but movement also calls this overload. Without this check a
+            // human ranger/mage keeps trying to path through the wall even
+            // though the projectile itself is allowed to hit a battlement.
+            if (CastleWarsManager.canBotAttackAcrossCastleLevels(attacker, target)
+                    || CastleWarsManager.isCastleWallCrossLevelPair(attacker, target)
+                    && isUsingCastleWarsRangedOrMagic(attacker)) {
+                return entity.isWithinReach(entity2, value2);
+            }
         }
         if (entity.isOverlapping(entity2)) {
             return false;
@@ -244,6 +252,23 @@ public class EntityTargetMovement {
             }
         }
         return GameUtil.hasClearPath(entity.getPosition(), entity2.getPosition(), value2 < 2);
+    }
+
+    private static boolean isUsingCastleWarsRangedOrMagic(Player player) {
+        if (player.getQueuedCombatSpell() != null
+                || (player.isAutocastEnabled() && player.getAutocastSpell() != null)) {
+            return true;
+        }
+        if (player.getWeaponProfile() == null
+                || player.getWeaponProfile().getInterfaceDefinition() == null) {
+            return false;
+        }
+        com.rs2.model.combat.AttackStyleDefinition[] styles =
+                player.getWeaponProfile().getInterfaceDefinition().getAttackStyles();
+        int styleIndex = player.getFightMode();
+        return styles != null && styleIndex >= 0 && styleIndex < styles.length
+                && styles[styleIndex] != null
+                && styles[styleIndex].getCombatType() == CombatType.RANGED;
     }
 
     public static boolean canReachTarget(Entity entity, Entity entity2, int value2,
