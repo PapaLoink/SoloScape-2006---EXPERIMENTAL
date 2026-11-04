@@ -852,6 +852,39 @@ public final class CastleWarsManager {
         return getWaitingTeam(player) != null;
     }
 
+    /**
+     * Start an eligible Castle Wars match now instead of waiting for the
+     * normal lobby countdown. Only a player inside a team waiting room may
+     * request it; the existing minimum player count still applies.
+     */
+    public static boolean startGameImmediately(Player requester) {
+        if (requester == null) {
+            return false;
+        }
+        if (gameInProgress) {
+            requester.getPacketSender().sendGameMessage(
+                    "A Castle Wars match is already in progress.");
+            return false;
+        }
+
+        cleanupWaitingPlayers();
+        if (waitingPlayers.get(requester) == null) {
+            requester.getPacketSender().sendGameMessage(
+                    "You must be in a Castle Wars team waiting room to use ::cwstart.");
+            return false;
+        }
+        if (!hasMinimumPlayersToStartInternal()) {
+            requester.getPacketSender().sendGameMessage(
+                    "Castle Wars needs at least one waiting player on each team.");
+            return false;
+        }
+
+        // Run the normal match setup now, including team spawning, flags,
+        // timers and interfaces. Do not weaken its player-count checks.
+        startGame(System.currentTimeMillis());
+        return gameInProgress;
+    }
+
     public static boolean isInGame(Player player) {
         return getGameTeam(player) != null;
     }
