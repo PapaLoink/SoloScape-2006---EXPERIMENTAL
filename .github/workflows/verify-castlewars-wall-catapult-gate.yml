@@ -3,6 +3,13 @@ on:
   push:
     branches:
       - Audit/Castlewars
+      - main
+    paths:
+      - 'Server/src/main/java/com/rs2/model/EntityTargetMovement.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsManager.java'
+      - 'Server/src/main/java/com/rs2/model/gameplay/castlewars/CastleWarsEngineeringManager.java'
+      - 'Server/src/test/java/CastleWarsBattlementRangedCombatChecks.java'
+      - '.github/workflows/verify-castlewars-wall-catapult-gate.yml'
   pull_request:
     paths:
       - 'Server/src/main/java/com/rs2/model/EntityTargetMovement.java'
@@ -11,6 +18,7 @@ on:
       - 'Server/src/main/java/com/rs2/bot/CastleWarsBotAi.java'
       - 'Server/src/main/java/com/rs2/bot/CastleWarsBotRoleAi.java'
       - 'Server/src/test/java/com/rs2/bot/CastleWarsWallCatapultGateChecks.java'
+      - 'Server/src/test/java/CastleWarsBattlementRangedCombatChecks.java'
       - '.github/workflows/verify-castlewars-wall-catapult-gate.yml'
   workflow_dispatch:
 jobs:
@@ -28,6 +36,7 @@ jobs:
           mkdir -p wall-catapult-gate-classes
           find src/main/java -name '*.java' > /tmp/castle-wars-wall-catapult-sources.txt
           javac -encoding UTF-8 -cp 'lib/*' -d wall-catapult-gate-classes @/tmp/castle-wars-wall-catapult-sources.txt
-          javac -encoding UTF-8 -cp 'wall-catapult-gate-classes:lib/*' -d wall-catapult-gate-classes src/test/java/com/rs2/bot/CastleWarsWallCatapultGateChecks.java src/test/java/CastleWarsMainDoorInteractionChecks.java
+          javac -encoding UTF-8 -cp 'wall-catapult-gate-classes:lib/*' -d wall-catapult-gate-classes src/test/java/com/rs2/bot/CastleWarsWallCatapultGateChecks.java src/test/java/CastleWarsMainDoorInteractionChecks.java src/test/java/CastleWarsBattlementRangedCombatChecks.java
           java -cp 'wall-catapult-gate-classes:lib/*' com.rs2.bot.CastleWarsWallCatapultGateChecks
           java -cp 'wall-catapult-gate-classes:lib/*' CastleWarsMainDoorInteractionChecks
+          java -cp 'wall-catapult-gate-classes:lib/*' CastleWarsBattlementRangedCombatChecks
