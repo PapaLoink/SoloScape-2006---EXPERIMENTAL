@@ -2819,17 +2819,23 @@ public final class CastleWarsManager {
         }
         player.activeBookPageIndex = spread;
 
-        // For 443 this is native book group 49, not the 377-only interface.
-        // Open once, then update the page text in place on arrow clicks.
-        if (player.getOpenInterfaceId() != CASTLE_WARS_MANUAL_INTERFACE_ID) {
+        // Native 443 book arrows use action-type-6 widgets. After a click,
+        // the 443 client sets its pending-widget lock until it receives an
+        // interface-open packet. Reopen the SAME book on every page turn,
+        // before sending the new text, so Next/Previous remain clickable.
+        // Other revisions keep the existing open-once behaviour.
+        if (ServerSettings.clientBuild == 443
+                || player.getOpenInterfaceId() != CASTLE_WARS_MANUAL_INTERFACE_ID) {
             player.getPacketSender().showInterface(CASTLE_WARS_MANUAL_INTERFACE_ID);
         }
         String[] lines = CASTLE_WARS_MANUAL_PAGES[spread];
         for (int index = 0; index < CASTLE_WARS_MANUAL_LINE_COUNT; ++index) {
             String text = index < lines.length ? lines[index] : "";
-            // Legacy @dre@ book markup is not a 443 JString colour tag.
+            // Revision 443 renders server-updated book text literally.
+            // Neither 377's @dre@ tag nor HTML-style <col=...> is parsed
+            // here, so keep headings as plain, legible text in native 443.
             if (ServerSettings.clientBuild == 443) {
-                text = text.replace("@dre@", "<col=800000>");
+                text = text.replace("@dre@", "");
             }
             player.getPacketSender().sendInterfaceText(
                     text, CASTLE_WARS_MANUAL_FIRST_LINE_ID + index);
