@@ -37,10 +37,10 @@ public final class CastleWarsNativePanelProbe {
                 }
             }
         }
-        for (int group : new int[] {228, 59, 61, 73, 81, 124, 154, 160, 187, 217, 264, 275, 391}) {
+        for (int group : new int[] {49, 55, 228, 59, 61, 73, 81, 124, 154, 160, 187, 217, 264, 275, 391}) {
             Map<Integer, Interfaces.Component> widgets = Interfaces.group(group);
             System.out.println("GROUP-PROBE "+group+" children="+widgets.size());
-            if (group == 228 || group == 264 || group == 275 || group == 391 || group == 61 || group == 73) {
+            if (group == 49 || group == 55 || group == 228 || group == 264 || group == 275 || group == 391 || group == 61 || group == 73) {
                 for (Interfaces.Component c : widgets.values()) {
                     if (c.childId >= 90) break;
                     System.out.println("CHILD " + group + ":" + c.childId + " type="+c.type+
