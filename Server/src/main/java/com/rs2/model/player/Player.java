@@ -550,6 +550,9 @@ extends Entity {
     public ArrayList botLootPickupTargets;
     public ArrayList botLootSellGroundItems;
     public ArrayList botLootSellItems;
+    // Session-only: ground battlements in the 2006 map share plane 0 with
+    // lower ground, so map height alone cannot identify rope/stair climbers.
+    public boolean castleWarsOnBattlements;
     public boolean clanWarsBot;
     public int clanWarsTeamId;
     public long botTaskStartTimeMillis;
