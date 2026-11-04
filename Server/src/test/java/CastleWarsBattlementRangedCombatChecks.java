@@ -1,5 +1,6 @@
 import com.rs2.model.EntityTargetMovement;
 import com.rs2.model.Position;
+import com.rs2.model.World;
 import com.rs2.model.combat.CombatType;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.player.Player;
@@ -20,6 +21,14 @@ public final class CastleWarsBattlementRangedCombatChecks {
         Player climber = new Player(null);
         Player defender = new Player(null);
         climber.isBot = true;
+        // CastleWarsManager.getGameTeam() removes players that are not in the
+        // active World registry, so register both test participants.
+        climber.setIndex(75);
+        climber.setEncodedIndex(32768 + 75);
+        defender.setIndex(76);
+        defender.setEncodedIndex(32768 + 76);
+        World.players[75] = climber;
+        World.players[76] = defender;
         try {
             checkCastle(CastleWarsManager.Team.SARADOMIN,
                     CastleWarsManager.Team.ZAMORAK, climber, defender, teams,
@@ -34,6 +43,10 @@ public final class CastleWarsBattlementRangedCombatChecks {
         } finally {
             teams.remove(climber);
             teams.remove(defender);
+            World.players[75] = null;
+            World.players[76] = null;
+            climber.setIndex(-1);
+            defender.setIndex(-1);
         }
     }
 
