@@ -189,6 +189,25 @@ extends TickTask {
             }
             return;
         }
+        // Wall-mounted Castle Wars barriers must be approached from the player's
+        // current side; generic object reach checks can reject the outside face.
+        Position energyBarrierApproach = CastleWarsManager.getEnergyBarrierInteractionApproach(
+                this.player, this.objectId, this.objectX, this.objectY);
+        if (energyBarrierApproach != null) {
+            if (this.player.getPosition().getX() == energyBarrierApproach.getX()
+                    && this.player.getPosition().getY() == energyBarrierApproach.getY()) {
+                CastleWarsManager.handleFirstObjectAction(
+                        this.player, this.objectId, this.objectX, this.objectY);
+                this.stop();
+                return;
+            }
+            boolean foundPath = PathFinder.findPath(this.player,
+                    energyBarrierApproach.getX(), energyBarrierApproach.getY(), false, 0, 0);
+            if (!foundPath) {
+                this.stop();
+            }
+            return;
+        }
         WorldObject worldObject = SkillActionHelper.findWorldObjectById(this.objectId, this.objectX, this.objectY, this.objectPlane);
         if (worldObject == null) {
             if (GameplayTrace.enabled() && !this.loggedMissingWorldObject) {
