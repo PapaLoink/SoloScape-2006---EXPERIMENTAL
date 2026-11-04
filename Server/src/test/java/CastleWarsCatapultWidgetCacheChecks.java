@@ -49,7 +49,19 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                 }
                 if (c.type == 6) {
                     StringBuilder models = new StringBuilder();
-                    for (int i = 0; i < 7; i++) models.append(" ").append(b.getShort() & 0xffff);
+                    int modelId = b.getShort() & 0xffff;
+                    models.append(" ").append(modelId);
+                    for (int i = 1; i < 7; i++) models.append(" ").append(b.getShort() & 0xffff);
+                    if (c.childId == 159 || c.childId == 160) {
+                        if (modelId != 4853)
+                            throw new AssertionError("Catapult-site icon model changed at 54:" + c.childId);
+                    } else if (c.childId == 161) {
+                        if (modelId != 4856)
+                            throw new AssertionError("Expected movable red X model at 54:161");
+                    } else if (c.childId >= 146 && c.childId <= 149) {
+                        if (modelId < 4864 || modelId > 4867)
+                            throw new AssertionError("Unexpected digit-overlap model at 54:" + c.childId);
+                    }
                     System.out.println("   model/details: conditions=" + conditions
                             + " scripts=" + scriptsText + " modelFields=" + models);
                 }
