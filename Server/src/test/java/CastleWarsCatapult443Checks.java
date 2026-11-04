@@ -41,10 +41,8 @@ public final class CastleWarsCatapult443Checks {
                             == (GROUP << 16 | 146 + i),
                     "Wrong native digit overlay model mapping " + i);
         }
-        require(InterfaceBridge.translate(19708) == (GROUP << 16 | 160),
-                "Wrong Saradomin enemy-side target marker");
-        require(InterfaceBridge.translate(19709) == (GROUP << 16 | 159),
-                "Wrong Zamorak enemy-side target marker");
+        require(InterfaceBridge.translate(19708) == (GROUP << 16 | 161),
+                "The movable red X must use native group 54 child 161");
 
         java.lang.reflect.Method markerX = CastleWarsEngineeringManager.class
                 .getDeclaredMethod("catapultMarkerOffsetX", int.class);
