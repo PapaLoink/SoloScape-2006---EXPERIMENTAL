@@ -28,6 +28,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '8'
+      - name: Diagnose client T1 opcode 64 across network senders
+        run: |
+          echo '--- Potential packet-64 writers and definitions ---'
+          grep -RnE 'writeOpcode\\([^,]+, *64\\)|startVariable(Short|Byte)Packet\\([^,]+, *64\\)|OPCODE *= *64|packetId *= *64|frameId == 64|incomingSizes\\[64\\]|new int\\[256\\]' Server/src/main/java Client/src || true
+          echo '--- Legacy packet-64 literal usages in packet classes ---'
+          grep -Rn -C 2 '\\b64\\b' Server/src/main/java/com/rs2/net/packet/PacketSender.java Server/src/main/java/com/rs2/net/packet/ObjectPacket.java Server/src/main/java/com/rs2/net/packet/ZonePacket.java || true
       - name: Inspect native catapult widget group 54
         working-directory: Server
         run: |
