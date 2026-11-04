@@ -28,14 +28,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '8'
-      - name: Diagnose client T1 opcode 64 across network senders
+      - name: Diagnose revision 443 first frame and forbidden packet 64
         run: |
-          echo '--- Potential packet-64 writers and definitions ---'
-          grep -RnE 'writeOpcode\\([^,]+, *64\\)|startVariable(Short|Byte)Packet\\([^,]+, *64\\)|OPCODE *= *64|packetId *= *64|frameId == 64|incomingSizes\\[64\\]|new int\\[256\\]' Server/src/main/java Client/src || true
-          echo '--- First frame handshake reads (client) ---'
-          grep -Rn -C 2 -E 'gameSocket\\.read\\(|gameSocket\\.available\\(|incomingSizes\\[' Client/src/unpackaged Client/src/jagex/io | head -n 120 || true
-          echo '--- Raw/plain packet writers or cipher changes ---'
-          grep -RnE 'setOutboundCipher|setInboundCipher|finalizeOutboundOpcodes|writeOpcode\\(' Server/src/main/java/com/rs2/net/ModernLoginProtocol.java Server/src/main/java/com/rs2/model/player/Player.java Server/src/main/java/com/rs2/net/packet/PacketWriter.java | head -n 90 || true
+          echo '--- Opcode 64 direct sender candidates ---'
+          grep -RnE 'writeOpcode.*64|startVariable.*64|OPCODE.*64|packetId.*64' Server/src/main/java | head -n 100 || true
+          echo '--- First frame client reads ---'
+          grep -RnF 'gameSocket.read(' Client/src | head -n 70 || true
+          echo '--- Client incoming size initialization ---'
+          grep -RnF 'incomingSizes[' Client/src | head -n 40 || true
+          echo '--- 443 server outgoing cipher setup ---'
+          grep -RnF -e 'setOutboundCipher' -e 'finalizeOutboundOpcodes' Server/src/main/java/com/rs2/net/ModernLoginProtocol.java Server/src/main/java/com/rs2/model/player/Player.java Server/src/main/java/com/rs2/net/packet/PacketWriter.java | head -n 70 || true
       - name: Inspect native catapult widget group 54
         working-directory: Server
         run: |
