@@ -26,7 +26,7 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                 }
             }
             if (word.length() >= 5) strings.append(" [").append(word).append("]");
-            if (c.childId == 88 || c.childId == 157 || c.childId == 116 || c.childId == 117 || c.childId == 132
+            if (c.childId == 116 || c.childId == 117 || c.childId == 132
                     || c.childId == 133 || c.childId == 146 || c.childId == 147
                     || c.childId == 148 || c.childId == 149
                     || c.childId == 159 || c.childId == 160 || c.childId == 161) {
@@ -47,16 +47,6 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                         scriptsText.append(j == 0 ? "" : ",").append(b.getShort() & 0xffff);
                     scriptsText.append("}");
                 }
-                if (c.type == 4 && (c.childId == 88 || c.childId == 157)) {
-                    int horizontal = b.get() & 255;
-                    int vertical = b.get() & 255;
-                    int line = b.get() & 255;
-                    int fontId = b.getShort() & 65535;
-                    int shadow = b.get() & 255;
-                    System.out.println("   text/details: align=" + horizontal + "," + vertical
-                            + " line=" + line + " font=" + fontId
-                            + " shadow=" + shadow);
-                }
                 if (c.type == 6) {
                     StringBuilder models = new StringBuilder();
                     int modelId = b.getShort() & 0xffff;
@@ -68,9 +58,13 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                     } else if (c.childId == 161) {
                         if (modelId != 4856)
                             throw new AssertionError("Expected movable red X model at 54:161");
+                    } else if (c.childId == 116 || c.childId == 117
+                            || c.childId == 132 || c.childId == 133) {
+                        if (modelId != 4857)
+                            throw new AssertionError("Native digit backing model changed at 54:" + c.childId);
                     } else if (c.childId >= 146 && c.childId <= 149) {
-                        if (modelId < 4864 || modelId > 4867)
-                            throw new AssertionError("Unexpected digit-overlap model at 54:" + c.childId);
+                        if (modelId != 4864 + (c.childId - 146))
+                            throw new AssertionError("Expected stock visible numeral models 1..4 at 54:" + c.childId);
                     }
                     System.out.println("   model/details: conditions=" + conditions
                             + " scripts=" + scriptsText + " modelFields=" + models);
