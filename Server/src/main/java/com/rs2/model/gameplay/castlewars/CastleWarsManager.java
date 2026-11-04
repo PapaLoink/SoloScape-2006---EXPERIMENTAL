@@ -272,11 +272,11 @@ public final class CastleWarsManager {
     private static final int GAME_ZAMORAK_SCORE_TEXT_ID = 11345;
     private static final int GAME_SARADOMIN_SCORE_TEXT_ID = 11346;
     private static final int GAME_TIMER_TEXT_ID = 11353;
-    // Native revision-443 HUD 59:8 is at (442,318), 68x11. Move only this
-    // countdown text up to y=23, alongside the top score row. Keep its native
-    // right-hand x=442 position and preserve the layout on legacy 377.
+    // Native revision-443 HUD 59:8 is at (442,318), 68x11: bottom-right.
+    // Send zero offsets on every HUD refresh to also reset clients that
+    // previously received the temporary top-right position override.
     static final int GAME_TIMER_443_OFFSET_X = 0;
-    static final int GAME_TIMER_443_OFFSET_Y = 23 - 318;
+    static final int GAME_TIMER_443_OFFSET_Y = 0;
     private static final int GAME_ZAMORAK_FLAG_TEXT_ID = 11349;
     private static final int GAME_SARADOMIN_FLAG_TEXT_ID = 11350;
     private static final int GAME_MAIN_GATE_TEXT_ID = 11352;
@@ -3589,8 +3589,8 @@ public final class CastleWarsManager {
     private static void updateGameInterface(Player player, long now) {
         player.getPacketSender().showWalkableInterface(GAME_INTERFACE_ID);
         if (ServerSettings.clientBuild == 443) {
-            // Reapply after the native walkable HUD is displayed (including
-            // match start, reconnect, and any subsequent HUD refresh).
+            // Restore the native bottom-right position after showing the HUD
+            // (also on reconnect and subsequent HUD refreshes).
             player.getPacketSender().sendInterfacePosition(
                     GAME_TIMER_TEXT_ID, GAME_TIMER_443_OFFSET_X, GAME_TIMER_443_OFFSET_Y);
         }
