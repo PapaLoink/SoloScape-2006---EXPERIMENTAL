@@ -26,7 +26,7 @@ public final class CastleWarsCatapultWidgetCacheChecks {
                 }
             }
             if (word.length() >= 5) strings.append(" [").append(word).append("]");
-            if (c.childId == 116 || c.childId == 117 || c.childId == 132
+            if (c.childId == 88 || c.childId == 157 || c.childId == 116 || c.childId == 117 || c.childId == 132
                     || c.childId == 133 || c.childId == 146 || c.childId == 147
                     || c.childId == 148 || c.childId == 149
                     || c.childId == 159 || c.childId == 160 || c.childId == 161) {
