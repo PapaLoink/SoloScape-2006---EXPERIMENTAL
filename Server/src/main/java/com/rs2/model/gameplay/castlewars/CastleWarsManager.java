@@ -85,6 +85,14 @@ public final class CastleWarsManager {
     private static final int CASTLE_WARS_MANUAL_PREVIOUS_BUTTON_ID = 839;
     private static final int CASTLE_WARS_MANUAL_NEXT_BUTTON_ID = 841;
     private static final int CASTLE_WARS_MANUAL_CLOSE_BUTTON_ID = 10162;
+    // Virtual 443 button IDs for cache group 55's native scoreboard close.
+    private static final int SCOREBOARD_CLOSE_BUTTON_ID = 19730;
+    // Cache group 228 contains two native sword flourishes around its title.
+    private static final int VACANCY_LEFT_SWORD_COMPONENT_ID = 19731;
+    private static final int VACANCY_RIGHT_SWORD_COMPONENT_ID = 19732;
+    // Move the sword flourishes closer to the longer Castle Wars vacancy title.
+    private static final int VACANCY_LEFT_SWORD_X_OFFSET = 10;
+    private static final int VACANCY_RIGHT_SWORD_X_OFFSET = -15;
 
     /*
      * The 2006 manual predates later Castle Wars additions such as flares and
@@ -954,6 +962,7 @@ public final class CastleWarsManager {
         }
 
         long now = System.currentTimeMillis();
+        restoreReplacementOfferSwordPositions(player);
         player.getPacketSender().closeInterfaces();
 
         if (buttonId == 2462) {
@@ -1044,12 +1053,23 @@ public final class CastleWarsManager {
 
     private static void showScoreboard(Player player) {
         ensureCurrentScoreboardSeason();
+        // In 443, native chatbox group 55 displays the original Castle Wars
+        // scoreboard title and team counters; open it before updating text.
+        player.getPacketSender().showChatboxInterface(SCOREBOARD_INTERFACE_ID);
         player.getPacketSender().sendInterfaceText("Total Wins This Season!", SCOREBOARD_TITLE_TEXT_ID);
         player.getPacketSender().sendInterfaceText(
                 "Saradomin: " + saradominSeasonVictories, SCOREBOARD_SARADOMIN_TEXT_ID);
         player.getPacketSender().sendInterfaceText(
                 "Zamorak: " + zamorakSeasonVictories, SCOREBOARD_ZAMORAK_TEXT_ID);
-        player.getPacketSender().showChatboxInterface(SCOREBOARD_INTERFACE_ID);
+    }
+
+    public static boolean handleScoreboardCloseButton(Player player, int buttonId) {
+        if (player == null || buttonId != SCOREBOARD_CLOSE_BUTTON_ID
+                || player.getOpenInterfaceId() != SCOREBOARD_INTERFACE_ID) {
+            return false;
+        }
+        player.getPacketSender().closeInterfaces();
+        return true;
     }
 
     private static void showPlayerScoreboardStats(Player player) {
@@ -2764,6 +2784,7 @@ public final class CastleWarsManager {
         }
 
         if (buttonId == CASTLE_WARS_MANUAL_CLOSE_BUTTON_ID) {
+            player.activeBookItemId = 0;
             player.getPacketSender().closeInterfaces();
             return true;
         }
@@ -2798,9 +2819,18 @@ public final class CastleWarsManager {
         }
         player.activeBookPageIndex = spread;
 
+        // For 443 this is native book group 49, not the 377-only interface.
+        // Open once, then update the page text in place on arrow clicks.
+        if (player.getOpenInterfaceId() != CASTLE_WARS_MANUAL_INTERFACE_ID) {
+            player.getPacketSender().showInterface(CASTLE_WARS_MANUAL_INTERFACE_ID);
+        }
         String[] lines = CASTLE_WARS_MANUAL_PAGES[spread];
         for (int index = 0; index < CASTLE_WARS_MANUAL_LINE_COUNT; ++index) {
             String text = index < lines.length ? lines[index] : "";
+            // Legacy @dre@ book markup is not a 443 JString colour tag.
+            if (ServerSettings.clientBuild == 443) {
+                text = text.replace("@dre@", "<col=800000>");
+            }
             player.getPacketSender().sendInterfaceText(
                     text, CASTLE_WARS_MANUAL_FIRST_LINE_ID + index);
         }
@@ -2813,7 +2843,6 @@ public final class CastleWarsManager {
                 "Page " + leftPage, CASTLE_WARS_MANUAL_LEFT_PAGE_TEXT_ID);
         player.getPacketSender().sendInterfaceText(
                 "Page " + rightPage, CASTLE_WARS_MANUAL_RIGHT_PAGE_TEXT_ID);
-        player.getPacketSender().showInterface(CASTLE_WARS_MANUAL_INTERFACE_ID);
     }
 
     private static void startGame(long now) {
@@ -3361,6 +3390,7 @@ public final class CastleWarsManager {
                         "A place is available on the " + getTeamName(team) + " team.",
                         "Join the game.",
                         "Stay in the waiting room.");
+                positionReplacementOfferSwords(player);
                 player.getPacketSender().sendGameMessage(
                         "A place has become available in the current Castle Wars game.");
             }
@@ -3415,9 +3445,32 @@ public final class CastleWarsManager {
         }
     }
 
+    private static void positionReplacementOfferSwords(Player player) {
+        if (ServerSettings.clientBuild != 443 || player == null) {
+            return;
+        }
+        // Native two-choice dialogue 228 has sword sprites 6 and 7 framing
+        // the title. Bring them in to the start/end of the vacancy sentence.
+        player.getPacketSender().sendInterfacePosition(
+                VACANCY_LEFT_SWORD_COMPONENT_ID, VACANCY_LEFT_SWORD_X_OFFSET, 0);
+        player.getPacketSender().sendInterfacePosition(
+                VACANCY_RIGHT_SWORD_COMPONENT_ID, VACANCY_RIGHT_SWORD_X_OFFSET, 0);
+    }
+
+    private static void restoreReplacementOfferSwordPositions(Player player) {
+        if (ServerSettings.clientBuild != 443 || player == null) {
+            return;
+        }
+        // Widget position overrides persist in the 443 client cache. Restore
+        // the stock layout so unrelated two-option dialogues are not affected.
+        player.getPacketSender().sendInterfacePosition(VACANCY_LEFT_SWORD_COMPONENT_ID, 0, 0);
+        player.getPacketSender().sendInterfacePosition(VACANCY_RIGHT_SWORD_COMPONENT_ID, 0, 0);
+    }
+
     private static void closeReplacementOfferInterface(Player player) {
         if (player != null
                 && (player.isInterfaceIdOpen(2461) || player.isInterfaceIdOpen(2462))) {
+            restoreReplacementOfferSwordPositions(player);
             player.getPacketSender().closeInterfaces();
         }
     }
