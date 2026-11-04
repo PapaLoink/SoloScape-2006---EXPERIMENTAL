@@ -2415,6 +2415,9 @@ extends Entity {
                     + this.getPosition().getY() + ", "
                     + this.getPosition().getPlane());
             return;
+        } else if (password.equals("cwstart")) {
+            CastleWarsManager.startGameImmediately(this);
+            return;
         } else if (password.equals("tick")) {
             if (stringValues2 == null || stringValues2.length == 0) {
                 this.packetSender.sendGameMessage(
