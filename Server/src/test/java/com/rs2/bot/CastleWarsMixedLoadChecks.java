@@ -7,6 +7,7 @@ import com.rs2.model.gameplay.castlewars.CastleWarsManager;
 import com.rs2.model.objects.ObjectDefinition;
 import com.rs2.model.player.Player;
 import com.rs2.util.GameUtil;
+import com.rs2.util.path.ProjectileCollisionMap;
 import com.rs2.util.path.PathFinder;
 import com.rs2.util.path.WalkingCollisionMap;
 import java.io.ByteArrayOutputStream;
@@ -55,6 +56,7 @@ public final class CastleWarsMixedLoadChecks {
         ServerSettings.clientBuild = 443;
         ObjectDefinition.loadRevision443();
         WalkingCollisionMap.loadCollisionMaps();
+        ProjectileCollisionMap.loadCollisionMaps();
 
         registered = Player.class.getDeclaredField("registered");
         registered.setAccessible(true);
