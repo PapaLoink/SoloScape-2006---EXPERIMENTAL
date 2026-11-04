@@ -122,7 +122,43 @@ public final class CastleWarsBattlementRangedCombatChecks {
                 }
             }
         }
+        debugFixture(team);
         return null;
+    }
+
+    private static void debugFixture(CastleWarsManager.Team team) {
+        Position landing = team == CastleWarsManager.Team.SARADOMIN
+                ? new Position(2417, 3077, 0) : new Position(2382, 3130, 0);
+        int firing = 0;
+        int insideGround = 0;
+        for (int x = landing.getX() - 10; x <= landing.getX() + 10; ++x) {
+            for (int y = landing.getY() - 10; y <= landing.getY() + 10; ++y) {
+                Position candidate = new Position(x, y, 0);
+                if (CastleWarsManager.isCastleBattlementFiringPosition(candidate)) {
+                    ++firing;
+                } else if (CastleWarsManager.getCastleTeamAtPosition(candidate) == team
+                        && (WalkingCollisionMap.getTileFlags(x, y, 0) & 0x1280100) == 0) {
+                    ++insideGround;
+                }
+            }
+        }
+        System.err.println("Battlement fixture " + team + " landing=" + landing
+                + " firing=" + firing + " inner-ground=" + insideGround
+                + " landing-flags=" + WalkingCollisionMap.getTileFlags(
+                        landing.getX(), landing.getY(), 0));
+        int printed = 0;
+        for (Object entry : com.rs2.model.objects.WorldObjectRegionIndex
+                .getOrCreateRegionBucket(landing).getLoadedObjects()) {
+            com.rs2.model.objects.LoadedWorldObject object =
+                    (com.rs2.model.objects.LoadedWorldObject) entry;
+            if (Math.abs(object.getPosition().getX() - landing.getX()) <= 4
+                    && Math.abs(object.getPosition().getY() - landing.getY()) <= 4
+                    && printed++ < 35) {
+                System.err.println("Nearby castle loc id="
+                        + object.getWorldObject().getObjectId()
+                        + " at " + object.getPosition());
+            }
+        }
     }
 
     private static void checkOuterEdgeOffset() throws Exception {
