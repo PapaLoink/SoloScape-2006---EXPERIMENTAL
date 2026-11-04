@@ -24,6 +24,7 @@ import com.rs2.util.GameUtil;
 import com.rs2.util.path.PathFinder;
 import com.rs2.util.path.WalkingCollisionMap;
 
+import java.awt.Color;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -2831,14 +2832,18 @@ public final class CastleWarsManager {
         String[] lines = CASTLE_WARS_MANUAL_PAGES[spread];
         for (int index = 0; index < CASTLE_WARS_MANUAL_LINE_COUNT; ++index) {
             String text = index < lines.length ? lines[index] : "";
-            // Revision 443 renders server-updated book text literally.
-            // Neither 377's @dre@ tag nor HTML-style <col=...> is parsed
-            // here, so keep headings as plain, legible text in native 443.
+            boolean sectionHeading = text.startsWith("@dre@");
+            int textWidget = CASTLE_WARS_MANUAL_FIRST_LINE_ID + index;
+            // Native 443 JStrings render both 377's @dre@ and HTML-style
+            // colour tags literally. Send plain text, then apply the dark-red
+            // heading colour through the native widget colour packet instead.
             if (ServerSettings.clientBuild == 443) {
                 text = text.replace("@dre@", "");
             }
-            player.getPacketSender().sendInterfaceText(
-                    text, CASTLE_WARS_MANUAL_FIRST_LINE_ID + index);
+            player.getPacketSender().sendInterfaceText(text, textWidget);
+            if (ServerSettings.clientBuild == 443 && sectionHeading) {
+                player.getPacketSender().sendInterfaceTextColor(textWidget, new Color(128, 0, 0));
+            }
         }
 
         int leftPage = spread * 2 + 1;
