@@ -47,6 +47,12 @@ public final class CastleWarsQuickStartChecks {
             saradomin.setPosition(new Position(2377, 9485, 0));
             zamorak.setPosition(new Position(2421, 9524, 0));
             outsider.setPosition(new Position(2440, 3090, 0));
+            // Real sessions initialise the local map view during login. The
+            // match's supply-spawn broadcast needs this even before teleporting
+            // players out of the waiting caves.
+            for (Player participant : participants) {
+                participant.refreshLocalViewArea();
+            }
             waiting.put(saradomin, Team.SARADOMIN);
             require(!CastleWarsManager.startGameImmediately(saradomin),
                     "Cannot start a game with an empty opposing team");
