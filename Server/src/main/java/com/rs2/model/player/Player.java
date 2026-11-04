@@ -203,6 +203,11 @@ extends Entity {
     private final SelectionKey selectionKey;
     private final ByteBuffer inboundBuffer;
     private ByteBuffer outboundBuffer;
+    // The 443 login protocol reads the first game frame as a variable-short
+    // region rebuild. Castle Wars relocation can produce inventory/chat packets
+    // before that rebuild; defer them until the region is on the wire.
+    private boolean awaitingInitial443Region;
+    private final List<ByteBuffer> pendingInitial443Packets = new ArrayList<ByteBuffer>();
     private SocketChannel socketChannel;
     private PlayerConnectionState connectionState = PlayerConnectionState.HANDSHAKE;
     private IsaacCipher outboundCipher;
@@ -1901,6 +1906,12 @@ extends Entity {
         }
         try {
             synchronized (this) {
+                if (this.awaitingInitial443Region) {
+                    // Do not consume ISAAC here; the deferred packets must be
+                    // ciphered after the region rebuild in actual wire order.
+                    this.pendingInitial443Packets.add(byteBuffer);
+                    return;
+                }
                 // Producer threads prepare packets concurrently. Encrypting
                 // ISAAC opcodes here guarantees cipher order matches the
                 // actual wire order, including packets generated during login.
@@ -1925,6 +1936,34 @@ extends Entity {
         }
     }
 
+    /**
+     * The 443 login handshake expects the FIRST ciphered frame to be the
+     * variable-short region rebuild. Castle Wars reconnect relocation updates
+     * may enqueue other frames first; keep their order but send them afterward.
+     */
+    public final synchronized void beginInitial443Region() {
+        this.awaitingInitial443Region = true;
+        this.pendingInitial443Packets.clear();
+    }
+
+    /** Send region first, then any packets produced during login relocation. */
+    public final synchronized void writeInitial443Region(ByteBuffer regionPacket) {
+        this.awaitingInitial443Region = false;
+        this.writePacketBuffer(regionPacket);
+        for (ByteBuffer deferred : this.pendingInitial443Packets) {
+            this.writePacketBuffer(deferred);
+        }
+        this.pendingInitial443Packets.clear();
+    }
+
+    private final synchronized void discardInitial443Packets() {
+        for (ByteBuffer deferred : this.pendingInitial443Packets) {
+            PacketWriter.discardOutboundOpcodes(deferred);
+        }
+        this.pendingInitial443Packets.clear();
+        this.awaitingInitial443Region = false;
+    }
+
     private void ensureOutboundCapacity(int additionalBytes) {
         if (additionalBytes <= this.outboundBuffer.remaining()) {
             return;
@@ -1941,6 +1980,7 @@ extends Entity {
         this.outboundBuffer = replacement;
     }
     public final void disconnect() {
+        this.discardInitial443Packets();
         disconnectControlExit1: {
             Object value;
             Object value2;
@@ -3505,13 +3545,15 @@ extends Entity {
     public final void processPostLogin() {
         Player player;
         boolean enabled = this.validateLocalLogin();
-        if (enabled && ServerSettings.clientBuild == 443) {
-            World.registerPlayer(this);
-        }
+        // Do not put a 443 player into world update queues before the login
+        // response and the initial variable-short region frame are sent.
         this.sendLoginResponse();
         if (!enabled) {
             this.disconnect();
             return;
+        }
+        if (ServerSettings.clientBuild == 443 && !this.isBot) {
+            this.beginInitial443Region();
         }
         this.lastPacketReceivedMillis = System.currentTimeMillis();
         this.lastPlayerInputMillis = this.lastPacketReceivedMillis;
@@ -3530,7 +3572,10 @@ extends Entity {
         boolean relocatedFromCastleWars = CastleWarsManager.relocatePlayerOnLogin(this);
         // The revision-443 initial map region must use the final reconnect/lobby coordinates.
         if (ServerSettings.clientBuild == 443) {
+            // RegionPacket (121, var-short) must be the first game frame.
+            // It also reflects the FINAL Castle Wars reconnect position.
             this.packetSender.sendMapRegion();
+            World.registerPlayer(this);
             InitialVarps.send(this);
         }
         Player player3 = this;
