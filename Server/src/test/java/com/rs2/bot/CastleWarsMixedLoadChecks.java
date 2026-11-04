@@ -81,6 +81,10 @@ public final class CastleWarsMixedLoadChecks {
                         : CastleWarsManager.Team.ZAMORAK, 1);
             }
 
+            // The game roster is assembled directly for the load test. Skip
+            // NPC-spawning initialize(): a full server boot (including NPC
+            // definitions) is not part of this isolated fixture.
+            setStaticBoolean("initialized", true);
             setStaticBoolean("gameInProgress", true);
             setStaticLong("gameEndMillis", System.currentTimeMillis() + 20 * 60_000L);
             setStaticInt("gameTeamCapacity", BOTS_PER_TEAM + 1);
@@ -196,7 +200,12 @@ public final class CastleWarsMixedLoadChecks {
         } finally {
             for (Player player : allPlayers) {
                 try {
-                    if (player.getIndex() >= 0) World.unregisterPlayer(player);
+                    if (player.getIndex() >= 0) {
+                        // This is a synthetic fixture without login credentials.
+                        // Never run persistence or disconnect/save side effects.
+                        World.getPlayers()[player.getIndex()] = null;
+                        player.setIndex(-1);
+                    }
                 } catch (Exception ignored) {}
                 try {
                     SocketChannel channel = (SocketChannel) socket.get(player);
@@ -209,6 +218,7 @@ public final class CastleWarsMixedLoadChecks {
             }
             gamePlayers.clear();
             setStaticBoolean("gameInProgress", false);
+            setStaticBoolean("initialized", false);
             World.tickCount = 0;
         }
     }
