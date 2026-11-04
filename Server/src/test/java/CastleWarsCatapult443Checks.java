@@ -37,7 +37,30 @@ public final class CastleWarsCatapult443Checks {
             require(InterfaceBridge.translate(19700 + i)
                             == (GROUP << 16 | new int[]{116, 117, 132, 133}[i]),
                     "Wrong native digit model mapping " + i);
+            require(InterfaceBridge.translate(19704 + i)
+                            == (GROUP << 16 | 146 + i),
+                    "Wrong native digit overlay model mapping " + i);
         }
+        require(InterfaceBridge.translate(19708) == (GROUP << 16 | 160),
+                "Wrong Saradomin enemy-side target marker");
+        require(InterfaceBridge.translate(19709) == (GROUP << 16 | 159),
+                "Wrong Zamorak enemy-side target marker");
+
+        java.lang.reflect.Method markerX = CastleWarsEngineeringManager.class
+                .getDeclaredMethod("catapultMarkerOffsetX", int.class);
+        java.lang.reflect.Method markerY = CastleWarsEngineeringManager.class
+                .getDeclaredMethod("catapultMarkerOffsetY", int.class);
+        markerX.setAccessible(true);
+        markerY.setAccessible(true);
+        require((Integer) markerX.invoke(null, 15) == 0
+                && (Integer) markerY.invoke(null, 15) == 0,
+                "Initial aiming target must use the native cache marker origin");
+        require((Integer) markerX.invoke(null, 16) > 0
+                && (Integer) markerY.invoke(null, 16) < 0,
+                "Right/up arrow clicks must move the target right/up on the map");
+        require((Integer) markerX.invoke(null, 0) < 0
+                && (Integer) markerY.invoke(null, 30) < 0,
+                "Map offsets must permit the whole 0..30 coordinate range");
 
         // Group 54 renders the two coordinates with model IDs 4857..4866
         // for digits 0..9, not with legacy text widget updates.
