@@ -440,6 +440,17 @@ implements PacketHandler {
         int objectY = worldObject.getPosition().getY();
         int plane = worldObject.getPosition().getPlane();
 
+        Position energyBarrierApproach = CastleWarsManager.getEnergyBarrierInteractionApproach(
+                player, objectId, objectX, objectY);
+        if (energyBarrierApproach != null) {
+            if (player.getPosition().getX() == energyBarrierApproach.getX()
+                    && player.getPosition().getY() == energyBarrierApproach.getY()) {
+                return true;
+            }
+            return PathFinder.findPath(player, energyBarrierApproach.getX(),
+                    energyBarrierApproach.getY(), false, 0, 0);
+        }
+
         Position castleWarsSideDoorApproach =
                 CastleWarsEngineeringManager.getSideDoorInteractionApproach(
                         player, objectId, objectX, objectY);
