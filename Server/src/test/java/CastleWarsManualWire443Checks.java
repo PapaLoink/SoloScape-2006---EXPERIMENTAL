@@ -44,10 +44,38 @@ public final class CastleWarsManualWire443Checks {
                 // frames, concealing the original book-navigation regression.
                 CastleWarsManager.openCastleWarsManual(player);
                 require(player.activeBookPageIndex == 0, "Book must start at first spread");
+
+                // Real 443 clients lock action-type-6 book controls until the
+                // server responds with an interface open. Boundary clicks
+                // previously returned silently and permanently locked both arrows.
+                for (int i = 0; i < 3; i++) {
+                    nativeWidgetSelect(player, 83); // Previous on first page
+                    require(player.activeBookPageIndex == 0,
+                            "Previous on the first spread must remain on page one");
+                }
+                for (int i = 1; i <= 4; i++) {
+                    nativeWidgetSelect(player, 85); // Advance to last spread
+                    require(player.activeBookPageIndex == i,
+                            "Next must advance from a previously blocked first-page click");
+                }
+                for (int i = 0; i < 3; i++) {
+                    nativeWidgetSelect(player, 85); // Next on last page
+                    require(player.activeBookPageIndex == 4,
+                            "Next on the last spread must remain on last page");
+                }
+                for (int i = 3; i >= 0; i--) {
+                    nativeWidgetSelect(player, 83); // Return to first spread
+                    require(player.activeBookPageIndex == i,
+                            "Previous must recover from a blocked last-page click");
+                }
+                for (int i = 0; i < 2; i++) {
+                    nativeWidgetSelect(player, 83); // Repeat first-page boundary
+                }
                 nativeWidgetSelect(player, 85);
-                require(player.activeBookPageIndex == 1, "Next arrow did not select second spread");
+                require(player.activeBookPageIndex == 1,
+                        "Next must still work after repeated first-page boundary clicks");
                 nativeWidgetSelect(player, 83);
-                require(player.activeBookPageIndex == 0, "Previous arrow did not select first spread");
+                require(player.activeBookPageIndex == 0, "Back navigation must still work");
                 nativeWidgetSelect(player, 112);
                 require(player.activeBookItemId == 0, "Native close button did not dismiss book");
 
@@ -59,8 +87,8 @@ public final class CastleWarsManualWire443Checks {
                     int count = receiver.read(received);
                     if (count < 0) break;
                     Parsed candidate = parse(Arrays.copyOf(received.array(), received.position()));
-                    if (candidate != null && candidate.openCount == 3
-                            && candidate.textCount == 75 && candidate.colourCount == 6
+                    if (candidate != null && candidate.openCount == 19
+                            && candidate.textCount == 275 && candidate.colourCount == 22
                             && candidate.closeCount == 1) {
                         parsed = candidate;
                         break;
@@ -68,17 +96,21 @@ public final class CastleWarsManualWire443Checks {
                     if (count == 0) Thread.yield();
                 }
                 require(parsed != null,
-                        "Book open/Next/Previous must send 3 interface-open frames, 75 text updates, 6 heading colours, and close");
-                require(parsed.firstLineHeadings.size() == 3,
-                        "Book must update the first line of every spread");
-                require("Objective".equals(parsed.firstLineHeadings.get(0))
-                        && "Bandages".equals(parsed.firstLineHeadings.get(1))
-                        && "Objective".equals(parsed.firstLineHeadings.get(2)),
-                        "Native 443 book headings must be plain Objective/Bandages/Objective, not raw colour markup: "
+                        "All 18 clicks (including repeated first/last-page clicks) must get "
+                        + "19 book-open frames total, with 11 rendered spreads and a close");
+                require(parsed.firstLineHeadings.size() == 11,
+                        "Only actual page changes must update the book's 11 headings");
+                String[] expectedHeadings = {
+                    "Objective", "Bandages", "Barricades", "Tinderbox", "Catapult",
+                    "Tinderbox", "Barricades", "Bandages", "Objective",
+                    "Bandages", "Objective"
+                };
+                require(parsed.firstLineHeadings.equals(Arrays.asList(expectedHeadings)),
+                        "Book must navigate all spreads and preserve plain text headings: "
                                 + parsed.firstLineHeadings);
             }
         }
-        System.out.println("Castle Wars 443 book navigation reset and plain text wire checks passed");
+        System.out.println("Castle Wars 443 rapid book navigation, boundary unlock and plain text wire checks passed");
     }
 
     private static Parsed parse(byte[] stream) {
