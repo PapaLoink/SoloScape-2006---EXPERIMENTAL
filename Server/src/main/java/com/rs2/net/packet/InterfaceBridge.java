@@ -146,9 +146,8 @@ public final class InterfaceBridge {
         put(mappings, 19705, 54, 147); // X ones overlay to clear
         put(mappings, 19706, 54, 148); // Y tens overlay to clear
         put(mappings, 19707, 54, 149); // Y ones overlay to clear
-        // Opposite-side target markers on the native catapult map.
-        put(mappings, 19708, 54, 160); // Saradomin targets north-west
-        put(mappings, 19709, 54, 159); // Zamorak targets south-east
+        // Child 161 is the red X (model 4856); 159/160 are fixed site icons.
+        put(mappings, 19708, 54, 161); // Movable aiming crosshair
 
         // Native Castle Wars HUD (group 59): stock text components.
         // Score and flag icons are driven by varps 377/378 instead.
