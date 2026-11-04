@@ -32,8 +32,10 @@ jobs:
         run: |
           echo '--- Potential packet-64 writers and definitions ---'
           grep -RnE 'writeOpcode\\([^,]+, *64\\)|startVariable(Short|Byte)Packet\\([^,]+, *64\\)|OPCODE *= *64|packetId *= *64|frameId == 64|incomingSizes\\[64\\]|new int\\[256\\]' Server/src/main/java Client/src || true
-          echo '--- Legacy packet-64 literal usages in packet classes ---'
-          grep -Rn -C 2 '\\b64\\b' Server/src/main/java/com/rs2/net/packet/PacketSender.java Server/src/main/java/com/rs2/net/packet/ObjectPacket.java Server/src/main/java/com/rs2/net/packet/ZonePacket.java || true
+          echo '--- First frame handshake reads (client) ---'
+          grep -Rn -C 2 -E 'gameSocket\\.read\\(|gameSocket\\.available\\(|incomingSizes\\[' Client/src/unpackaged Client/src/jagex/io | head -n 120 || true
+          echo '--- Raw/plain packet writers or cipher changes ---'
+          grep -RnE 'setOutboundCipher|setInboundCipher|finalizeOutboundOpcodes|writeOpcode\\(' Server/src/main/java/com/rs2/net/ModernLoginProtocol.java Server/src/main/java/com/rs2/model/player/Player.java Server/src/main/java/com/rs2/net/packet/PacketWriter.java | head -n 90 || true
       - name: Inspect native catapult widget group 54
         working-directory: Server
         run: |
