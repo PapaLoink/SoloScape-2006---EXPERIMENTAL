@@ -95,7 +95,7 @@ public final class RunEnergyChecks {
                         player.getMovementQueue().addStep(new Position(3224, 3222, 0));
                         player.getMovementQueue().removeFirstStep();
                         World.processTick();
-                        require(player.getRunDirection() != -1, "443 player did not run");
+                        require(player.getPosition().getX() == 3224, "443 player did not move two running steps");
                         require(player.getRunEnergyRaw() == 9933,
                                 "Run energy did not drain while debug mode was enabled");
                     } finally {
