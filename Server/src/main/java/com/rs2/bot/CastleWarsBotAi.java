@@ -104,20 +104,25 @@ public final class CastleWarsBotAi {
             // doors, cross the battlefield, then enter their own castle to score.
             CastleWarsManager.Team castleAtPosition =
                     CastleWarsManager.getCastleTeamAtPosition(bot.getPosition());
-            if (bot.getPosition().getPlane() > 0) {
-                if (castleAtPosition == opposite(team)) {
-                    state.phase = Phase.DESCEND_ENEMY;
-                } else if (castleAtPosition == team
-                        && state.phase != Phase.CAPTURE_FLAG) {
+            // Recover a newly acquired flag (including a tunnel-AI handoff),
+            // but preserve an active return route. Overwriting ENTER_HOME with
+            // RETURN_FIELD resets crossedMidpoint and sends carriers back to
+            // midfield every time they reach their own castle entrance.
+            if (!isFlagReturnPhase(state.phase)) {
+                state.crossedMidpoint = false;
+                if (bot.getPosition().getPlane() > 0) {
+                    if (castleAtPosition == opposite(team)) {
+                        state.phase = Phase.DESCEND_ENEMY;
+                    } else if (castleAtPosition == team) {
+                        state.phase = Phase.CLIMB_HOME;
+                    }
+                } else if (castleAtPosition == opposite(team)) {
+                    state.phase = Phase.EXIT_ENEMY_GROUND;
+                } else if (castleAtPosition == null) {
+                    state.phase = Phase.RETURN_FIELD;
+                } else if (castleAtPosition == team) {
                     state.phase = Phase.CLIMB_HOME;
                 }
-            } else if (castleAtPosition == opposite(team)) {
-                state.phase = Phase.EXIT_ENEMY_GROUND;
-            } else if (castleAtPosition == null) {
-                state.phase = Phase.RETURN_FIELD;
-            } else if (castleAtPosition == team
-                    && state.phase != Phase.CAPTURE_FLAG) {
-                state.phase = Phase.CLIMB_HOME;
             }
             state.repathDelay = 0;
         } else if (!dedicatedFlagRunner
@@ -340,7 +345,7 @@ public final class CastleWarsBotAi {
             return;
         }
 
-        Position exterior = CastleWarsManager.getBotMainDoorExteriorPosition(bot, castleTeam);
+        Position exterior = CastleWarsManager.getBotGroundCastleRouteDestination(bot, castleTeam, false);
         // Ground-castle routing uses a dedicated pathfinder, not walk().
         // Check it too so a barricade at the door cannot trap flag runners.
         if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, exterior)) {
@@ -386,7 +391,7 @@ public final class CastleWarsBotAi {
             }
         }
 
-        Position inside = CastleWarsManager.getBotMainDoorInteriorPosition(bot, castleTeam);
+        Position inside = CastleWarsManager.getBotGroundCastleRouteDestination(bot, castleTeam, true);
         if (CastleWarsBotBarricadeAi.handleBlockedRoute(bot, inside)) {
             return;
         }
@@ -563,7 +568,10 @@ public final class CastleWarsBotAi {
             return;
         }
 
-        if (CastleWarsManager.isFlagAtBase(enemyTeam) && CastleWarsManager.takeEnemyFlag(bot)) {
+        if (CastleWarsManager.isFlagAtBase(enemyTeam)) {
+            if (!CastleWarsManager.takeEnemyFlag(bot)) {
+                return;
+            }
             CastleWarsBotChat.sayFlagCarrier(bot);
         }
         state.phase = Phase.DESCEND_ENEMY;
@@ -986,6 +994,20 @@ public final class CastleWarsBotAi {
         }
         Integer count = getTeamBotTargetCounts(bot).get(target);
         return count == null ? 0 : count;
+    }
+
+    private static boolean isFlagReturnPhase(Phase phase) {
+        switch (phase) {
+            case DESCEND_ENEMY:
+            case EXIT_ENEMY_GROUND:
+            case RETURN_FIELD:
+            case ENTER_HOME:
+            case CLIMB_HOME:
+            case CAPTURE_FLAG:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static boolean isTraversalPhase(Phase phase) {

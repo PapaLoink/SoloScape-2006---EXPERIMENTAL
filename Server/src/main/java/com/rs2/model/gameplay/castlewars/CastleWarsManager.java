@@ -1,6 +1,7 @@
 package com.rs2.model.gameplay.castlewars;
 
 import com.rs2.ServerSettings;
+import com.rs2.bot.CastleWarsBotRoleAi;
 import com.rs2.bot.combat.BotCombatHelper;
 import com.rs2.model.Position;
 import com.rs2.model.EntityTargetMovement;
@@ -1396,6 +1397,23 @@ public final class CastleWarsManager {
         if (player.getEquipmentManager().getContainer().getItemAt(5) != null) {
             ++neededSlots;
         }
+        // Bot supply collection can fill the bag before reaching the standard.
+        // Keep weapons, shields and runes; discard only spare healing supplies.
+        if (player.isBot) {
+            for (int supplyId : new int[]{4049, player.botFoodItemId}) {
+                int missing = neededSlots - player.getInventoryManager().getContainer().getFreeSlots();
+                if (missing <= 0) {
+                    break;
+                }
+                if (supplyId <= 0) {
+                    continue;
+                }
+                int remove = Math.min(missing, player.getInventoryManager().getItemAmount(supplyId));
+                if (remove > 0) {
+                    player.getInventoryManager().removeItem(new ItemStack(supplyId, remove));
+                }
+            }
+        }
         if (player.getInventoryManager().getContainer().getFreeSlots() < neededSlots) {
             player.getPacketSender().sendGameMessage("You need enough inventory space for your weapon and shield.");
             return false;
@@ -2259,10 +2277,6 @@ public final class CastleWarsManager {
                 && isCastleBattlementPosition(firstPosition);
         boolean secondOnWall = second.castleWarsOnBattlements
                 && isCastleBattlementPosition(secondPosition);
-        if (!firstOnWall && !secondOnWall) {
-            firstOnWall = isCastleBattlementFiringPosition(firstPosition);
-            secondOnWall = isCastleBattlementFiringPosition(secondPosition);
-        }
         if (firstOnWall == secondOnWall) {
             return false;
         }
@@ -2280,14 +2294,12 @@ public final class CastleWarsManager {
 
         Position wallPosition = firstOnWall ? firstPosition : secondPosition;
         Position battlefieldPosition = firstOnWall ? secondPosition : firstPosition;
-        Team wallTeam = getCastleTeamAtPosition(wallPosition);
         Team groundTeam = getCastleTeamAtPosition(battlefieldPosition);
-        // An opponent on the lower floor *inside* the same castle footprint
-        // can still shoot a rope climber on its battlements. Only require an
-        // outward-facing wall edge for targets outside that castle. The
-        // walk-connected check above preserves ordinary same-level melee.
-        if (groundTeam != wallTeam
-                && !isFacingOutFromBattlement(wallPosition, battlefieldPosition)) {
+        // Only bypass the battlement edge when firing out onto the battlefield.
+        // Indoor targets must use normal projectile clipping; otherwise this
+        // exception lets wall guards shoot through castle room walls.
+        if (groundTeam != null
+                || !isFacingOutFromBattlement(wallPosition, battlefieldPosition)) {
             return false;
         }
         return GameUtil.getDistance(wallPosition, battlefieldPosition) <= 15;
@@ -2302,7 +2314,27 @@ public final class CastleWarsManager {
                 && isCastleWallCrossLevelPair(attacker, target)) {
             return true;
         }
-        return GameUtil.hasClearPath(attacker.getPosition(), target.getPosition(), false);
+        return hasCastleWarsProjectileLineOfSight(attacker, target);
+    }
+
+    public static boolean hasCastleWarsProjectileLineOfSight(Player attacker, Player target) {
+        Position from = attacker.getPosition();
+        Position to = target.getPosition();
+        if (from.getPlane() != to.getPlane()) {
+            return false;
+        }
+        if (areOpponents(attacker, target)) {
+            if (isInTeamSpawnArea(attacker, getGameTeam(attacker))
+                    || isInTeamSpawnArea(target, getGameTeam(target))) {
+                return false;
+            }
+            if ((getCastleTeamAtPosition(from) != null || getCastleTeamAtPosition(to) != null)
+                    && (!GameUtil.hasClearPath(from, to, true)
+                            || !GameUtil.hasClearPath(to, from, true))) {
+                return false;
+            }
+        }
+        return GameUtil.hasClearPath(from, to, false);
     }
 
     public static boolean routeBotOneCastleLevel(Player player, Team castleTeam, boolean up) {
@@ -2372,6 +2404,17 @@ public final class CastleWarsManager {
         return true;
     }
 
+    public static Position getBotGroundCastleRouteDestination(Player player, Team castleTeam,
+                                                             boolean enteringCastle) {
+        if (!CastleWarsEngineeringManager.isMainDoorPassable(castleTeam)
+                && getGameTeam(player) != castleTeam
+                && (player.botPrimaryCombatStyle != 0 || isCarryingFlag(player))) {
+            return CastleWarsEngineeringManager.getBotSideDoorDestination(castleTeam, enteringCastle);
+        }
+        return enteringCastle ? getBotMainDoorInteriorPosition(player, castleTeam)
+                : getBotMainDoorExteriorPosition(player, castleTeam);
+    }
+
     public static boolean routeBotThroughGroundCastle(Player player, Team castleTeam,
                                                        boolean enteringCastle) {
         if (player == null || castleTeam == null || !player.isBot
@@ -2383,6 +2426,20 @@ public final class CastleWarsManager {
         Position interior = getBotMainDoorInteriorPosition(player, castleTeam);
         if (exterior == null || interior == null) {
             return false;
+        }
+
+        // Non-melee bots cannot break an enemy gate, and a flag carrier must
+        // keep moving home rather than fight the gate with the standard.
+        // Use the ordinary side-door lockpicking interaction on either leg.
+        if (!CastleWarsEngineeringManager.isMainDoorPassable(castleTeam)
+                && getGameTeam(player) != castleTeam
+                && (player.botPrimaryCombatStyle != 0 || isCarryingFlag(player))) {
+            Position destination = getBotGroundCastleRouteDestination(player, castleTeam, enteringCastle);
+            if (samePosition(player.getPosition(), destination)) {
+                return true;
+            }
+            return CastleWarsEngineeringManager.routeBotThroughSideDoor(
+                    player, castleTeam, enteringCastle);
         }
 
         // A passable main door requires no separate interaction pause or
@@ -2698,6 +2755,9 @@ public final class CastleWarsManager {
             approach = enteringCastle
                     ? new Position(2416, 3074, 0)
                     : new Position(2417, 3077, 0);
+            if (!enteringCastle && samePosition(player.getPosition(), new Position(2418, 3077, 0))) {
+                approach = new Position(2418, 3077, 0);
+            }
             destination = enteringCastle
                     ? new Position(2417, 3077, 0)
                     : new Position(2416, 3074, 0);
@@ -3089,6 +3149,7 @@ public final class CastleWarsManager {
 
         IdentityHashMap<Player, Team> finishers = new IdentityHashMap<Player, Team>(gamePlayers);
         gamePlayers.clear();
+        CastleWarsBotRoleAi.resetCatapultOperators();
         disconnectedParticipants.clear();
         closeAllReplacementOfferInterfaces();
         replacementOffers.clear();

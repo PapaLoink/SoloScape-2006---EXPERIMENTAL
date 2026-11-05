@@ -26,6 +26,7 @@ import com.rs2.model.task.CycleEvent;
 import com.rs2.model.task.CycleEventContainer;
 import com.rs2.model.task.CycleEventHandler;
 import com.rs2.util.GameUtil;
+import com.rs2.util.path.PathFinder;
 import com.rs2.util.path.ProjectileCollisionMap;
 import com.rs2.util.path.WalkingCollisionMap;
 
@@ -812,6 +813,40 @@ public final class CastleWarsEngineeringManager {
         int rightX = Math.max(door.closedX, door.openX);
         int approachX = player.getPosition().getX() <= leftX ? leftX : rightX;
         return new Position(approachX, door.closedY, MAIN_DOOR_PLANE);
+    }
+
+    /** Route through the side entrance using the same lock rules as a player. */
+    public static Position getBotSideDoorDestination(CastleWarsManager.Team castleTeam,
+                                                     boolean enteringCastle) {
+        SideDoorState door = castleTeam == CastleWarsManager.Team.SARADOMIN
+                ? saradominSideDoor : zamorakSideDoor;
+        return new Position(enteringCastle ? door.closedX : door.openX,
+                door.closedY, MAIN_DOOR_PLANE);
+    }
+
+    public static boolean routeBotThroughSideDoor(Player player,
+                                                  CastleWarsManager.Team castleTeam,
+                                                  boolean enteringCastle) {
+        if (player == null || !player.isBot || castleTeam == null
+                || !CastleWarsManager.isInGame(player)
+                || player.getPosition().getPlane() != MAIN_DOOR_PLANE) {
+            return false;
+        }
+        SideDoorState door = castleTeam == CastleWarsManager.Team.SARADOMIN
+                ? saradominSideDoor : zamorakSideDoor;
+        Position approach = new Position(enteringCastle ? door.openX : door.closedX,
+                door.closedY, MAIN_DOOR_PLANE);
+        Position destination = new Position(enteringCastle ? door.closedX : door.openX,
+                door.closedY, MAIN_DOOR_PLANE);
+        if (player.getPosition().equals(approach) && !door.open) {
+            handleSideDoor(player, door.closedId, door.closedX, door.closedY);
+            return true;
+        }
+        Position target = door.open ? destination : approach;
+        player.getMovementQueue().setRunning(true);
+        PathFinder.findPath(player, target.getX(), target.getY(), false, 0, 0);
+        player.getMovementQueue().clearMovementActions();
+        return true;
     }
 
     public static boolean handleSideDoor(Player player, int objectId, int objectX, int objectY) {

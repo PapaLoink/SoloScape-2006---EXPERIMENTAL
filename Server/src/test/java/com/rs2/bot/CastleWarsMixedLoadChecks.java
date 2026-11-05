@@ -4,6 +4,7 @@ import com.rs2.ServerSettings;
 import com.rs2.model.Position;
 import com.rs2.model.World;
 import com.rs2.model.gameplay.castlewars.CastleWarsManager;
+import com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager;
 import com.rs2.model.objects.ObjectDefinition;
 import com.rs2.model.player.Player;
 import com.rs2.util.GameUtil;
@@ -34,8 +35,8 @@ import sun.reflect.ReflectionFactory;
  * real 20-minute multiplayer client soak. Captures unexpected console spam.
  */
 public final class CastleWarsMixedLoadChecks {
-    private static final int BOTS_PER_TEAM = 6;
-    private static final int TICKS = 500;
+    private static final int BOTS_PER_TEAM = Integer.getInteger("prs.test.castleWarsBotsPerTeam", 6);
+    private static final int TICKS = Integer.getInteger("prs.test.castleWarsTicks", 500);
     private static final int STALL_TICKS = 80;
     private static final long TICK_BUDGET_NANOS = 600_000_000L;
     private static final List<Player> allPlayers = new ArrayList<Player>();
@@ -51,12 +52,15 @@ public final class CastleWarsMixedLoadChecks {
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
+        Long seed = Long.getLong("prs.test.castleWarsSeed");
+        if (seed != null) GameUtil.getRandom().setSeed(seed.longValue());
         System.setProperty("prs.traceGameplay", "false");
         System.setProperty("prs.traceConsole", "false");
         ServerSettings.clientBuild = 443;
         // General Debug Mode must not re-enable gameplay/packet trace spam.
         // Only the explicit prs.traceGameplay property may enable it.
         ServerSettings.debugModeEnabled = true;
+        com.rs2.model.combat.CombatManager.initialize();
         ObjectDefinition.loadRevision443();
         WalkingCollisionMap.loadCollisionMaps();
         ProjectileCollisionMap.loadCollisionMaps();
@@ -77,6 +81,9 @@ public final class CastleWarsMixedLoadChecks {
                 bot.botPrimaryCombatStyle = i % 3;
                 register(bot, team, i % BOTS_PER_TEAM);
                 bots.add(bot);
+                // Real bots join over time, so roles may be cached before the
+                // full team exists. Assembling the whole roster first hid this.
+                CastleWarsBotRoleAi.process(bot);
             }
             for (int i = 0; i < 2; i++) {
                 Player human = new Player(null);
@@ -94,6 +101,12 @@ public final class CastleWarsMixedLoadChecks {
             setStaticLong("gameEndMillis", System.currentTimeMillis() + 20 * 60_000L);
             setStaticInt("gameTeamCapacity", BOTS_PER_TEAM + 1);
             long[] durations = new long[TICKS];
+            Map<BotPlayer, Integer> shots = new IdentityHashMap<BotPlayer, Integer>();
+            Map<BotPlayer, Integer> restocks = new IdentityHashMap<BotPlayer, Integer>();
+            Field readyField = com.rs2.model.gameplay.castlewars.CastleWarsEngineeringManager.class
+                    .getDeclaredField("catapultReadyAt");
+            readyField.setAccessible(true);
+            Map<Player, Long> catapultReady = (Map<Player, Long>) readyField.get(null);
             int maxStall = 0;
             PrintStream originalOut = System.out;
             PrintStream originalErr = System.err;
@@ -106,9 +119,18 @@ public final class CastleWarsMixedLoadChecks {
                 for (int tick = 0; tick < TICKS; tick++) {
                     long started = System.nanoTime();
                     World.tickCount++;
+                    // Advance the 12-second firing cooldown without a real-time
+                    // sleep: 20 game ticks represent 12 seconds in this fixture.
+                    if (tick % 20 == 0) catapultReady.clear();
                     for (BotPlayer bot : bots) {
+                        int before = bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.ROCK_ITEM_ID);
                         if (!CastleWarsBotRoleAi.process(bot)) {
                             CastleWarsBotAi.process(bot);
+                        }
+                        int after = bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.ROCK_ITEM_ID);
+                        if (after < before) shots.put(bot, count(shots, bot) + before - after);
+                        if (after > before && count(shots, bot) > 0) {
+                            restocks.put(bot, count(restocks, bot) + 1);
                         }
                     }
                     // The non-bot fixtures generate actual pathfinding work
@@ -175,6 +197,34 @@ public final class CastleWarsMixedLoadChecks {
             require(activeSara >= 2 && activeZam >= 2,
                     "Too few bots navigated: Saradomin=" + activeSara + " Zamorak=" + activeZam);
             require(movedHumans == 2, "Both synthetic human movement paths must progress");
+            Field roleStatesField = CastleWarsBotRoleAi.class.getDeclaredField("states");
+            roleStatesField.setAccessible(true);
+            Map<BotPlayer, ?> roleStates = (Map<BotPlayer, ?>) roleStatesField.get(null);
+            for (CastleWarsManager.Team team : CastleWarsManager.Team.values()) {
+                int operators = 0, teamShots = 0, teamRestocks = 0;
+                for (BotPlayer bot : bots) {
+                    if (gamePlayers.get(bot) != team) continue;
+                    Object state = roleStates.get(bot);
+                    if (state != null) {
+                        Field role = state.getClass().getDeclaredField("role");
+                        role.setAccessible(true);
+                        if ("CATAPULT".equals(role.get(state).toString())) {
+                            ++operators;
+                            BotPlayer firstOnTeam = bots.get(team == CastleWarsManager.Team.SARADOMIN
+                                    ? 0 : BOTS_PER_TEAM);
+                            require(bot == firstOnTeam, "Late arrivals replaced the operator for " + team);
+                            require(!bot.isAutoRetaliate(), "Catapult operator can retaliate for " + team);
+                        }
+                    }
+                    teamShots += count(shots, bot);
+                    teamRestocks += count(restocks, bot);
+                }
+                require(operators == 1, "Expected one catapult operator for " + team + ", found " + operators);
+                require(teamShots >= 7, "Catapult did not keep firing for " + team + ": " + teamShots);
+                require(teamRestocks > 0, "Catapult did not collect replacement rocks for " + team);
+                System.out.println("CASTLE_WARS_CATAPULT " + team + " operators=" + operators
+                        + " shots=" + teamShots + " restocks=" + teamRestocks);
+            }
             long[] sorted = durations.clone();
             Arrays.sort(sorted);
             long p95 = sorted[(int)(TICKS * 0.95) - 1];
@@ -182,7 +232,7 @@ public final class CastleWarsMixedLoadChecks {
             long max = sorted[TICKS - 1];
             long total = 0;
             for (long value : durations) total += value;
-            System.out.println("CASTLE_WARS_LOAD_METRICS bots=12 simulatedHumans=2 ticks=" + TICKS
+            System.out.println("CASTLE_WARS_LOAD_METRICS bots=" + bots.size() + " simulatedHumans=2 ticks=" + TICKS
                     + " avgMs=" + String.format(java.util.Locale.ROOT, "%.3f",
                         total / (double)TICKS / 1_000_000.0)
                     + " p95Ms=" + String.format(java.util.Locale.ROOT, "%.3f", p95 / 1_000_000.0)
@@ -228,6 +278,11 @@ public final class CastleWarsMixedLoadChecks {
             setStaticBoolean("initialized", false);
             World.tickCount = 0;
         }
+    }
+
+    private static int count(Map<BotPlayer, Integer> values, BotPlayer bot) {
+        Integer value = values.get(bot);
+        return value == null ? 0 : value.intValue();
     }
 
     private static BotPlayer newUnconnectedBot(String name) throws Exception {

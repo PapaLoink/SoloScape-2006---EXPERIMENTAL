@@ -251,6 +251,11 @@ public class EntityTargetMovement {
                 return true;
             }
         }
+        if (value2 > 1 && entity.isPlayer() && entity2.isPlayer()
+                && CastleWarsManager.areOpponents((Player)entity, (Player)entity2)) {
+            return CastleWarsManager.hasCastleWarsProjectileLineOfSight(
+                    (Player)entity, (Player)entity2);
+        }
         return GameUtil.hasClearPath(entity.getPosition(), entity2.getPosition(), value2 < 2);
     }
 
@@ -287,6 +292,13 @@ public class EntityTargetMovement {
             return CastleWarsManager.canAttackAcrossCastleLevels(
                     (Player)entity, (Player)entity2, combatType)
                     && entity.isWithinReach(entity2, value2);
+        }
+        if ((combatType == CombatType.MAGIC || combatType == CombatType.RANGED)
+                && entity.isPlayer() && entity2.isPlayer()
+                && CastleWarsManager.areOpponents((Player)entity, (Player)entity2)) {
+            return !entity.isOverlapping(entity2) && entity.isWithinReach(entity2, value2)
+                    && CastleWarsManager.hasCastleWarsProjectileLineOfSight(
+                            (Player)entity, (Player)entity2);
         }
         return canReachTarget(entity, entity2, value2);
     }
