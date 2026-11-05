@@ -1,0 +1,48 @@
+name: Verify player energy regeneration and drain
+
+on:
+  push:
+    branches:
+      - fix/regen-special-and-run-energy-cw
+    paths:
+      - 'Server/src/main/java/com/rs2/model/World.java'
+      - 'Server/src/main/java/com/rs2/model/MovementQueue.java'
+      - 'Server/src/test/java/RunEnergyChecks.java'
+      - 'Server/src/test/java/com/rs2/model/Revision443SpecialEnergyChecks.java'
+      - '.github/workflows/verify-player-energy.yml'
+  pull_request:
+    paths:
+      - 'Server/src/main/java/com/rs2/model/World.java'
+      - 'Server/src/main/java/com/rs2/model/MovementQueue.java'
+      - 'Server/src/test/java/RunEnergyChecks.java'
+      - 'Server/src/test/java/com/rs2/model/Revision443SpecialEnergyChecks.java'
+      - '.github/workflows/verify-player-energy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  energy-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Compile server and energy regression checks
+        working-directory: Server
+        run: |
+          mkdir -p /tmp/soloscape-energy-classes
+          find src/main/java -name '*.java' > /tmp/soloscape-energy-sources.txt
+          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/soloscape-energy-classes @/tmp/soloscape-energy-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/soloscape-energy-classes:lib/*' -d /tmp/soloscape-energy-classes \
+            src/test/java/RunEnergyChecks.java \
+            src/test/java/com/rs2/model/Revision443SpecialEnergyChecks.java
+      - name: Verify run energy drain and recovery
+        working-directory: Server
+        run: java -Djava.awt.headless=true -cp '/tmp/soloscape-energy-classes:lib/*' RunEnergyChecks
+      - name: Verify revision 443 special energy restoration
+        working-directory: Server
+        run: java -Djava.awt.headless=true -cp '/tmp/soloscape-energy-classes:lib/*' com.rs2.model.Revision443SpecialEnergyChecks
