@@ -58,12 +58,12 @@ public final class World {
 
     /**
      * Revision 443 intentionally bypasses Player.process() to avoid legacy
-     * side effects. Keep essential passive timers alive, however: prayer
-     * drain normally runs inside Player.process(), so leaving it out made
-     * activated prayers free for every human revision-443 player.
+     * side effects. Keep passive systems alive here: prayer drain and
+     * stat/special-energy restoration normally run in Player.process().
      */
     static void processRevision443Player(Player player) {
         player.getPrayerManager().drainPrayerPoints();
+        player.getSkillManager().startRestorationTasks();
         // NPCs may move after the client's initial click route.
         // Continue pursuing the target without invoking legacy Player.process().
         player.getTargetMovement().process();
