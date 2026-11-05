@@ -137,15 +137,15 @@ public final class MovementQueue {
                     if (!((MovementQueue)value).runPath) break processControlExit2;
                 }
                 if (((Player)entity).getRunEnergyPercent() > 0) {
-                    if (!ServerSettings.debugModeEnabled) {
-                        if (((Player)entity).godModeEnabled || ((Player)entity).infiniteRunEnabled) {
-                            ((Player)entity).setRunEnergyPercent(100);
-                        } else {
-                            value = value4 = entity;
-                            int value5 = GameUtil.clampRunWeightForEnergyDrain(0, 64, (int)((Player)value).carriedWeight);
-                            value5 = 67 + value5 * 67 / 64;
-                            ((Player)entity).addRunEnergyRaw(-value5);
-                        }
+                    // Debug logging must not grant infinite stamina to every player.
+                    // Only the explicit per-player cheats bypass the normal drain.
+                    if (((Player)entity).godModeEnabled || ((Player)entity).infiniteRunEnabled) {
+                        ((Player)entity).setRunEnergyPercent(100);
+                    } else {
+                        value = value4 = entity;
+                        int value5 = GameUtil.clampRunWeightForEnergyDrain(0, 64, (int)((Player)value).carriedWeight);
+                        value5 = 67 + value5 * 67 / 64;
+                        ((Player)entity).addRunEnergyRaw(-value5);
                     }
                     if (((Player)entity).getRunEnergyPercent() <= 0) {
                         this.setRunning(false);
