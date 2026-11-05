@@ -50,7 +50,7 @@ public final class CastleWarsWallCatapultGateChecks {
                                       Position wallLanding, Position preferred,
                                       Position catapult) {
         Position operating = CastleWarsBotRoleAi.findCatapultBotOperatingPosition(
-                team, wallLanding);
+                team, wallLanding, tile -> hasWalkableRoute(wallLanding, tile, team, catapult));
         require(operating != null,
                 "No valid firing post for " + team + " catapult from wall stairs");
         require(CastleWarsBotRoleAi.canOperateCatapultFrom(operating, team),
@@ -71,6 +71,11 @@ public final class CastleWarsWallCatapultGateChecks {
                 "Operators must not fire from a different level");
         require(!CastleWarsBotRoleAi.canOperateCatapultFrom(null, team),
                 "Null position cannot operate a catapult");
+        Position alternate = CastleWarsBotRoleAi.findCatapultBotOperatingPosition(
+                team, wallLanding, tile -> !tile.equals(operating)
+                        && hasWalkableRoute(wallLanding, tile, team, catapult));
+        require(alternate != null && !alternate.equals(operating),
+                "Blocked catapult post should fall back to another reachable tile");
         System.out.println(team + " catapult post " + operating
                 + " (old fixed post " + preferred + ")");
     }

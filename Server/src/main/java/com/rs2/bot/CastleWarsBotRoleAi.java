@@ -12,19 +12,33 @@ import com.rs2.model.player.Player;
 import com.rs2.util.GameUtil;
 import com.rs2.util.path.PathFinder;
 import com.rs2.util.path.WalkingCollisionMap;
+import com.rs2.util.GameplayTrace;
 
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public final class CastleWarsBotRoleAi {
     private static final Map<BotPlayer, RoleState> states =
             new IdentityHashMap<BotPlayer, RoleState>();
     private static BotPlayer saradominDedicatedFlagRunner;
     private static BotPlayer zamorakDedicatedFlagRunner;
+    private static final Map<CastleWarsManager.Team, Map<BotPlayer, Integer>> roleRosters =
+            new EnumMap<CastleWarsManager.Team, Map<BotPlayer, Integer>>(CastleWarsManager.Team.class);
+    private static final Map<CastleWarsManager.Team, Integer> roleGenerations =
+            new EnumMap<CastleWarsManager.Team, Integer>(CastleWarsManager.Team.class);
+    private static final Map<CastleWarsManager.Team, BotPlayer> catapultOperators =
+            new EnumMap<CastleWarsManager.Team, BotPlayer>(CastleWarsManager.Team.class);
 
     private CastleWarsBotRoleAi() {
+    }
+
+    public static void resetCatapultOperators() {
+        catapultOperators.clear();
+        roleRosters.clear();
     }
 
     public static void clear(BotPlayer bot) {
@@ -49,12 +63,29 @@ public final class CastleWarsBotRoleAi {
             return false;
         }
 
+        // The reserved objective runner must use the surface flag AI, even
+        // when promoted after another runner dies. Do not let a cached tunnel
+        // role divert it into incidental combat instead of capturing flags.
+        boolean dedicatedFlagRunner = isDedicatedFlagRunner(bot);
+        boolean catapultOperator = bot == catapultOperators.get(team);
+        if (bot.isAutoRetaliate() == catapultOperator) {
+            bot.setAutoRetaliate(!catapultOperator);
+        }
+        if (dedicatedFlagRunner) {
+            states.remove(bot);
+            return false;
+        }
+
         RoleState state = states.get(bot);
         if (state == null || state.team != team
-                || state.primaryCombatStyle != bot.botPrimaryCombatStyle) {
+                || state.primaryCombatStyle != bot.botPrimaryCombatStyle
+                || state.roleGeneration != roleGenerations.get(team).intValue()
+                    && (state.role != assignRole(bot, team)
+                        || state.role == Role.DEFENDER && state.defenderIndex != getDefenderIndex(bot, team))) {
             state = new RoleState(bot, team, bot.botPrimaryCombatStyle);
             states.put(bot, state);
         }
+        state.roleGeneration = roleGenerations.get(team).intValue();
         if (state.role == Role.ATTACKER) {
             return false;
         }
@@ -80,10 +111,10 @@ public final class CastleWarsBotRoleAi {
             CastleWarsManager.useBandage(bot);
         }
 
-        if (processFlagCarrierFocus(bot, state)) {
+        if (!catapultOperator && processFlagCarrierFocus(bot, state)) {
             return true;
         }
-        if (processOwnDroppedFlagRecovery(bot, state)) {
+        if (!catapultOperator && processOwnDroppedFlagRecovery(bot, state)) {
             return true;
         }
 
@@ -104,8 +135,7 @@ public final class CastleWarsBotRoleAi {
             return true;
         }
 
-        boolean prioritizeTraversal = isTraversalPhase(state.phase)
-                || (state.role == Role.CATAPULT && state.phase == Phase.CATAPULT_MOVE);
+        boolean prioritizeTraversal = catapultOperator || isTraversalPhase(state.phase);
         // Spare defender barricades are deployed against the route enemies
         // ACTUALLY take. Do this before combat AI consumes the same tick.
         if (state.role == Role.DEFENDER && !prioritizeTraversal
@@ -148,7 +178,7 @@ public final class CastleWarsBotRoleAi {
 
         // Underground attackers save explosive potions for collapsed rocks.
         // They use their reusable tinderboxes on barricades obstructing a route.
-        Position enemyBarricade = state.role == Role.UNDERGROUND ? null
+        Position enemyBarricade = catapultOperator || state.role == Role.UNDERGROUND ? null
                 : CastleWarsEngineeringManager.findNearestEnemyBarricade(bot, 3);
         if (enemyBarricade != null
                 && bot.getInventoryManager().getItemAmount(
@@ -165,6 +195,7 @@ public final class CastleWarsBotRoleAi {
             return true;
         }
 
+        Phase previousPhase = state.phase;
         switch (state.phase) {
             case SPAWN_SUPPLY:
                 processSpawnSupply(bot, state);
@@ -242,6 +273,13 @@ public final class CastleWarsBotRoleAi {
                 state.resetForSpawn();
                 break;
         }
+        if (catapultOperator && (previousPhase != state.phase || World.tickCount % 50 < 4)
+                && GameplayTrace.enabled()) {
+            GameplayTrace.log("castle-wars catapult team=" + team + " " + previousPhase + " -> "
+                    + state.phase + " rocks=" + bot.getInventoryManager().getItemAmount(
+                            CastleWarsEngineeringManager.ROCK_ITEM_ID)
+                    + " operator=" + GameplayTrace.describe(bot));
+        }
         return true;
     }
 
@@ -279,14 +317,6 @@ public final class CastleWarsBotRoleAi {
                 state.utilityStocked = stockUndergroundSupplies(bot);
                 state.delayTicks = 1 + GameUtil.randomInt(3);
                 return;
-            } else if (state.role == Role.CATAPULT) {
-                makeInventorySpace(bot, 8);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.ROCK_ITEM_ID, 6);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID, 1);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.TOOLKIT_ID, 1);
             } else if (state.role == Role.DEFENDER) {
                 makeInventorySpace(bot, 6);
                 // Three or fewer initial posts, with the remaining supplies
@@ -317,7 +347,7 @@ public final class CastleWarsBotRoleAi {
         if (state.team == CastleWarsManager.Team.SARADOMIN) {
             barrier = alternateExit
                     ? new Position(2423, 3076, 1)
-                    : new Position(2426, 3079, 1);
+                    : new Position(2426, 3080, 1);
             objectId = CastleWarsManager.SARADOMIN_ENERGY_BARRIER_ID;
             objectX = alternateExit ? 2422 : 2426;
             objectY = alternateExit ? 3076 : 3080;
@@ -334,11 +364,19 @@ public final class CastleWarsBotRoleAi {
             return;
         }
         CastleWarsManager.handleFirstObjectAction(bot, objectId, objectX, objectY);
+        if (CastleWarsManager.isInTeamSpawnArea(bot, state.team)) {
+            return;
+        }
         state.phase = Phase.DESCEND_HOME;
         state.repathDelay = 0;
     }
 
     private static void processDescendHome(BotPlayer bot, RoleState state) {
+        if (CastleWarsManager.isInTeamSpawnArea(bot, state.team)) {
+            state.phase = Phase.LEAVE_SPAWN;
+            state.repathDelay = 0;
+            return;
+        }
         if (bot.getPosition().getPlane() == 0) {
             state.phase = Phase.GROUND_SUPPLY;
             return;
@@ -354,6 +392,12 @@ public final class CastleWarsBotRoleAi {
     }
 
     private static void processGroundSupply(BotPlayer bot, RoleState state) {
+        if (state.role == Role.CATAPULT) {
+            state.phase = Phase.CATAPULT_RESTOCK;
+            state.wallAccessed = false;
+            state.repathDelay = 0;
+            return;
+        }
         Position supply = state.team == CastleWarsManager.Team.SARADOMIN
                 ? new Position(2426, 3075, 0)
                 : new Position(2373, 3131, 0);
@@ -369,15 +413,6 @@ public final class CastleWarsBotRoleAi {
                     state.delayTicks = 1 + GameUtil.randomInt(3);
                     return;
                 }
-            } else if (state.role == Role.CATAPULT) {
-                makeInventorySpace(bot, 8);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.ROCK_ITEM_ID, 6);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.EXPLOSIVE_POTION_ID, 1);
-                CastleWarsEngineeringManager.giveSupply(bot,
-                        CastleWarsEngineeringManager.TOOLKIT_ID, 1);
-                state.utilityStocked = true;
             } else {
                 state.utilityStocked = true;
             }
@@ -397,11 +432,6 @@ public final class CastleWarsBotRoleAi {
             state.phase = Phase.WALL_GUARD_PATROL;
             state.wallPatrolTarget = null;
             state.wallPatrolTicks = 0;
-        } else if (state.role == Role.CATAPULT) {
-            // Catapults sit on the battlement. Do not send the specialist out
-            // through the main gate; route it to the internal wall-access stairs.
-            state.phase = Phase.CATAPULT_MOVE;
-            state.wallAccessed = false;
         } else {
             state.phase = Phase.EXIT_HOME;
         }
@@ -1243,58 +1273,65 @@ public final class CastleWarsBotRoleAi {
             return;
         }
 
-        // The catapult is on the castle battlement. Reach it through the same
-        // wall-access stairs used by wall guards instead of pathing at the
-        // catapult from ground level or exiting through the main gate.
+        // Ground tiles near wall scenery can look like battlements. Use the
+        // actual stair landing as the waypoint before heading to the catapult.
+        boolean saradomin = state.team == CastleWarsManager.Team.SARADOMIN;
+        Position stairApproach = saradomin
+                ? new Position(2418, 3077, 0) : new Position(2382, 3130, 0);
+        if (near(bot, stairApproach, 0) && !bot.castleWarsOnBattlements) {
+            state.wallAccessed = false;
+        }
         if (!state.wallAccessed) {
-            if (CastleWarsEngineeringManager.isBattlementWalkwayTile(
-                    bot.getPosition(), state.team)) {
+            Position wallLanding = saradomin
+                    ? new Position(2416, 3074, 0) : new Position(2383, 3133, 0);
+            if (near(bot, wallLanding, 0)) {
                 state.wallAccessed = true;
                 state.repathDelay = 0;
+            } else if (bot.getInventoryManager().getItemAmount(
+                    CastleWarsEngineeringManager.TINDERBOX_ITEM_ID) <= 0) {
+                state.phase = Phase.CATAPULT_RESTOCK;
+                state.repathDelay = 0;
+                return;
             } else {
-                Position stairApproach = state.team == CastleWarsManager.Team.SARADOMIN
-                        ? new Position(2416, 3074, 0)
-                        : new Position(2383, 3133, 0);
-                Position wallLanding = state.team == CastleWarsManager.Team.SARADOMIN
-                        ? new Position(2417, 3077, 0)
-                        : new Position(2382, 3130, 0);
-
-                if (near(bot, wallLanding, 0)) {
-                    state.wallAccessed = true;
-                    state.repathDelay = 0;
-                } else if (reachInteractionApproach(bot, state, stairApproach)) {
+                if (reachInteractionApproach(bot, state, stairApproach)) {
                     if (CastleWarsManager.moveBotThroughGroundCastleStairs(
-                            bot, state.team, true)) {
+                            bot, state.team, false)) {
+                        CastleWarsManager.setPlayerOnBattlements(bot, true);
                         state.wallAccessed = true;
                         state.repathDelay = 0;
+                        if (GameplayTrace.enabled()) {
+                            GameplayTrace.log("castle-wars catapult used stairs team=" + state.team
+                                    + " operator=" + GameplayTrace.describe(bot));
+                        }
                     }
                 }
                 return;
             }
         }
 
-        // Being within operating distance is enough; the old strict
-        // battlement check discarded wall access just before reaching the
-        // catapult, making the bot circle back to the stairs indefinitely.
+        // Keep stair access for this trip. Some tiles on the clipped route
+        // from the landing to the weapon lack the battlement scenery marker.
         if (!canOperateCatapultFrom(bot.getPosition(), state.team)) {
-            if (!CastleWarsEngineeringManager.isBattlementWalkwayTile(
-                    bot.getPosition(), state.team)) {
-                state.wallAccessed = false;
-                state.repathDelay = 0;
+            if (state.repathDelay > 0) {
+                --state.repathDelay;
                 return;
             }
             Position operatingPosition = findCatapultBotOperatingPosition(
-                    state.team, bot.getPosition());
+                    state.team, bot.getPosition(),
+                    tile -> PathFinder.isReachable(bot, tile.getX(), tile.getY()));
             if (operatingPosition == null) {
-                state.repathDelay = 0;
+                state.repathDelay = 6;
                 return;
             }
-            walk(bot, state, operatingPosition);
+            reachInteractionApproach(bot, state, operatingPosition);
             return;
         }
 
         if (!CastleWarsEngineeringManager.isCatapultOperational(state.team)) {
-            if (CastleWarsEngineeringManager.repairOwnCatapult(bot)) {
+            if (bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.TOOLKIT_ID) <= 0) {
+                state.phase = Phase.CATAPULT_RESTOCK;
+                state.repathDelay = 0;
+            } else if (CastleWarsEngineeringManager.repairOwnCatapult(bot)) {
                 CastleWarsBotChat.sayCatapult(bot);
                 state.delayTicks = 4;
             }
@@ -1311,6 +1348,10 @@ public final class CastleWarsBotRoleAi {
         }
 
         if (CastleWarsEngineeringManager.fireCatapult(bot)) {
+            if (GameplayTrace.enabled()) {
+                GameplayTrace.log("castle-wars catapult fired team=" + state.team
+                        + " operator=" + GameplayTrace.describe(bot));
+            }
             if (GameUtil.randomInt(3) == 0) {
                 CastleWarsBotChat.sayCatapult(bot);
             }
@@ -1337,7 +1378,7 @@ public final class CastleWarsBotRoleAi {
     }
 
     static Position findCatapultBotOperatingPosition(
-            CastleWarsManager.Team team, Position origin) {
+            CastleWarsManager.Team team, Position origin, Predicate<Position> canReach) {
         if (team == null || origin == null || origin.getPlane() != 0) {
             return null;
         }
@@ -1351,23 +1392,19 @@ public final class CastleWarsBotRoleAi {
         for (int x = catapult.getX() - 3; x <= catapult.getX() + 3; ++x) {
             for (int y = catapult.getY() - 3; y <= catapult.getY() + 3; ++y) {
                 Position candidate = new Position(x, y, 0);
-                if (!canOperateCatapultFrom(candidate, team)
-                        || !CastleWarsEngineeringManager.isBattlementWalkwayTile(
-                                candidate, team)) {
+                if (!canOperateCatapultFrom(candidate, team)) {
                     continue;
                 }
                 int score = 5 * GameUtil.getDistance(candidate, preferred)
                         + GameUtil.getDistance(candidate, origin);
-                if (score < bestScore) {
+                if (!CastleWarsEngineeringManager.isBattlementWalkwayTile(candidate, team)) {
+                    score += 100;
+                }
+                if (score < bestScore && canReach.test(candidate)) {
                     bestScore = score;
                     best = candidate;
                 }
             }
-        }
-        // A valid nearby tile may not be flagged as battlement because the
-        // 443 wall mesh extends beyond the original battlement-object marker.
-        if (best == null && canOperateCatapultFrom(preferred, team)) {
-            return preferred;
         }
         return best;
     }
@@ -1380,16 +1417,16 @@ public final class CastleWarsBotRoleAi {
             state.repathDelay = 0;
             return;
         }
-        if (state.wallAccessed) {
-            Position wallLanding = state.team == CastleWarsManager.Team.SARADOMIN
-                    ? new Position(2417, 3077, 0)
-                    : new Position(2382, 3130, 0);
-            if (!near(bot, wallLanding, 0)) {
-                walk(bot, state, wallLanding);
+        Position wallLanding = state.team == CastleWarsManager.Team.SARADOMIN
+                ? new Position(2416, 3074, 0) : new Position(2383, 3133, 0);
+        if (state.wallAccessed || near(bot, wallLanding, 1)
+                && !PathFinder.isReachable(bot, supply.getX(), supply.getY())) {
+            if (!reachInteractionApproach(bot, state, wallLanding)) {
                 return;
             }
             if (CastleWarsManager.moveBotThroughGroundCastleStairs(
-                    bot, state.team, false)) {
+                    bot, state.team, true)) {
+                CastleWarsManager.setPlayerOnBattlements(bot, false);
                 state.wallAccessed = false;
                 state.repathDelay = 0;
             }
@@ -1401,10 +1438,21 @@ public final class CastleWarsBotRoleAi {
             walk(bot, state, supply);
             return;
         }
-        makeInventorySpace(bot, 7);
-        CastleWarsEngineeringManager.giveSupply(bot,
-                CastleWarsEngineeringManager.ROCK_ITEM_ID, 6);
+        makeInventorySpace(bot, 8);
+        int rocksGranted = CastleWarsEngineeringManager.giveSupply(bot,
+                CastleWarsEngineeringManager.ROCK_ITEM_ID, 6 - Math.min(6,
+                        bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.ROCK_ITEM_ID)));
+        if (rocksGranted > 0) {
+            bot.getUpdateState().setAnimation(881);
+        }
+        if (bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.TOOLKIT_ID) <= 0) {
+            CastleWarsEngineeringManager.giveSupply(bot, CastleWarsEngineeringManager.TOOLKIT_ID, 1);
+        }
+        if (bot.getInventoryManager().getItemAmount(CastleWarsEngineeringManager.TINDERBOX_ITEM_ID) <= 0) {
+            CastleWarsEngineeringManager.giveSupply(bot, CastleWarsEngineeringManager.TINDERBOX_ITEM_ID, 1);
+        }
         state.wallAccessed = false;
+        CastleWarsManager.setPlayerOnBattlements(bot, false);
         state.phase = Phase.CATAPULT_MOVE;
         state.repathDelay = 0;
     }
@@ -1732,8 +1780,10 @@ public final class CastleWarsBotRoleAi {
             return;
         }
 
-        if (CastleWarsManager.isFlagAtBase(enemy)
-                && CastleWarsManager.takeEnemyFlag(bot)) {
+        if (CastleWarsManager.isFlagAtBase(enemy)) {
+            if (!CastleWarsManager.takeEnemyFlag(bot)) {
+                return;
+            }
             CastleWarsBotChat.sayFlagCarrier(bot);
         }
         state.phase = Phase.ENEMY_DESCEND;
@@ -1842,6 +1892,8 @@ public final class CastleWarsBotRoleAi {
 
     private static boolean isTraversalPhase(Phase phase) {
         switch (phase) {
+            case CATAPULT_MOVE:
+            case CATAPULT_RESTOCK:
             case LEAVE_SPAWN:
             case DESCEND_HOME:
             case EXIT_HOME:
@@ -2267,7 +2319,7 @@ public final class CastleWarsBotRoleAi {
         if (near(bot, approach, 0)) {
             return true;
         }
-        if (state.role == Role.UNDERGROUND
+        if ((state.role == Role.UNDERGROUND || state.role == Role.CATAPULT)
                 && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, approach)) {
             return false;
         }
@@ -2277,7 +2329,12 @@ public final class CastleWarsBotRoleAi {
         }
         state.repathDelay = 2;
         bot.getMovementQueue().setRunning(true);
-        PathFinder.findPath(bot, approach.getX(), approach.getY(), false, 0, 0);
+        boolean pathFound = PathFinder.findPath(bot, approach.getX(), approach.getY(), false, 0, 0);
+        if (!pathFound && state.role == Role.CATAPULT && World.tickCount % 50 < 10
+                && GameplayTrace.enabled()) {
+            GameplayTrace.log("castle-wars catapult no path team=" + state.team
+                    + " approach=" + approach + " operator=" + GameplayTrace.describe(bot));
+        }
         bot.getMovementQueue().clearMovementActions();
         return false;
     }
@@ -2297,7 +2354,7 @@ public final class CastleWarsBotRoleAi {
             navigationTarget = steppingWaypoint;
         }
 
-        if (state.role == Role.UNDERGROUND
+        if ((state.role == Role.UNDERGROUND || state.role == Role.CATAPULT)
                 && CastleWarsBotBarricadeAi.handleBlockedRoute(bot, navigationTarget)) {
             return;
         }
@@ -2337,6 +2394,10 @@ public final class CastleWarsBotRoleAi {
         if (team == null) {
             return false;
         }
+        refreshRoleRoster(team);
+        if (bot == catapultOperators.get(team)) {
+            return false;
+        }
 
         BotPlayer dedicated = team == CastleWarsManager.Team.SARADOMIN
                 ? saradominDedicatedFlagRunner : zamorakDedicatedFlagRunner;
@@ -2352,6 +2413,39 @@ public final class CastleWarsBotRoleAi {
         return bot == dedicated;
     }
 
+    private static void refreshRoleRoster(CastleWarsManager.Team team) {
+        Map<BotPlayer, Integer> roster = new IdentityHashMap<BotPlayer, Integer>();
+        for (Player player : CastleWarsManager.getGamePlayersView()) {
+            if (player instanceof BotPlayer && CastleWarsManager.getGameTeam(player) == team) {
+                roster.put((BotPlayer)player, Integer.valueOf(player.botPrimaryCombatStyle));
+            }
+        }
+        BotPlayer previousOperator = catapultOperators.get(team);
+        BotPlayer operator = previousOperator;
+        // Keep the same operator through respawns and late arrivals. If a
+        // replacement is needed, leave any current flag carrier on its run.
+        if (!roster.containsKey(operator)) {
+            operator = null;
+            for (BotPlayer candidate : roster.keySet()) {
+                if (!CastleWarsManager.isCarryingFlag(candidate)
+                        && (operator == null || candidate.getNameHash() < operator.getNameHash())) {
+                    operator = candidate;
+                }
+            }
+            catapultOperators.put(team, operator);
+        }
+        if (operator != previousOperator || !roster.equals(roleRosters.get(team))) {
+            roleRosters.put(team, roster);
+            Integer previous = roleGenerations.get(team);
+            roleGenerations.put(team, Integer.valueOf(previous == null ? 1 : previous.intValue() + 1));
+            if (team == CastleWarsManager.Team.SARADOMIN) {
+                saradominDedicatedFlagRunner = null;
+            } else {
+                zamorakDedicatedFlagRunner = null;
+            }
+        }
+    }
+
     private static BotPlayer findDedicatedFlagRunner(CastleWarsManager.Team team) {
         long[] wallGuardHashes = getWallGuardNameHashes(team);
         long[] specialistHashes = getSpecialistNonWallNameHashes(team, wallGuardHashes);
@@ -2365,7 +2459,7 @@ public final class CastleWarsBotRoleAi {
             }
             BotPlayer other = (BotPlayer)player;
             long nameHash = other.getNameHash();
-            if (containsNameHash(wallGuardHashes, nameHash)
+            if (other == catapultOperators.get(team) || containsNameHash(wallGuardHashes, nameHash)
                     || containsNameHash(specialistHashes, nameHash)) {
                 continue;
             }
@@ -2415,14 +2509,15 @@ public final class CastleWarsBotRoleAi {
                 ++botCount;
             }
         }
-        long[] hashes = createEmptyHashSelection(wallGuardCapacity(botCount));
+        long[] hashes = createEmptyHashSelection(
+                Math.min(wallGuardCapacity(botCount), Math.max(0, botCount - 2)));
         for (Player player : CastleWarsManager.getGamePlayersView()) {
             if (!(player instanceof BotPlayer)
                     || CastleWarsManager.getGameTeam(player) != team) {
                 continue;
             }
             BotPlayer bot = (BotPlayer)player;
-            if (bot.botPrimaryCombatStyle == 0) {
+            if (bot == catapultOperators.get(team) || bot.botPrimaryCombatStyle == 0) {
                 continue;
             }
             insertLowestNameHash(hashes, bot.getNameHash());
@@ -2436,18 +2531,19 @@ public final class CastleWarsBotRoleAi {
         for (Player player : CastleWarsManager.getGamePlayersView()) {
             if (player instanceof BotPlayer
                     && CastleWarsManager.getGameTeam(player) == team
+                    && player != catapultOperators.get(team)
                     && !containsNameHash(wallGuardHashes, player.getNameHash())) {
                 ++nonWallBotCount;
             }
         }
-        long[] hashes = createEmptyHashSelection(specialistCapacity(nonWallBotCount));
+        long[] hashes = createEmptyHashSelection(Math.min(8, specialistCapacity(nonWallBotCount)));
         for (Player player : CastleWarsManager.getGamePlayersView()) {
             if (!(player instanceof BotPlayer)
                     || CastleWarsManager.getGameTeam(player) != team) {
                 continue;
             }
             BotPlayer bot = (BotPlayer)player;
-            if (containsNameHash(wallGuardHashes, bot.getNameHash())) {
+            if (bot == catapultOperators.get(team) || containsNameHash(wallGuardHashes, bot.getNameHash())) {
                 continue;
             }
             insertLowestNameHash(hashes, bot.getNameHash());
@@ -2492,6 +2588,12 @@ public final class CastleWarsBotRoleAi {
     }
 
     private static Role assignRole(BotPlayer bot, CastleWarsManager.Team team) {
+        if (isDedicatedFlagRunner(bot)) {
+            return Role.ATTACKER;
+        }
+        if (bot == catapultOperators.get(team)) {
+            return Role.CATAPULT;
+        }
         long[] wallGuardHashes = getWallGuardNameHashes(team);
         if (containsNameHash(wallGuardHashes, bot.getNameHash())) {
             return Role.WALL_GUARD;
@@ -2504,9 +2606,6 @@ public final class CastleWarsBotRoleAi {
             }
             if (nonWallRank < 2) {
                 return Role.DEFENDER;
-            }
-            if (nonWallRank == 2) {
-                return Role.CATAPULT;
             }
             return Role.UNDERGROUND;
         }
@@ -2532,7 +2631,7 @@ public final class CastleWarsBotRoleAi {
 
             BotPlayer candidate = (BotPlayer)player;
             long candidateHash = candidate.getNameHash();
-            if (containsNameHash(wallGuardHashes, candidateHash)
+            if (candidate == catapultOperators.get(team) || containsNameHash(wallGuardHashes, candidateHash)
                     || containsNameHash(specialistHashes, candidateHash)) {
                 continue;
             }
@@ -2583,6 +2682,7 @@ public final class CastleWarsBotRoleAi {
         private final CastleWarsManager.Team team;
         private final int primaryCombatStyle;
         private final Role role;
+        private int roleGeneration;
         private Phase phase;
         private boolean bandagesStocked;
         private boolean utilityStocked;

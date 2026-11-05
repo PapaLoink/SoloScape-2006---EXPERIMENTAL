@@ -663,7 +663,7 @@ extends TickTask {
                 styleBonus = 1.0;
             }
             rangedLevel = (int)((double)rangedLevel + styleBonus);
-            double rangedStrength = weaponCombatAttack.getAmmunition().getRangedStrength();
+            double rangedStrength = player.getCombatBonus(12);
             double maxHit = ((double)rangedLevel + rangedStrength / 8.0 + (double)rangedLevel * rangedStrength * Math.pow(64.0, -1.0) + 14.0) / 10.0;
             return (int)Math.floor(maxHit);
         }
@@ -1038,12 +1038,13 @@ extends TickTask {
             if (((Player)(entity = (Player)entity)).getEquipmentManager().getItemIdAtSlot(9) == 777 && (spellDefinition == SpellDefinition.WIND_BOLT || spellDefinition == SpellDefinition.WATER_BOLT || spellDefinition == SpellDefinition.EARTH_BOLT || spellDefinition == SpellDefinition.FIRE_BOLT)) {
                 maxDamage += 3;
             }
-            if (((Player)entity).getEquipmentManager().getItemIdAtSlot(3) == 4675 || ((Player)entity).getEquipmentManager().getItemIdAtSlot(3) == 4710 || ((Player)entity).getEquipmentManager().getItemIdAtSlot(3) == 6914) {
-                maxDamage = (int)((double)maxDamage * 1.1);
-            }
             if (spellDefinition == SpellDefinition.MAGIC_DART) {
                 maxDamage += ((Player)entity).getSkillManager().getBaseLevel(6) / 10;
             }
+            // Bonus 13 is a percentage summed from every equipped item.
+            // Apply it once, after the spell's base damage and flat boosts.
+            long magicDamagePercent = Math.max(0L, 100L + entity.getCombatBonus(13));
+            maxDamage = (int)((long)maxDamage * magicDamagePercent / 100L);
         }
         return maxDamage;
     }

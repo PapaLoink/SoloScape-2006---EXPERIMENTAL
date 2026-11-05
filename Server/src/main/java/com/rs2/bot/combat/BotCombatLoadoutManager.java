@@ -790,7 +790,8 @@ public final class BotCombatLoadoutManager {
             if (player.getSkillManager().getCurrentLevels()[1] >= 45) {
                 headId = 3755;
             }
-            if (ItemDefinition.isDefined(4097)) {
+            if (player.getSkillManager().getCurrentLevels()[6] >= 40
+                    && ItemDefinition.isDefined(4097)) {
                 headId = BotCombatHelper.selectBestBotLoadoutItemId(player, null, BotCombatLoadoutTables.mageHeadIds);
                 bodyId = BotCombatHelper.selectBestBotLoadoutItemId(player, null, BotCombatLoadoutTables.mageBodyIds);
                 legId = BotCombatHelper.selectBestBotLoadoutItemId(player, null, BotCombatLoadoutTables.mageLegIds);

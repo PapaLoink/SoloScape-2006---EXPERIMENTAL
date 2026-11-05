@@ -37,11 +37,11 @@ public final class CastleWarsBattlementRangedCombatChecks {
             checkCastle(CastleWarsManager.Team.SARADOMIN,
                     CastleWarsManager.Team.ZAMORAK, climber, defender, teams,
                     new Position(2416, 3074, 0), new Position(2417, 3077, 0),
-                    new Position(2424, 3077, 0));
+                    new Position(2410, 3077, 0));
             checkCastle(CastleWarsManager.Team.ZAMORAK,
                     CastleWarsManager.Team.SARADOMIN, climber, defender, teams,
                     new Position(2383, 3133, 0), new Position(2382, 3130, 0),
-                    new Position(2375, 3130, 0));
+                    new Position(2389, 3130, 0));
             checkOuterEdgeOffset();
             System.out.println("Castle Wars battlement ranged and magic combat checks passed");
         } finally {
@@ -76,11 +76,11 @@ public final class CastleWarsBattlementRangedCombatChecks {
         require(climber.castleWarsOnBattlements,
                 "Climbing wall stairs must mark the player as elevated");
         require(CastleWarsManager.getCastleTeamAtPosition(defender.getPosition())
-                        == castleTeam,
-                "Defender fixture must stand on ground inside the same castle");
+                        == null,
+                "Ground fixture must stand outside the castle");
 
         require(CastleWarsManager.isCastleWallCrossLevelPair(climber, defender),
-                "Rope/stair climber must be targetable from the ground inside castle");
+                "Rope/stair climber must be targetable from the battlefield");
         require(CastleWarsManager.isCastleWallCrossLevelPair(defender, climber),
                 "Height-aware target selection must work in either direction");
 
@@ -99,7 +99,7 @@ public final class CastleWarsBattlementRangedCombatChecks {
         climber.botPrimaryCombatStyle = 1;
         climber.botActiveCombatStyle = 1;
         require(CastleWarsManager.hasBotCombatLineOfSight(climber, defender),
-                "Ranged wall bot must see ground defender even through scenery");
+                "Ranged wall bot must see an outward battlefield target");
 
         defender.setQueuedCombatSpell(SpellDefinition.WIND_STRIKE);
         try {

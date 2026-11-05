@@ -516,6 +516,11 @@ public class ItemDefinition {
         }
         // Server metadata uses the later black axe requirement; revision 443 used level 6.
         definitionsById[1361].requiredLevels[8] = 6;
+        // All three 443 mystic colours require 40 Magic and 20 Defence.
+        // The legacy metadata incorrectly lowers Magic to 20.
+        for (int id = 4089; id <= 4117; id += 2) {
+            definitionsById[id].requiredLevels[6] = 40;
+        }
         // The legacy metadata incorrectly marks Lanthus's decorative platebodies
         // and platelegs as non-equipment (slot -1), despite their 443 Wear action.
         // Each tier shares the same body/legs slots as ordinary plate armour.

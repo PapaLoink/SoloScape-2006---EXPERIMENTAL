@@ -174,25 +174,7 @@ extends BaseCombatAttack {
         }
         runeCosts = this.spell.getHitDefinition().copy();
         ((HitDefinition)runeCosts).setSpell(this.spell);
-        if (ServerSettings.modernCombatSystemEnabled) {
-            ((HitDefinition)runeCosts).setMaxDamage(CombatManager.calculateSpellMaxHit(this.getAttacker(), this.spell));
-        } else {
-            if (this.getAttacker().isChargeSpellActive() && (this.spell == SpellDefinition.FLAMES_OF_ZAMORAK || this.spell == SpellDefinition.CLAWS_OF_GUTHIX || this.spell == SpellDefinition.SARADOMIN_STRIKE)) {
-                ((HitDefinition)runeCosts).setMaxDamage(((HitDefinition)runeCosts).getMaxDamage() + 10);
-            }
-            if (this.getAttacker().isPlayer()) {
-                Player player = (Player)this.getAttacker();
-                if (player.getEquipmentManager().getItemIdAtSlot(9) == 777 && (this.spell == SpellDefinition.WIND_BOLT || this.spell == SpellDefinition.WATER_BOLT || this.spell == SpellDefinition.EARTH_BOLT || this.spell == SpellDefinition.FIRE_BOLT)) {
-                    ((HitDefinition)runeCosts).setMaxDamage(((HitDefinition)runeCosts).getMaxDamage() + 3);
-                }
-                if (player.getEquipmentManager().getItemIdAtSlot(3) == 4675 || player.getEquipmentManager().getItemIdAtSlot(3) == 4710 || player.getEquipmentManager().getItemIdAtSlot(3) == 6914) {
-                    ((HitDefinition)runeCosts).setMaxDamage((int)((double)((HitDefinition)runeCosts).getMaxDamage() * 1.1));
-                }
-                if (this.spell == SpellDefinition.MAGIC_DART) {
-                    ((HitDefinition)runeCosts).setMaxDamage(((HitDefinition)runeCosts).getMaxDamage() + player.getSkillManager().getBaseLevel(6) / 10);
-                }
-            }
-        }
+        ((HitDefinition)runeCosts).setMaxDamage(CombatManager.calculateSpellMaxHit(this.getAttacker(), this.spell));
         boolean enabled = this.spell == SpellDefinition.SUMMON_ZOMBIE || this.spell == SpellDefinition.CHAOS_ELEMENTAL_DISARM || this.spell == SpellDefinition.CHAOS_ELEMENTAL_RANDOM_TELEPORT;
         CombatEffect combatEffect = this.spell.getSecondaryEffect();
         if (this.spell.getSecondaryEffect() != null && this.spell.getSecondaryEffect() instanceof PoisonEffect && !GameUtil.rollChance(0.125)) {

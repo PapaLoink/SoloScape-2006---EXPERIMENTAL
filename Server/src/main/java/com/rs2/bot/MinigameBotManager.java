@@ -59,12 +59,6 @@ public final class MinigameBotManager {
         }
 
         if (CastleWarsManager.isInGame(botPlayer)) {
-            // Castle Wars bots should always fight back when attacked. Keep this
-            // asserted every AI cycle because generic combat/escape code can
-            // temporarily switch auto-retaliate off.
-            if (!botPlayer.isAutoRetaliate()) {
-                botPlayer.setAutoRetaliate(true);
-            }
             BotCombatHelper.syncPrimaryMagicAutocast(botPlayer);
             spreadWaitingBots.remove(botPlayer);
             clearWaitingSocial(botPlayer);
@@ -133,9 +127,13 @@ public final class MinigameBotManager {
 
     private static void prepareCastleWarsCombatStacks(BotPlayer botPlayer) {
         if (botPlayer.botPrimaryCombatStyle == BotPvpCombatHandler.RANGED_COMBAT_STYLE) {
-            // Rune arrows. Castle Wars ranged bots should never exhaust their ammo.
-            botPlayer.getEquipmentManager().getContainer().setItem(
-                    13, new ItemStack(892, Integer.MAX_VALUE));
+            // Refill the compatible arrows chosen with the bow. Rune arrows
+            // cannot be fired by the lower-tier bows used by low-level bots.
+            ItemStack arrows = botPlayer.getEquipmentManager().getContainer().getItemAt(13);
+            if (arrows != null) {
+                botPlayer.getEquipmentManager().getContainer().setItem(
+                        13, new ItemStack(arrows.getId(), Integer.MAX_VALUE));
+            }
             return;
         }
         if (botPlayer.botPrimaryCombatStyle != BotPvpCombatHandler.MAGIC_COMBAT_STYLE) {
@@ -344,7 +342,7 @@ public final class MinigameBotManager {
         BotCombatHelper.setBotSkillLevel(botPlayer, 2, 10 + GameUtil.randomInt(90));
         BotCombatHelper.setBotSkillLevel(botPlayer, 3, 30 + GameUtil.randomInt(70));
         BotCombatHelper.setBotSkillLevel(botPlayer, 4, 10 + GameUtil.randomInt(90));
-        BotCombatHelper.setBotSkillLevel(botPlayer, 5, 1 + GameUtil.randomInt(70));
+        BotCombatHelper.setBotSkillLevel(botPlayer, 5, 1 + GameUtil.randomInt(99));
         BotCombatHelper.setBotSkillLevel(botPlayer, 6, 10 + GameUtil.randomInt(90));
         botPlayer.getSkillManager().refreshAllSkills();
     }
