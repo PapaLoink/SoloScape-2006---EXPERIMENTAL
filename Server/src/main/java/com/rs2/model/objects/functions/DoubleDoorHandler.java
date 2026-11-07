@@ -69,7 +69,7 @@ public final class DoubleDoorHandler {
                 DoubleDoorHandler doubleDoorHandler2 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 + 1, value42);
                 DoubleDoorHandler doubleDoorHandler3 = null;
                 DoubleDoorHandler doubleDoorHandler4 = null;
-                if (DoubleDoorHandler.usesWideDoubleDoorOffset(value6)) {
+                if (DoubleDoorHandler.usesWideDoubleDoorOffset(((DoubleDoorHandler)value5).originalObjectId)) {
                     doubleDoorHandler3 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 - 1, value32, value42);
                     doubleDoorHandler4 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 + 1, value32, value42);
                 }
@@ -96,7 +96,7 @@ public final class DoubleDoorHandler {
                 DoubleDoorHandler doubleDoorHandler5 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 + 1, value32, value42);
                 DoubleDoorHandler doubleDoorHandler6 = null;
                 DoubleDoorHandler doubleDoorHandler7 = null;
-                if (DoubleDoorHandler.usesWideDoubleDoorOffset(value6)) {
+                if (DoubleDoorHandler.usesWideDoubleDoorOffset(((DoubleDoorHandler)value5).originalObjectId)) {
                     doubleDoorHandler6 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 - 1, value42);
                     doubleDoorHandler7 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 + 1, value42);
                 }
@@ -123,7 +123,7 @@ public final class DoubleDoorHandler {
                 DoubleDoorHandler doubleDoorHandler8 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 - 1, value42);
                 DoubleDoorHandler doubleDoorHandler9 = null;
                 DoubleDoorHandler doubleDoorHandler10 = null;
-                if (DoubleDoorHandler.usesWideDoubleDoorOffset(value6)) {
+                if (DoubleDoorHandler.usesWideDoubleDoorOffset(((DoubleDoorHandler)value5).originalObjectId)) {
                     doubleDoorHandler9 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 - 1, value32, value42);
                     doubleDoorHandler10 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 + 1, value32, value42);
                 }
@@ -151,7 +151,7 @@ public final class DoubleDoorHandler {
                 DoubleDoorHandler doubleDoorHandler11 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22 + 1, value32, value42);
                 DoubleDoorHandler doubleDoorHandler12 = null;
                 DoubleDoorHandler doubleDoorHandler13 = null;
-                if (DoubleDoorHandler.usesWideDoubleDoorOffset(value6)) {
+                if (DoubleDoorHandler.usesWideDoubleDoorOffset(((DoubleDoorHandler)value5).originalObjectId)) {
                     doubleDoorHandler12 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 - 1, value42);
                     doubleDoorHandler13 = DoubleDoorHandler.getOrCreateDoubleDoorState(value22, value32 + 1, value42);
                 }
@@ -295,7 +295,7 @@ public final class DoubleDoorHandler {
                 doubleDoorHandler.currentObjectId = doubleDoorHandler.originalObjectId;
             }
         } else {
-            doubleDoorHandler.currentObjectId = doubleDoorHandler.originalObjectId;
+            doubleDoorHandler.currentObjectId = DoubleDoorHandler.wideGateObjectId(doubleDoorHandler);
         }
         ObjectManager.getInstance().removeDynamicObjectAt(doubleDoorHandler.currentX, doubleDoorHandler.currentY, doubleDoorHandler.plane, 0);
         int value = doubleDoorHandler.currentObjectId;
@@ -412,7 +412,7 @@ public final class DoubleDoorHandler {
                 doubleDoorHandler.currentObjectId = doubleDoorHandler.originalObjectId;
             }
         } else {
-            doubleDoorHandler.currentObjectId = doubleDoorHandler.originalObjectId;
+            doubleDoorHandler.currentObjectId = DoubleDoorHandler.wideGateObjectId(doubleDoorHandler);
         }
         ObjectManager.getInstance().removeDynamicObjectAt(doubleDoorHandler.currentX, doubleDoorHandler.currentY, doubleDoorHandler.plane, 0);
         int value = doubleDoorHandler.currentObjectId;
@@ -458,6 +458,35 @@ public final class DoubleDoorHandler {
             ++index;
         }
         return false;
+    }
+
+    /**
+     * A wide gate keeps its closed id while open, except where the cache has LostCity's separate open-gate
+     * locs: the Paterdomus members fence gate (memberfencegate_l/r) opens into 1552/1556, whose option is Close.
+     */
+    private static int wideGateObjectId(DoubleDoorHandler gate) {
+        boolean open = gate.currentX != gate.originalX || gate.currentY != gate.originalY;
+        if (open && gate.originalObjectId == 1598) return 1552;
+        if (open && gate.originalObjectId == 1599) return 1556;
+        return gate.originalObjectId;
+    }
+
+    /** True while the gate leaf that started at (x, y) is swung open. */
+    public static boolean isOpen(int x, int y, int plane) {
+        for (Object o : doorStates) {
+            DoubleDoorHandler h = (DoubleDoorHandler)o;
+            if (h.originalX == x && h.originalY == y && h.plane == plane) return h.currentX != x || h.currentY != y;
+        }
+        return false;
+    }
+
+    /** The current position and id of the leaf that started at (x, y): {id, x, y}, or null. */
+    public static int[] currentLeaf(int x, int y, int plane) {
+        for (Object o : doorStates) {
+            DoubleDoorHandler h = (DoubleDoorHandler)o;
+            if (h.originalX == x && h.originalY == y && h.plane == plane) return new int[]{h.currentObjectId, h.currentX, h.currentY};
+        }
+        return null;
     }
 
     public static boolean usesWideDoubleDoorOffset(int value2) {

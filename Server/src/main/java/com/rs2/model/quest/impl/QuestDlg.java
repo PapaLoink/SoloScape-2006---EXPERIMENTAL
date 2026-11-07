@@ -63,7 +63,9 @@ public final class QuestDlg {
             DialogueManager d = p.getDialogueManager();
             if (l.length == 1) d.showOneLineStatement(l[0]);
             else if (l.length == 2) d.showTwoLineStatement(l[0], l[1]);
-            else d.showThreeLineStatement(l[0], l[1], l[2]);
+            else if (l.length == 3) d.showThreeLineStatement(l[0], l[1], l[2]);
+            else if (l.length == 4) d.showFourLineStatement(l[0], l[1], l[2], l[3]);
+            else d.showFiveLineStatement(l[0], l[1], l[2], l[3], l[4]);
         }
         public void opts(String[] t) {
             DialogueManager d = p.getDialogueManager();
@@ -125,6 +127,22 @@ public final class QuestDlg {
     public QuestDlg npc(String t) { return chunked(NPC, t, 4, 52); }
     public QuestDlg player(String t) { return chunked(PLAYER, t, 4, 52); }
     public QuestDlg mes(String t) { return chunked(MES, t, 3, 60); }
+    /**
+     * LostCity ~mesbox with its own "|" line breaks kept (up to five lines). Each line is its own text component
+     * here, so a colour code still running at the end of a line is carried onto the next one.
+     */
+    public QuestDlg box(String t) {
+        String[] l = t.split("\\|");
+        String colour = null;
+        for (int k = 0; k < l.length; k++) {
+            if (colour != null && !l[k].startsWith("@")) l[k] = colour + l[k];
+            int at = l[k].lastIndexOf('@', l[k].length() - 1);
+            int from = at > 0 ? l[k].lastIndexOf('@', at - 1) : -1;
+            if (from >= 0 && at - from == 4) colour = l[k].substring(from, at + 1);
+        }
+        Node n = new Node(); n.kind = MES; n.lines = l;
+        return add(n);
+    }
     /** One-line message with an item picture (LostCity ~objbox). */
     public QuestDlg item(int item, String line) { Node n = new Node(); n.kind = ITEM; n.item = item; n.lines = new String[]{line}; return add(n); }
     public QuestDlg act(Act a) { Node n = new Node(); n.kind = ACT; n.act = a; return add(n); }

@@ -120,6 +120,8 @@ function Start-DevServer {
         "-cp", $javaClasspath,
         "com.rs2.launcher.ControlPanel"
     )
+    # Start-Process joins arguments with spaces, so quote any that contain one (e.g. a folder named "AI Projects").
+    $javaArgs = $javaArgs | ForEach-Object { if ($_ -match ' ') { '"' + $_ + '"' } else { $_ } }
 
     Write-Host "[Dev] Starting server with live HotSwap..." -ForegroundColor Cyan
     Write-Host "[Dev] Save a .java file under src\main\java to apply changes." -ForegroundColor DarkGray

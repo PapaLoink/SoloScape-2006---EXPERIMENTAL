@@ -330,8 +330,17 @@ public final class ObjectManager {
             case 8744: 
             case 9319: {
                 int objectOrientation = SkillActionHelper.getObjectOrientation(objectId, value2, value32, 0);
-                player.interactionApproachX = value2 + (objectOrientation == 1 ? 1 : (objectOrientation == 3 ? -1 : 0));
-                player.interactionApproachY = value32 + (objectOrientation == 0 ? 1 : (objectOrientation == 2 ? -1 : 0));
+                int dx = objectOrientation == 1 ? 1 : (objectOrientation == 3 ? -1 : 0);
+                int dy = objectOrientation == 0 ? 1 : (objectOrientation == 2 ? -1 : 0);
+                // Some ladders are climbed from the other side, e.g. the Paterdomus mausoleum ladder (3405,9907),
+                // whose north tile is solid wall. Use the side the player can actually stand on.
+                if (!com.rs2.util.path.PathFinder.isReachable(player, value2 + dx, value32 + dy)
+                        && com.rs2.util.path.PathFinder.isReachable(player, value2 - dx, value32 - dy)) {
+                    dx = -dx;
+                    dy = -dy;
+                }
+                player.interactionApproachX = value2 + dx;
+                player.interactionApproachY = value32 + dy;
                 return;
             }
             case 3014: {

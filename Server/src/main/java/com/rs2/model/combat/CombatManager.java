@@ -102,7 +102,10 @@ extends TickTask {
         }
         if (entity.isPlayer() && entity2.isNpc() && !((Player)entity).getQuestManager().canAttackNpc(((Npc)entity2).getNpcId())) {
             Player player = (Player)entity;
-            player.packetSender.sendGameMessage("You cannot attack this npc.");
+            // Priest in Peril's guard dog sends its own LostCity refusal message.
+            if (((Npc)entity2).getNpcId() != 1047) {
+                player.packetSender.sendGameMessage("You cannot attack this npc.");
+            }
             CombatManager.stopCombat(entity);
             return;
         }

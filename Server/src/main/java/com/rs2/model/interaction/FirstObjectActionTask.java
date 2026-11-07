@@ -67,6 +67,26 @@ extends TickTask {
     private boolean loggedMissingWorldObject;
     private boolean loggedMissingReachPosition;
     private boolean loggedOutsideDistance;
+    private static int paterdomusGateOpenings;
+
+    /**
+     * LostCity memberfencegate_l/r (open_gate): both halves swing back west along the fence for 500 ticks and the
+     * player walks through on their own. Clicking an open half (1552/1556) closes it early through the normal
+     * double-gate handling.
+     */
+    private static void openPaterdomusMembersGate(Player player, int objectId, int x, int y, int plane) {
+        if (!DoubleDoorHandler.handleDoubleDoor(objectId, x, y, plane)) return;
+        player.getPacketSender().sendSoundEffect(318, 1, 0);
+        final int opening = ++paterdomusGateOpenings;
+        World.getTaskScheduler().schedule(new TickTask(500) {
+            public void execute() {
+                this.stop();
+                if (opening != paterdomusGateOpenings || !DoubleDoorHandler.isOpen(3320, 3467, 0)) return;
+                int[] leaf = DoubleDoorHandler.currentLeaf(3320, 3467, 0);
+                if (leaf != null) DoubleDoorHandler.handleDoubleDoor(leaf[0], leaf[1], leaf[2], 0);
+            }
+        });
+    }
 
     public FirstObjectActionTask(int value7, boolean enabled2, Player player, int actionSequence, int objectId, int objectX, int objectY, int objectPlane, String objectName) {
         super(1, true);
@@ -715,9 +735,7 @@ extends TickTask {
                 if (ServerSettings.freeToPlayWorld) {
                     this.player.packetSender.sendGameMessage("You need to be in members world to access members content.");
                 } else {
-                    this.player.getPacketSender().queueRelativeMovementStep(this.player.getPosition().getX() < 3320 ? 1 : -1, 0, true);
-                    this.player.getPacketSender().openDoubleDoorPair(1598, 3320, 3467, 1599, 3320, 3468);
-                    this.player.getPacketSender().sendSoundEffect(318, 1, 0);
+                    openPaterdomusMembersGate(this.player, this.objectId, this.objectX, this.objectY, this.objectPlane);
                 }
             } else {
                 this.player.packetSender.sendGameMessage("You need a members account to access members content.");

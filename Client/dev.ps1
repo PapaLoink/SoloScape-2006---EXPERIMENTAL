@@ -134,6 +134,8 @@ function Start-DevClient {
         "-cp", $CompileCp,
         "unpackaged.Client"
     ) + $argsToUse
+    # Start-Process joins arguments with spaces, so quote any that contain one (e.g. a folder named "AI Projects").
+    $javaArgs = $javaArgs | ForEach-Object { if ($_ -match ' ' -and $_ -notmatch '"') { '"' + $_ + '"' } else { $_ } }
 
     Write-Host "[Dev] Starting client with live HotSwap..." -ForegroundColor Cyan
     Write-Host "[Dev] Developer tools dashboard: http://127.0.0.1:$McpPort/" -ForegroundColor Cyan
