@@ -81,6 +81,22 @@ public final class DoubleDoorHandler {
         return DoubleDoorHandler.getOrCreateDoubleDoorState(value4, value22, value32) != null;
     }
 
+    public static boolean isOpen(int x, int y, int plane) {
+        for (Object o : doorStates) {
+            DoubleDoorHandler h = (DoubleDoorHandler)o;
+            if (h.originalX == x && h.originalY == y && h.plane == plane) return h.currentX != x || h.currentY != y;
+        }
+        return false;
+    }
+
+    public static int[] currentLeaf(int x, int y, int plane) {
+        for (Object o : doorStates) {
+            DoubleDoorHandler h = (DoubleDoorHandler)o;
+            if (h.originalX == x && h.originalY == y && h.plane == plane) return new int[]{h.currentObjectId, h.currentX, h.currentY};
+        }
+        return null;
+    }
+
     /*
      * Enabled force condition propagation
      * Lifted jumps to return sites

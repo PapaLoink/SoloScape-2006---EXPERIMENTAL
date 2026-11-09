@@ -416,6 +416,7 @@ implements Runnable {
             SkillGuideManager.initialize();
             GrandExchangePriceSample.loadPriceSamples();
             new NoopStartupHook();
+            com.rs2.model.quest.impl.QuestExtras.start();
             value8 = CacheStore.getInstance();
             if (value8 != null) {
                 ((CacheStore)value8).close();
