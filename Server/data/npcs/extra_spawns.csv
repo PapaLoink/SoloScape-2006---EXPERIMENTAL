@@ -1,0 +1,4 @@
+npc_id,name,x,y,plane,walk
+349,Kilron,2556,3266,0,0
+350,Omart,2559,3266,0,0
+373,Nurse Sarah,2516,3274,0,1

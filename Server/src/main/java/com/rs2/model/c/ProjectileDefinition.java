@@ -159,6 +159,9 @@ public class ProjectileDefinition {
         NpcCombatDefinition.register(new int[]{742}, npcCombatDefinition);
         npcCombatDefinition = new MelzarTheMadCombatDefinition();
         NpcCombatDefinition.register(new int[]{753}, npcCombatDefinition);
+        NpcCombatDefinition.register(new int[]{PriestInPerilMonkCombatDefinition.MONK1}, new PriestInPerilMonkCombatDefinition(PriestInPerilMonkCombatDefinition.MONK1));
+        NpcCombatDefinition.register(new int[]{PriestInPerilMonkCombatDefinition.MONK2}, new PriestInPerilMonkCombatDefinition(PriestInPerilMonkCombatDefinition.MONK2));
+        NpcCombatDefinition.register(new int[]{PriestInPerilMonkCombatDefinition.MONK3}, new PriestInPerilMonkCombatDefinition(PriestInPerilMonkCombatDefinition.MONK3));
         npcCombatDefinition = new KolodionCombatDefinition();
         NpcCombatDefinition.register(new int[]{907, 908, 909, 910, 911}, npcCombatDefinition);
         npcCombatDefinition = new ZamorakBattleMageCombatDefinition();
