@@ -36,6 +36,6 @@ jobs:
         run: |
           mkdir -p /tmp/fps-command-classes
           find src/main/java ../Client/src -name '*.java' > /tmp/fps-command-sources.txt
-          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/fps-command-classes @/tmp/fps-command-sources.txt
-          javac -encoding UTF-8 -cp '/tmp/fps-command-classes:lib/*' -d /tmp/fps-command-classes ../Client/tests/FpsDebugOverlayChecks.java
-          java -Djava.awt.headless=true -cp '/tmp/fps-command-classes:lib/*:../Client/src' unpackaged.FpsDebugOverlayChecks
+          javac -encoding UTF-8 -cp 'lib/*:../Client/lib/*' -d /tmp/fps-command-classes @/tmp/fps-command-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/fps-command-classes:lib/*:../Client/lib/*' -d /tmp/fps-command-classes ../Client/tests/FpsDebugOverlayChecks.java
+          java -Djava.awt.headless=true -cp '/tmp/fps-command-classes:lib/*:../Client/lib/*:../Client/src' unpackaged.FpsDebugOverlayChecks

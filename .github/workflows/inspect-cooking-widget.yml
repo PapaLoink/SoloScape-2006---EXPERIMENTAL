@@ -31,9 +31,9 @@ jobs:
         run: |
           mkdir -p cooking-test-classes
           find src -name '*.java' > /tmp/cooking-client-sources.txt
-          javac -encoding UTF-8 -d cooking-test-classes @/tmp/cooking-client-sources.txt
-          javac -encoding UTF-8 -cp cooking-test-classes -d cooking-test-classes tests/CookingChatboxWidgetChecks.java
-          java -cp cooking-test-classes unpackaged.CookingChatboxWidgetChecks
+          javac -encoding UTF-8 -cp 'lib/*' -d cooking-test-classes @/tmp/cooking-client-sources.txt
+          javac -encoding UTF-8 -cp 'cooking-test-classes:lib/*' -d cooking-test-classes tests/CookingChatboxWidgetChecks.java
+          java -cp 'cooking-test-classes:lib/*' unpackaged.CookingChatboxWidgetChecks
       - name: Compile server and verify cooking button mapping
         working-directory: Server
         run: |

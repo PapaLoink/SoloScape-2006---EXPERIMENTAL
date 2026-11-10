@@ -29,9 +29,9 @@ jobs:
         run: |
           mkdir -p /tmp/removed-content-classes
           find src/main/java ../Client/src -name '*.java' > /tmp/removed-content-sources.txt
-          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/removed-content-classes @/tmp/removed-content-sources.txt
-          javac -encoding UTF-8 -cp '/tmp/removed-content-classes:lib/*' -d /tmp/removed-content-classes ../Client/tests/RemovedContentChecks.java src/test/java/ControlPanelConfigChecks.java
-          java -Djava.awt.headless=true -cp '/tmp/removed-content-classes:lib/*:../Client/src' unpackaged.RemovedContentChecks
+          javac -encoding UTF-8 -cp 'lib/*:../Client/lib/*' -d /tmp/removed-content-classes @/tmp/removed-content-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/removed-content-classes:lib/*:../Client/lib/*' -d /tmp/removed-content-classes ../Client/tests/RemovedContentChecks.java src/test/java/ControlPanelConfigChecks.java
+          java -Djava.awt.headless=true -cp '/tmp/removed-content-classes:lib/*:../Client/lib/*:../Client/src' unpackaged.RemovedContentChecks
           classes=/tmp/removed-content-classes
           libraries="$PWD/lib/*"
           sandbox=$(mktemp -d)

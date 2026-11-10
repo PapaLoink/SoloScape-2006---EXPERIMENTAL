@@ -41,8 +41,8 @@ jobs:
         run: |
           mkdir -p fletching-client-classes
           find src -name '*.java' > /tmp/fletching-client-sources.txt
-          javac -encoding UTF-8 -d fletching-client-classes @/tmp/fletching-client-sources.txt
-          javac -encoding UTF-8 -cp fletching-client-classes -d fletching-client-classes tests/FletchingChatboxWidgetChecks.java tests/LevelUpIconChecks.java tests/FletchingMakeXInputChecks.java
-          java -cp fletching-client-classes unpackaged.FletchingChatboxWidgetChecks
-          java -cp fletching-client-classes unpackaged.LevelUpIconChecks
-          java -cp fletching-client-classes unpackaged.FletchingMakeXInputChecks
+          javac -encoding UTF-8 -cp 'lib/*' -d fletching-client-classes @/tmp/fletching-client-sources.txt
+          javac -encoding UTF-8 -cp 'fletching-client-classes:lib/*' -d fletching-client-classes tests/FletchingChatboxWidgetChecks.java tests/LevelUpIconChecks.java tests/FletchingMakeXInputChecks.java
+          java -cp 'fletching-client-classes:lib/*' unpackaged.FletchingChatboxWidgetChecks
+          java -cp 'fletching-client-classes:lib/*' unpackaged.LevelUpIconChecks
+          java -cp 'fletching-client-classes:lib/*' unpackaged.FletchingMakeXInputChecks

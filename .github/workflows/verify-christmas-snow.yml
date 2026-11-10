@@ -26,6 +26,6 @@ jobs:
         run: |
           mkdir -p /tmp/christmas-snow-classes ../qa-output
           find src/main/java ../Client/src -name '*.java' > /tmp/christmas-snow-sources.txt
-          javac -encoding UTF-8 -cp 'lib/*' -d /tmp/christmas-snow-classes @/tmp/christmas-snow-sources.txt
-          javac -encoding UTF-8 -cp '/tmp/christmas-snow-classes:lib/*' -d /tmp/christmas-snow-classes ../Client/tests/ChristmasSnowChecks.java
-          java -Djava.awt.headless=true -cp '/tmp/christmas-snow-classes:lib/*:../Client/src' unpackaged.ChristmasSnowChecks
+          javac -encoding UTF-8 -cp 'lib/*:../Client/lib/*' -d /tmp/christmas-snow-classes @/tmp/christmas-snow-sources.txt
+          javac -encoding UTF-8 -cp '/tmp/christmas-snow-classes:lib/*:../Client/lib/*' -d /tmp/christmas-snow-classes ../Client/tests/ChristmasSnowChecks.java
+          java -Djava.awt.headless=true -cp '/tmp/christmas-snow-classes:lib/*:../Client/lib/*:../Client/src' unpackaged.ChristmasSnowChecks

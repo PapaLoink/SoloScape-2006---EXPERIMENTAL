@@ -10,7 +10,8 @@ find src -type f -name '*.java' -print0 | sort -z |
     while IFS= read -r -d '' src; do printf '"%s"\n' "$src"; done > build/sources.txt
 [[ -s build/sources.txt ]] || { echo "No client sources found." >&2; exit 1; }
 echo "Compiling client with Java 8..."
-"$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/classes @build/sources.txt
+# lib/ holds LWJGL, which the optional GPU renderer is compiled against.
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -cp "lib/*" -d build/classes @build/sources.txt
 if [[ -d src/assets ]]; then
     mkdir -p build/classes/assets
     cp -a src/assets/. build/classes/assets/

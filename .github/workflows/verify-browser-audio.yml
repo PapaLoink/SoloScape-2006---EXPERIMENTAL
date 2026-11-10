@@ -54,8 +54,8 @@ jobs:
             cmp "Server/cache/map-fallback/$name" "Client/WebClient/build/local-render/cache/map-fallback/$name"
           done < Client/WebClient/build/local-render/cache/map-fallback/manifest.txt
           mkdir -p Client/build/test-classes
-          javac -encoding UTF-8 -cp Client/build/classes -d Client/build/test-classes Client/tests/BrowserAudioStartupChecks.java
-          timeout 30s java -Djava.awt.headless=true -cp Client/build/classes:Client/build/test-classes unpackaged.BrowserAudioStartupChecks
+          javac -encoding UTF-8 -cp 'Client/build/classes:Client/lib/*' -d Client/build/test-classes Client/tests/BrowserAudioStartupChecks.java
+          timeout 30s java -Djava.awt.headless=true -cp 'Client/build/classes:Client/build/test-classes:Client/lib/*' unpackaged.BrowserAudioStartupChecks
       - name: Check local-renderer touch gestures
         run: node Client/tests/LocalRenderTouchChecks.js
       - name: Check desktop controls

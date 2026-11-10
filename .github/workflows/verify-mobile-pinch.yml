@@ -36,9 +36,9 @@ jobs:
         run: |
           mkdir -p build/pinch-classes
           find src -name '*.java' > /tmp/soloscape-pinch-sources.txt
-          javac -encoding UTF-8 -d build/pinch-classes @/tmp/soloscape-pinch-sources.txt
-          javac -encoding UTF-8 -cp 'build/pinch-classes' -d build/pinch-classes tests/BrowserCameraZoomChecks.java
-          java -Djava.awt.headless=true -cp build/pinch-classes unpackaged.BrowserCameraZoomChecks
+          javac -encoding UTF-8 -cp 'lib/*' -d build/pinch-classes @/tmp/soloscape-pinch-sources.txt
+          javac -encoding UTF-8 -cp 'build/pinch-classes:lib/*' -d build/pinch-classes tests/BrowserCameraZoomChecks.java
+          java -Djava.awt.headless=true -cp 'build/pinch-classes:lib/*' unpackaged.BrowserCameraZoomChecks
       - name: Test browser mouse, touch, pinch and audio
         run: |
           node Client/WebClient/tests/browser-input.test.cjs
