@@ -499,12 +499,14 @@ public final class QuestManager {
                         questManager = this;
                         QuestScript questScript = QuestDefinition.getQuestScript(value);
                         String[] questState = questScript.buildQuestJournal(questManager.player, questManager.player.getQuestState(value));
+                        for (int line = 0; line < questState.length; line++) questState[line] = JournalStyle.format(questState[line]);
+                        questState = JournalStyle.wrap(questState);
                         player = questManager.player;
-                        player.packetSender.sendInterfaceText(JournalStyle.format(questState[0]), 8145);
+                        player.packetSender.sendInterfaceText(questState[0], 8145);
                         int initialValue = 1;
                         while (initialValue < questState.length) {
                             player = questManager.player;
-                            player.packetSender.sendInterfaceText(JournalStyle.format(questState[initialValue]), initialValue + 8146);
+                            player.packetSender.sendInterfaceText(questState[initialValue], initialValue + 8146);
                             ++initialValue;
                         }
                         player = this.player;
