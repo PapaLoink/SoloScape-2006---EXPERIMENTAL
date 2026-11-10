@@ -792,6 +792,8 @@ final class DeveloperToolsClient {
                 "text", text(widget.aClass3_2029), "alternateText", text(widget.aClass3_2048),
                 "spriteId", widget.anInt2093, "itemId", widget.anInt1997, "quantity", widget.anInt2096,
                 "itemIdsPlusOne", widget.anIntArray2087, "itemQuantities", widget.anIntArray2073,
+                // model widgets: media type (1 model, 4 item from if_setobject) and its model or item id
+                "modelType", widget.anInt2009, "modelId", widget.anInt2026,
                 "actions", strings(widget.aClass3Array2027));
     }
 
