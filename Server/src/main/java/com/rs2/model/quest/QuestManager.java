@@ -472,7 +472,7 @@ public final class QuestManager {
                         value = value2;
                         questManager = this;
                         QuestScript questScript = QuestDefinition.getQuestScript(value);
-                        String[] questState = questScript.buildQuestJournal(questManager.player, questManager.player.getQuestState(value));
+                        String[] questState = JournalWrap.wrap(questScript.buildQuestJournal(questManager.player, questManager.player.getQuestState(value)));
                         player = questManager.player;
                         player.packetSender.sendInterfaceText(questState[0], 8145);
                         int initialValue = 1;

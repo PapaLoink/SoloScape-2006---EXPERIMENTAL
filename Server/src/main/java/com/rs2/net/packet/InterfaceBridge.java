@@ -20,6 +20,7 @@ public final class InterfaceBridge {
 
     private static Map<Integer, Integer> createGroupMappings() {
         Map<Integer, Integer> mappings = new LinkedHashMap<Integer, Integer>();
+        mappings.put(8016, 272); // Priest in Peril grave monument (LostCity priestperil_gravemonument)
         mappings.put(18890, 500);
         mappings.put(18939, 501);
         mappings.put(18984, 502);
@@ -173,6 +174,8 @@ public final class InterfaceBridge {
         put(mappings, 19731, 228, 6);    // vacancy title left sword
         put(mappings, 19732, 228, 7);    // vacancy title right sword
 
+        put(mappings, 8111, 272, 15); // Priest in Peril grave monument: gift model
+        put(mappings, 8112, 272, 94); // Priest in Peril grave monument: inscription
         // Native Castle Wars HUD (group 59): stock text components.
         // Score and flag icons are driven by varps 377/378 instead.
         put(mappings, 11346, 59, 1);  // Saradomin score label

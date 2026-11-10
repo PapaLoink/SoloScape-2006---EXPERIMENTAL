@@ -9,6 +9,7 @@ import com.rs2.model.ground.GroundItemManager;
 import com.rs2.model.item.ItemDefinition;
 import com.rs2.model.item.ItemStack;
 import com.rs2.model.npc.Npc;
+import com.rs2.model.objects.DynamicObject;
 import com.rs2.model.player.Player;
 import com.rs2.model.quest.QuestScript;
 
@@ -41,7 +42,7 @@ public final class PriestInPerilQuest extends QuestScript {
     static final int BARRIER = 3443, UNDERGROUND_DOOR1 = 3444, UNDERGROUND_DOOR2 = 3445, PRISON_DOOR = 3463,
         COFFIN = 3480, WELL = 3485, TEMPLE_DOOR_L = 3489, TEMPLE_DOOR_R = 3490, GRAVE_FIRST = 3493, GRAVE_LAST = 3499;
     // synths, seqs and spotanims
-    static final int DOOR_OPEN = 318, WELL_FILL = 1039, THROW_BUCKET = 1077, OPEN_CUPBOARD = 538, PICKUP_TABLE = 832,
+    static final int DOOR_OPEN = 318, GRATE_OPEN = 332, WELL_FILL = 1039, THROW_BUCKET = 1077, OPEN_CUPBOARD = 538, PICKUP_TABLE = 832,
         COFFIN_SPELL = 272;
 
     // monument contents, indexed by LostCity content id 1-7 (enum monument_graves_*)
@@ -143,14 +144,21 @@ public final class PriestInPerilQuest extends QuestScript {
 
     /**
      * LostCity open_and_close_metal_gate for a single door: (ox, oy) is the step from the door's own tile to the
-     * tile on the other side of its wall. The player walks to the door's tile on their side, then crosses.
+     * tile on the other side of its wall (LostCity door_open for the door's angle). The player walks to the door's
+     * tile on their side, then crosses. As in LostCity the open door stands on that far tile, turned a quarter, for
+     * 3 ticks; it must not go on the tile beside the doorway, where it would replace that tile's wall (the
+     * railing of Drezel's cell).
      */
     private static void throughDoor(final Player p, final int id, final int x, final int y, final int ox, final int oy) {
         int px = p.getPosition().getX(), py = p.getPosition().getY();
         boolean far = (px - x) * ox + (py - y) * oy > 0;
         int tx = far ? x + ox : x, ty = far ? y + oy : y;
         if (px != tx || py != ty) { walkThen(p, tx, ty, () -> throughDoor(p, id, x, y, ox, oy)); return; }
-        p.packetSender.openSingleDoor(id, x, y, plane(p));
+        int angle = ox < 0 ? 0 : oy > 0 ? 1 : ox > 0 ? 2 : 3;
+        int z = plane(p);
+        new DynamicObject(com.rs2.ServerSettings.placeholderObjectId, x, y, z, angle, 0, id, 3, false);
+        new DynamicObject(id, x + ox, y + oy, z, (angle + 1) & 3, 0, com.rs2.ServerSettings.placeholderObjectId, 3, false);
+        p.packetSender.sendSoundEffect(GRATE_OPEN, 1, 0);
         p.packetSender.queueRelativeMovementStep(far ? -ox : ox, far ? -oy : oy, true);
     }
 
