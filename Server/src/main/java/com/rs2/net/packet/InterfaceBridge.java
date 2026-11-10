@@ -174,7 +174,7 @@ public final class InterfaceBridge {
         put(mappings, 19731, 228, 6);    // vacancy title left sword
         put(mappings, 19732, 228, 7);    // vacancy title right sword
 
-        put(mappings, 8111, 272, 15); // Priest in Peril grave monument: gift model
+        put(mappings, 8111, 272, 93); // Priest in Peril grave monument: gift model (LostCity monumentmodel)
         put(mappings, 8112, 272, 94); // Priest in Peril grave monument: inscription
         // Native Castle Wars HUD (group 59): stock text components.
         // Score and flag icons are driven by varps 377/378 instead.
